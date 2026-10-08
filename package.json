@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "python3 scripts/test-host.py && node scripts/test-site-fixes.mjs"
+    "test": "python3 scripts/test-host.py && node scripts/test-site-fixes.mjs && node scripts/test-background.mjs"
   },
   "license": "MIT",
   "dependencies": {

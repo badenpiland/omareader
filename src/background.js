@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { acceptSiteFixes, fixesFor, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
+import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 
 const HOST = "com.bhp.omareader";
 const DARK_READER_ID = "eimadpbcbfnmbkopoojfekhnkhdbieeh";
@@ -14,6 +15,7 @@ let enabled = true;
 let pausedSites = [];
 let hostError = "";
 let reconnectTimer = null;
+let reconnectDelay = RECONNECT_MIN_MS;
 let darkReaderPrompt = false;
 let sites = null;
 let fixesText = "";
@@ -263,7 +265,10 @@ function connectHost() {
   try {
     port = chrome.runtime.connectNative(HOST);
   } catch (error) {
-    hostError = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : String(error);
+    hostError = /not found/i.test(message)
+      ? "Theme host not installed — run ./install.sh"
+      : message;
     scheduleReconnect();
     broadcast();
     return;
@@ -280,12 +285,16 @@ function connectHost() {
     }
     if (message.type === "palette" && message.background && message.foreground) {
       hostError = "";
+      reconnectDelay = RECONNECT_MIN_MS;
       rememberPalette(message);
     }
   });
   port.onDisconnect.addListener(() => {
     nativePort = null;
-    hostError = chrome.runtime.lastError?.message || "Theme host disconnected";
+    const message = chrome.runtime.lastError?.message || "";
+    hostError = /not found/i.test(message)
+      ? "Theme host not installed — run ./install.sh"
+      : message || "Theme host disconnected";
     broadcast();
     scheduleReconnect();
   });
@@ -301,10 +310,12 @@ function scheduleReconnect() {
   if (reconnectTimer) {
     return;
   }
+  const step = nextDelay(reconnectDelay);
+  reconnectDelay = step.next;
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     connectHost();
-  }, 1000);
+  }, step.delay);
 }
 
 function setEnabled(value) {
@@ -394,7 +405,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     void refreshFixes();
     return;
   }
-  if (alarm.name === "reconnect" && !nativePort) {
+  // A pending backoff timer already covers this wake. Don't start a second attempt.
+  if (alarm.name === "reconnect" && !nativePort && !reconnectTimer) {
     connectHost();
   }
 });
