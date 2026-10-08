@@ -40,3 +40,7 @@ npm run build
 The public key in `src/manifest.json` pins the extension id. `key.pem` stays private and is how `scripts/pack.sh` signs `release/omareader.crx`. Do not generate a replacement key. A new key would publish a different extension id, and already-installed browsers would keep the old one.
 
 Dark Reader’s license is `LICENSES/darkreader-MIT.txt`. The build copies it into the extension package.
+
+## Omarchy
+
+This is a pre-release. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
