@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 const HOST = "com.bhp.omareader";
 const DARK_READER_ID = "eimadpbcbfnmbkopoojfekhnkhdbieeh";
 
@@ -7,9 +8,10 @@ let palette = null;
 let enabled = true;
 let hostError = "";
 let reconnectTimer = null;
+let darkReaderPrompt = false;
 
 function snapshot() {
-  return { type: "state", enabled, palette, hostError };
+  return { type: "state", enabled, palette, hostError, darkReaderPrompt };
 }
 
 globalThis.omareaderSnapshot = snapshot;
@@ -122,6 +124,8 @@ chrome.runtime.onConnect.addListener((port) => {
       port.postMessage(snapshot());
     } else if (message.type === "setEnabled") {
       setEnabled(message.enabled);
+    } else if (message.type === "darkReaderChoice") {
+      resolveDarkReader(Boolean(message.disable));
     }
   });
   port.postMessage(snapshot());
@@ -141,6 +145,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "setEnabled") {
     setEnabled(message.enabled);
     sendResponse(snapshot());
+    return;
+  }
+  if (message.type === "darkReaderChoice") {
+    resolveDarkReader(Boolean(message.disable));
+    sendResponse(snapshot());
   }
 });
 
@@ -150,21 +159,49 @@ chrome.alarms.onAlarm.addListener(() => {
   }
 });
 
+function resolveDarkReader(disable) {
+  darkReaderPrompt = false;
+  chrome.action.setBadgeText({ text: "" });
+  if (disable) {
+    chrome.management.setEnabled(DARK_READER_ID, false, () => {
+      void chrome.runtime.lastError;
+    });
+  }
+  chrome.storage.local.set({ darkReaderChoice: disable ? "off" : "keep" });
+  broadcast();
+}
+
+async function considerDarkReader(stored) {
+  // darkReaderOffered is the previous release, which turned Dark Reader off
+  // without asking. Don't ask those installs again.
+  if (stored.darkReaderChoice || stored.darkReaderOffered) {
+    return;
+  }
+  let info;
+  try {
+    info = await chrome.management.get(DARK_READER_ID);
+  } catch {
+    return;
+  }
+  if (!info?.enabled) {
+    return;
+  }
+  darkReaderPrompt = true;
+  chrome.action.setBadgeText({ text: "!" });
+  chrome.action.setBadgeBackgroundColor({ color: "#9ECE6A" });
+}
+
 async function start() {
   const stored = await chrome.storage.local.get({
     enabled: true,
     palette: null,
+    darkReaderChoice: "",
     darkReaderOffered: false,
   });
   enabled = stored.enabled !== false;
   palette = stored.palette;
   applyIcon();
-  if (!stored.darkReaderOffered) {
-    chrome.management.setEnabled(DARK_READER_ID, false, () => {
-      void chrome.runtime.lastError;
-      chrome.storage.local.set({ darkReaderOffered: true });
-    });
-  }
+  await considerDarkReader(stored);
   chrome.alarms.create("reconnect", { periodInMinutes: 1 });
   connectHost();
   broadcast();

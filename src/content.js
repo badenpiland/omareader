@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 import { disable, enable } from "darkreader";
 
 let lastKey = "";

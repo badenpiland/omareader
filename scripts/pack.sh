@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # Sign dist/ into release/omareader.crx. Requires the private key.pem, which is not in git.
 # Refuses to generate a key: a new key would mint a new extension id.
 set -euo pipefail
@@ -28,6 +29,7 @@ fi
 for required in \
   "$ROOT/dist/LICENSE" \
   "$ROOT/dist/LICENSES/darkreader-MIT.txt" \
+  "$ROOT/dist/LICENSES/omarchy-MIT.txt" \
   "$ROOT/dist/content.js"
 do
   if [[ ! -f "$required" ]]; then
@@ -35,7 +37,11 @@ do
     exit 1
   fi
 done
-if ! grep -q "Copyright (c) 2026 Dark Reader Ltd." "$ROOT/dist/content.js"; then
+if ! grep -q "Dark Reader Ltd." "$ROOT/dist/LICENSES/darkreader-MIT.txt"; then
+  echo "dist/LICENSES/darkreader-MIT.txt is missing the Dark Reader copyright notice." >&2
+  exit 1
+fi
+if ! grep -q "Dark Reader Ltd." "$ROOT/dist/content.js"; then
   echo "dist/content.js is missing the Dark Reader copyright notice." >&2
   exit 1
 fi
@@ -53,4 +59,5 @@ rm -f "$ROOT/dist.pem"
 
 mkdir -p "$ROOT/release"
 mv "$ROOT/dist.crx" "$ROOT/release/omareader.crx"
+sha256sum "$ROOT/release/omareader.crx" | tee "$ROOT/release/omareader.crx.sha256"
 echo "Packed $ROOT/release/omareader.crx ($EXT_ID)"

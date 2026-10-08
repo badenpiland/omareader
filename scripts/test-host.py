@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Exercise the native host against a fake Omarchy theme directory."""
 
 import json

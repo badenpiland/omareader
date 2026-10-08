@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 import { spawn, execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile, chmod } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -180,7 +181,7 @@ async function pollSample(client, ready) {
 
 async function main() {
   if (!(await readFile(join(root, "key.pem")).then(() => true).catch(() => false))) {
-    execFileSync("openssl", ["genrsa", "-out", join(root, "key.pem"), "2048"]);
+    throw new Error("key.pem is missing. Do not generate a replacement key. See the README.");
   }
   execFileSync("npm", ["run", "build"], { cwd: root, stdio: "inherit" });
   const extensionId = (await readFile(join(root, "extension-id"), "utf8")).trim();

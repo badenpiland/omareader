@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 :root {
   color-scheme: light dark;
   font: 13px/1.4 system-ui, sans-serif;
@@ -61,4 +62,31 @@ p {
 .swatches span {
   font-family: ui-monospace, monospace;
   font-size: 11px;
+}
+
+#dark-reader {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgb(255 255 255 / 20%);
+}
+
+#dark-reader p {
+  margin: 0;
+}
+
+#dark-reader .choices {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+#dark-reader button {
+  flex: 1;
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }

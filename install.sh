@@ -87,4 +87,4 @@ else
   echo "No browser config directory was updated." >&2
   exit 1
 fi
-echo "Restart each of those browsers once. The first start turns the Dark Reader extension off so the two do not both restyle the page."
+echo "Restart each of those browsers once. If Dark Reader is installed and on, Omareader asks before turning it off."

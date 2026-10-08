@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Omareader",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Restyle web pages with the current Omarchy theme.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0BWATsSXREEVk+HS/a+TuNglr0VqBTbThYaVML4+JzsEpGF5MGWWZHFvDA1o9sh69vTx5/3SQ8PA6GjiLCxv0BEMYXhH7PyCsuK7I7vEDq4gMOsF8z/OuUcjIeAJdN3SiLWcO++956tU6exYn1pKxfsEkCe22wGcnFpKjn2qlo+cFerPkfjX05zNbWsiXPI12tgBKtyXpOuRTl+45Lc6k5c1RxzJuboH7ZjVVjjdNjW1sTE1G1rU7l+4noT5/GoTFe2jmY3avqLVjqxcMuqqdW4enaRWzUeyqN8FtUXP7xNiC++ezPrPrwUYBVJ/ur0iz7ha8gNcECbSVD+gPgLv0QIDAQAB",
   "minimum_chrome_version": "120",
@@ -24,15 +24,15 @@
     "default_title": "Omareader",
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icon-light-16.png",
-      "32": "icon-light-32.png",
-      "48": "icon-light-48.png",
-      "128": "icon-light-128.png"
+      "16": "icon-dark-16.png",
+      "32": "icon-dark-32.png",
+      "48": "icon-dark-48.png",
+      "128": "icon-dark-128.png"
     }
   },
   "icons": {
-    "16": "icon-light-16.png",
-    "48": "icon-light-48.png",
-    "128": "icon-light-128.png"
+    "16": "icon-dark-16.png",
+    "48": "icon-dark-48.png",
+    "128": "icon-dark-128.png"
   }
 }

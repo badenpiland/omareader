@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -9,6 +10,7 @@ import esbuild from "esbuild";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 
+// Derived from the Omarchy mark (icon.txt), Copyright (c) David Heinemeier Hansson, MIT. See LICENSES/omarchy-MIT.txt.
 // The Omarchy mark, one cell per character, plus glasses on the same grid.
 // Rims sit one cell inside the inner wall. Col 7 is the lens gap except for
 // the bridge at row 6. Stems are the cells (3,6) and (11,6).
@@ -159,20 +161,30 @@ await esbuild.build({
   legalComments: "none",
 });
 
+const darkReaderLicensePath = join(root, "node_modules", "darkreader", "LICENSE");
+const darkReaderLicense = readFileSync(darkReaderLicensePath, "utf8");
+const darkReaderCopyright = darkReaderLicense
+  .split(/\r?\n/)
+  .find((line) => line.includes("Dark Reader Ltd."));
+if (!darkReaderCopyright) {
+  process.stderr.write("node_modules/darkreader/LICENSE has no Dark Reader Ltd. copyright line\n");
+  process.exit(1);
+}
 const contentPath = join(dist, "content.js");
 const banner = `/*!
  * Omareader includes Dark Reader (https://darkreader.org/), MIT License.
- * Copyright (c) 2026 Dark Reader Ltd.
+ * ${darkReaderCopyright.trim()}
  * The full license is LICENSES/darkreader-MIT.txt in this extension.
  */
 `;
 writeFileSync(contentPath, banner + readFileSync(contentPath));
+const licenseText = darkReaderLicense.endsWith("\n") ? darkReaderLicense : `${darkReaderLicense}\n`;
+mkdirSync(join(root, "LICENSES"), { recursive: true });
 mkdirSync(join(dist, "LICENSES"), { recursive: true });
+writeFileSync(join(root, "LICENSES", "darkreader-MIT.txt"), licenseText);
+writeFileSync(join(dist, "LICENSES", "darkreader-MIT.txt"), licenseText);
 copyFileSync(join(root, "LICENSE"), join(dist, "LICENSE"));
-copyFileSync(
-  join(root, "LICENSES", "darkreader-MIT.txt"),
-  join(dist, "LICENSES", "darkreader-MIT.txt"),
-);
+copyFileSync(join(root, "LICENSES", "omarchy-MIT.txt"), join(dist, "LICENSES", "omarchy-MIT.txt"));
 
 for (const file of ["background.js", "popup.js", "popup.html", "popup.css"]) {
   copyFileSync(join(root, "src", file), join(dist, file));

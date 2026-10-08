@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 const enabledInput = document.querySelector("#enabled");
 const themeNode = document.querySelector("#theme");
 const statusNode = document.querySelector("#status");
@@ -6,6 +7,7 @@ const bg = document.querySelector("#bg");
 const fg = document.querySelector("#fg");
 const bgLabel = document.querySelector("#bg-label");
 const fgLabel = document.querySelector("#fg-label");
+const darkReader = document.querySelector("#dark-reader");
 
 function render(state) {
   if (!state) {
@@ -29,10 +31,17 @@ function render(state) {
     statusNode.style.color = palette.foreground;
   }
   statusNode.textContent = state.hostError || "";
+  darkReader.hidden = !state.darkReaderPrompt;
 }
 
 const port = chrome.runtime.connect({ name: "client" });
 port.onMessage.addListener(render);
 enabledInput.addEventListener("change", () => {
   port.postMessage({ type: "setEnabled", enabled: enabledInput.checked });
+});
+document.querySelector("#dark-reader-off").addEventListener("click", () => {
+  port.postMessage({ type: "darkReaderChoice", disable: true });
+});
+document.querySelector("#dark-reader-keep").addEventListener("click", () => {
+  port.postMessage({ type: "darkReaderChoice", disable: false });
 });
