@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist.crx
+dist.pem
+release/
+key.pem
+*.pem
+extension-id
+*.crx

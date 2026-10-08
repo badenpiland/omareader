@@ -1,0 +1,16 @@
+{
+  "name": "omareader",
+  "version": "0.1.2",
+  "private": true,
+  "description": "Restyle Chromium pages with the active Omarchy theme.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "python3 scripts/test-host.py"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "darkreader": "4.9.133",
+    "esbuild": "0.28.2"
+  }
+}

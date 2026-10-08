@@ -1,0 +1,64 @@
+:root {
+  color-scheme: light dark;
+  font: 13px/1.4 system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  width: 240px;
+  padding: 12px;
+  background: #1c1c1c;
+  color: #f2f2f2;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+p {
+  margin: 8px 0 0;
+}
+
+#status {
+  min-height: 1.4em;
+  color: #c7c7c7;
+}
+
+.swatches {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.swatches div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatches i {
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgb(255 255 255 / 35%);
+  border-radius: 3px;
+}
+
+.swatches span {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
