@@ -16,7 +16,9 @@ Link and syntax colors stay on Dark Reader’s usual path. They are not replaced
 
 ## Install
 
-The installer registers Chromium, and any of Chrome, Brave, Brave Origin, and Edge that already have a config directory. The palette has to come from your machine, so it installs the extension and the native host together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
+The installer auto-installs the extension for Chromium, which is the browser Omarchy ships. Brave Origin on this machine also loads that per-user External Extensions folder, so it is registered the same way. Chrome, Edge, Brave, Brave beta, and Brave nightly were not installed here, so the installer does not claim they auto-install. For those, it still registers the native host when a config directory already exists, and you install the extension once: open `chrome://extensions`, turn on Developer mode, and drag in `~/.local/share/omareader/omareader.crx` (or load `dist/` unpacked). System-wide folders such as `/opt/google/chrome/extensions` need root and are left to you.
+
+The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 
 `install.sh` copies the host to `~/.local/share/omareader/` and downloads the signed extension for the version in `package.json`. It does not compile anything and it does not create a signing key.
 

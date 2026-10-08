@@ -35,25 +35,32 @@ else
   chmod 644 "$CRX_DEST"
 fi
 
-mapfile -t registered < <(python3 - "$HOST_NAME" "$HOST_DEST" "$EXT_ID" "$CRX_DEST" "$VERSION" <<'PY'
+python3 - "$HOST_NAME" "$HOST_DEST" "$EXT_ID" "$CRX_DEST" "$VERSION" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 host_name, host_dest, ext_id, crx, version = sys.argv[1:]
 home = Path.home()
-chromium = home / ".config" / "chromium"
-candidates = [
-    chromium,
-    home / ".config" / "google-chrome",
-    home / ".config" / "google-chrome-beta",
-    home / ".config" / "google-chrome-unstable",
-    home / ".config" / "BraveSoftware" / "Brave-Browser",
-    home / ".config" / "BraveSoftware" / "Brave-Browser-Beta",
-    home / ".config" / "BraveSoftware" / "Brave-Browser-Nightly",
-    home / ".config" / "BraveSoftware" / "Brave-Origin",
-    home / ".config" / "microsoft-edge",
-    home / ".config" / "microsoft-edge-dev",
+# Per-user External Extensions is honored by Chromium-branded builds. Chrome and
+# Edge were not installed on the machine where this was checked. Brave Origin
+# was: a restart loaded the crx from its per-user External Extensions folder.
+# The other Brave channels were not installed, so they are not on the auto list.
+auto_extension = {
+    "Chromium",
+    "Brave Origin",
+}
+browsers = [
+    ("Chromium", home / ".config" / "chromium"),
+    ("Chrome", home / ".config" / "google-chrome"),
+    ("Chrome beta", home / ".config" / "google-chrome-beta"),
+    ("Chrome unstable", home / ".config" / "google-chrome-unstable"),
+    ("Brave", home / ".config" / "BraveSoftware" / "Brave-Browser"),
+    ("Brave beta", home / ".config" / "BraveSoftware" / "Brave-Browser-Beta"),
+    ("Brave nightly", home / ".config" / "BraveSoftware" / "Brave-Browser-Nightly"),
+    ("Brave Origin", home / ".config" / "BraveSoftware" / "Brave-Origin"),
+    ("Edge", home / ".config" / "microsoft-edge"),
+    ("Edge dev", home / ".config" / "microsoft-edge-dev"),
 ]
 host_manifest = {
     "name": host_name,
@@ -66,25 +73,35 @@ ext_manifest = {
     "external_crx": crx,
     "external_version": version,
 }
-for base in candidates:
-    if base != chromium and not base.is_dir():
+extension_names = []
+host_names = []
+for name, base in browsers:
+    if name != "Chromium" and not base.is_dir():
         continue
     host_dir = base / "NativeMessagingHosts"
-    ext_dir = base / "External Extensions"
     host_dir.mkdir(parents=True, exist_ok=True)
-    ext_dir.mkdir(parents=True, exist_ok=True)
     (host_dir / f"{host_name}.json").write_text(json.dumps(host_manifest, indent=2) + "\n")
-    (ext_dir / f"{ext_id}.json").write_text(json.dumps(ext_manifest, indent=2) + "\n")
-    print(base)
-PY
-)
+    host_names.append(name)
+    if name in auto_extension:
+        ext_dir = base / "External Extensions"
+        ext_dir.mkdir(parents=True, exist_ok=True)
+        (ext_dir / f"{ext_id}.json").write_text(json.dumps(ext_manifest, indent=2) + "\n")
+        extension_names.append(name)
+        continue
+    print(
+        f"{name}: native host registered. Install the extension manually: "
+        f"chrome://extensions → Developer mode → drag {crx} in (or Load unpacked dist/)."
+    )
 
-echo "Omareader $VERSION ($EXT_ID) installed."
-if ((${#registered[@]})); then
-  echo "Registered for:"
-  printf '  %s\n' "${registered[@]}"
-else
-  echo "No browser config directory was updated." >&2
-  exit 1
-fi
-echo "Restart each of those browsers once. If Dark Reader is installed and on, Omareader asks before turning it off."
+if not host_names:
+    print("No browser config directory was updated.", file=sys.stderr)
+    sys.exit(1)
+print(f"Omareader {version} ({ext_id}) installed.")
+print("Extension auto-install registered for:")
+for name in extension_names:
+    print(f"  {name}")
+print("Native host registered for:")
+for name in host_names:
+    print(f"  {name}")
+PY
+echo "Restart Chromium and Brave Origin once. Other browsers need the manual extension install above, then one restart. If Dark Reader is installed and on, Omareader asks before turning it off."
