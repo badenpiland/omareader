@@ -1,30 +1,8 @@
 # Omareader
 
-Web pages wear the Omarchy theme you already picked. Switch themes and the open tabs follow. Light stays light. The photograph stays a photograph.
+Web pages use the Omarchy theme you already picked. Switch themes and the open tabs follow. 
 
 ![The same page in Harbor, then Tokyo Night, without a reload](docs/switch.gif)
-
-```bash
-git clone https://github.com/badenpiland/omareader.git
-cd omareader
-./install.sh
-```
-
-Restart the browser once.
-
-The clip is Harbor, then Tokyo Night. [The same switch as a video](docs/switch.mp4).
-
-![The Blue Marble in Harbor](docs/harbor.png)
-
-Harbor.
-
-![The Blue Marble in Tokyo Night](docs/tokyo-night.png)
-
-Tokyo Night.
-
-![The Blue Marble in Retro 82](docs/retro-82.png)
-
-Retro 82.
 
 ## What it does
 
