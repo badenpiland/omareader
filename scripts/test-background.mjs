@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { RECONNECT_MAX_MS, RECONNECT_MIN_MS, nextDelay } from "../src/reconnect-delay.js";
 import { fromExtensionPage } from "../src/extension-page.js";
 
@@ -26,3 +29,11 @@ assert.equal(
 assert.equal(fromExtensionPage(null, origin), false);
 assert.equal(fromExtensionPage({ url: `${origin}popup.html` }, ""), false);
 console.log("extension page senders accepted only for this extension");
+
+const manifest = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../src/manifest.json"), "utf8"),
+);
+assert.deepEqual(manifest.permissions, ["nativeMessaging", "storage", "alarms"]);
+assert.deepEqual(manifest.optional_permissions, ["management"]);
+assert.equal(manifest.permissions.includes("management"), false);
+console.log("management is an optional permission");

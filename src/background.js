@@ -19,12 +19,21 @@ let hostError = "";
 let reconnectTimer = null;
 let reconnectDelay = RECONNECT_MIN_MS;
 let darkReaderPrompt = false;
+let darkReaderKnown = false;
 let sites = null;
 let fixesText = "";
 let refreshTask = null;
 
 function snapshot() {
-  return { type: "state", enabled, pausedSites, palette, hostError, darkReaderPrompt };
+  return {
+    type: "state",
+    enabled,
+    pausedSites,
+    palette,
+    hostError,
+    darkReaderPrompt,
+    darkReaderKnown,
+  };
 }
 
 globalThis.omareaderSnapshot = snapshot;
@@ -370,7 +379,7 @@ chrome.runtime.onConnect.addListener((port) => {
     } else if (message.type === "setSitePaused") {
       setSitePaused(message.host, Boolean(message.paused));
     } else if (message.type === "darkReaderChoice") {
-      resolveDarkReader(Boolean(message.disable));
+      void resolveDarkReader(Boolean(message.disable));
     }
   });
   postTo(port);
@@ -411,15 +420,33 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-function resolveDarkReader(disable) {
+function showDarkReaderPrompt(known) {
+  darkReaderPrompt = true;
+  darkReaderKnown = known;
+  chrome.action.setBadgeText({ text: "!" });
+  chrome.action.setBadgeBackgroundColor({ color: "#9ECE6A" });
+}
+
+async function managementGranted() {
+  try {
+    return await chrome.permissions.contains({ permissions: ["management"] });
+  } catch {
+    return false;
+  }
+}
+
+async function resolveDarkReader(disable) {
   darkReaderPrompt = false;
+  darkReaderKnown = false;
   chrome.action.setBadgeText({ text: "" });
-  if (disable) {
+  // A missing permission means keep. Do not call management without it.
+  const granted = disable ? await managementGranted() : false;
+  if (granted) {
     chrome.management.setEnabled(DARK_READER_ID, false, () => {
       void chrome.runtime.lastError;
     });
   }
-  chrome.storage.local.set({ darkReaderChoice: disable ? "off" : "keep" });
+  chrome.storage.local.set({ darkReaderChoice: disable && granted ? "off" : "keep" });
   broadcast();
 }
 
@@ -427,6 +454,10 @@ async function considerDarkReader(stored) {
   // darkReaderOffered is the previous release, which turned Dark Reader off
   // without asking. Don't ask those installs again.
   if (stored.darkReaderChoice || stored.darkReaderOffered) {
+    return;
+  }
+  if (!(await managementGranted())) {
+    showDarkReaderPrompt(false);
     return;
   }
   let info;
@@ -438,9 +469,7 @@ async function considerDarkReader(stored) {
   if (!info?.enabled) {
     return;
   }
-  darkReaderPrompt = true;
-  chrome.action.setBadgeText({ text: "!" });
-  chrome.action.setBadgeBackgroundColor({ color: "#9ECE6A" });
+  showDarkReaderPrompt(true);
 }
 
 async function start() {

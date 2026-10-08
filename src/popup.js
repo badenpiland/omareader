@@ -11,6 +11,10 @@ const fg = document.querySelector("#fg");
 const bgLabel = document.querySelector("#bg-label");
 const fgLabel = document.querySelector("#fg-label");
 const darkReader = document.querySelector("#dark-reader");
+const darkReaderText = document.querySelector("#dark-reader-text");
+const DARK_READER_KNOWN = "Dark Reader is also on. Both extensions restyle the page. Turn Dark Reader off?";
+const DARK_READER_UNKNOWN = "If Dark Reader is also on, both restyle pages. Turn it off?";
+let declineNote = "";
 let latest = null;
 let host = "";
 
@@ -50,8 +54,11 @@ function render(state) {
     document.body.style.color = palette.foreground;
     statusNode.style.color = palette.foreground;
   }
-  statusNode.textContent = state.hostError || "";
+  statusNode.textContent = state.hostError || declineNote;
   darkReader.hidden = !state.darkReaderPrompt;
+  if (state.darkReaderPrompt) {
+    darkReaderText.textContent = state.darkReaderKnown ? DARK_READER_KNOWN : DARK_READER_UNKNOWN;
+  }
 }
 
 const port = chrome.runtime.connect({ name: "client" });
@@ -75,8 +82,17 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   }
   renderSite();
 });
-document.querySelector("#dark-reader-off").addEventListener("click", () => {
-  port.postMessage({ type: "darkReaderChoice", disable: true });
+document.querySelector("#dark-reader-off").addEventListener("click", async () => {
+  let granted = false;
+  try {
+    granted = await chrome.permissions.request({ permissions: ["management"] });
+  } catch {
+    granted = false;
+  }
+  if (!granted) {
+    declineNote = "Turn Dark Reader off in chrome://extensions.";
+  }
+  port.postMessage({ type: "darkReaderChoice", disable: granted });
 });
 document.querySelector("#dark-reader-keep").addEventListener("click", () => {
   port.postMessage({ type: "darkReaderChoice", disable: false });
