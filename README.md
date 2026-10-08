@@ -8,7 +8,7 @@ Web pages use the Omarchy theme you already picked. Switch themes and the open t
 
 Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, and selection color whenever `omarchy theme set` swaps that directory.
 
-The painting is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. If that extension is on, the popup asks once before turning it off. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, so a site such as Amazon gets the same corrections Dark Reader ships for it. The bundled list is from Dark Reader 4.9.133. Once a day Omareader fetches the list Dark Reader publishes and uses it when the file still parses. A failed download, or a list with a command this version does not know, keeps the list already in use.
+The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. If that extension is on, the popup asks once before turning it off. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, so a site such as Amazon gets the same corrections Dark Reader ships for it. The bundled list is from Dark Reader 4.9.133. Once a day Omareader fetches the list Dark Reader publishes and uses it when the file still parses. A failed download, or a list with a command this version does not know, keeps the list already in use.
 
 Alt+Shift+O turns Omareader on or off. The toolbar shows the dark glasses while it is on, and the light glasses while it is off. Pause on this site leaves that host alone and shows the light glasses on its tabs.
 
@@ -22,7 +22,7 @@ The installer registers Chromium, and any of Chrome, Brave, Brave Origin, and Ed
 
 ## Limits
 
-`chrome://` pages and the Chrome Web Store cannot be themed. Zen is not wired up.
+`chrome://` pages and the Chrome Web Store cannot be themed.
 
 ## Build from source
 
