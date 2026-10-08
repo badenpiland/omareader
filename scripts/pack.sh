@@ -32,6 +32,7 @@ for required in \
   "$ROOT/dist/LICENSES/omarchy-MIT.txt" \
   "$ROOT/dist/content.js" \
   "$ROOT/dist/background.js" \
+  "$ROOT/dist/extension-page.js" \
   "$ROOT/dist/site-fixes.js" \
   "$ROOT/dist/dynamic-theme-fixes.config"
 do

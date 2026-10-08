@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 import { acceptSiteFixes, fixesFor, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
+import { fromExtensionPage } from "./extension-page.js";
 
 const HOST = "com.bhp.omareader";
+const EXTENSION_ORIGIN = chrome.runtime.getURL("");
 const DARK_READER_ID = "eimadpbcbfnmbkopoojfekhnkhdbieeh";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RETRY_MS = 6 * 60 * 60 * 1000;
@@ -357,7 +359,13 @@ chrome.runtime.onConnect.addListener((port) => {
         pageUrls.set(port, message.url);
       }
       postTo(port);
-    } else if (message.type === "setEnabled") {
+      return;
+    }
+    // Content scripts share the "client" port name. Only extension pages may change settings.
+    if (!fromExtensionPage(port.sender, EXTENSION_ORIGIN)) {
+      return;
+    }
+    if (message.type === "setEnabled") {
       setEnabled(message.enabled);
     } else if (message.type === "setSitePaused") {
       setSitePaused(message.host, Boolean(message.paused));
@@ -368,35 +376,6 @@ chrome.runtime.onConnect.addListener((port) => {
   postTo(port);
   if (!nativePort) {
     connectHost();
-  }
-});
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!message || typeof message !== "object") {
-    return;
-  }
-  if (message.type === "getState") {
-    const state = snapshot();
-    const url = typeof message.url === "string" ? message.url : sender?.url || "";
-    if (sender?.tab && sites && url) {
-      state.siteFix = fixesFor(url, sites);
-    }
-    sendResponse(state);
-    return;
-  }
-  if (message.type === "setEnabled") {
-    setEnabled(message.enabled);
-    sendResponse(snapshot());
-    return;
-  }
-  if (message.type === "setSitePaused") {
-    setSitePaused(message.host, Boolean(message.paused));
-    sendResponse(snapshot());
-    return;
-  }
-  if (message.type === "darkReaderChoice") {
-    resolveDarkReader(Boolean(message.disable));
-    sendResponse(snapshot());
   }
 });
 

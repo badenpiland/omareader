@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { RECONNECT_MAX_MS, RECONNECT_MIN_MS, nextDelay } from "../src/reconnect-delay.js";
+import { fromExtensionPage } from "../src/extension-page.js";
 
 const seen = [];
 let current = RECONNECT_MIN_MS;
@@ -14,3 +15,14 @@ assert.equal(seen.at(-1), RECONNECT_MAX_MS);
 assert.equal(nextDelay(RECONNECT_MAX_MS).next, RECONNECT_MAX_MS);
 assert.equal(nextDelay(50).delay, RECONNECT_MIN_MS);
 console.log(`reconnect delays ${seen.join(", ")}`);
+
+const origin = "chrome-extension://mhglniaepbokfgnpeennihlifandcgjh/";
+assert.equal(fromExtensionPage({ url: `${origin}popup.html` }, origin), true);
+assert.equal(fromExtensionPage({ tab: { id: 1 }, url: "https://example.org/" }, origin), false);
+assert.equal(
+  fromExtensionPage({ url: "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/popup.html" }, origin),
+  false,
+);
+assert.equal(fromExtensionPage(null, origin), false);
+assert.equal(fromExtensionPage({ url: `${origin}popup.html` }, ""), false);
+console.log("extension page senders accepted only for this extension");
