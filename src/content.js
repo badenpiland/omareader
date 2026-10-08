@@ -20,15 +20,25 @@ function themeFrom(palette) {
   };
 }
 
+function pausedHere(state) {
+  const host = location.hostname.toLowerCase().replace(/\.$/, "");
+  return Boolean(host && state?.pausedSites?.includes(host));
+}
+
 function apply(state) {
   const palette = state?.palette;
   const active = Boolean(
     state &&
       state.enabled !== false &&
+      !pausedHere(state) &&
       palette?.background &&
       palette?.foreground,
   );
-  const next = active ? JSON.stringify(palette) : "";
+  // siteFix is this page's Dark Reader corrections. A later download has to
+  // change this key so the engine repaints with the new list.
+  const hasFix = Boolean(state && Object.prototype.hasOwnProperty.call(state, "siteFix"));
+  const fix = hasFix && state.siteFix && typeof state.siteFix === "object" ? state.siteFix : null;
+  const next = active ? JSON.stringify([palette, hasFix ? fix : null]) : "";
   if (next === lastKey) {
     return;
   }
@@ -39,7 +49,7 @@ function apply(state) {
   }
   lastKey = next;
   if (active) {
-    enable(themeFrom(palette));
+    enable(themeFrom(palette), fix || undefined);
   }
 }
 
@@ -56,7 +66,7 @@ function connect() {
     setTimeout(connect, 300);
   });
   try {
-    port.postMessage({ type: "getState" });
+    port.postMessage({ type: "getState", url: location.href });
   } catch {
     // The worker will push state when it reconnects.
   }

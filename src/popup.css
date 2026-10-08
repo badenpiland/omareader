@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: MIT */
 :root {
+  --popup-bg: #1c1c1c;
   color-scheme: light dark;
   font: 13px/1.4 system-ui, sans-serif;
 }
@@ -28,7 +29,47 @@ h1 {
 .switch {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.switch input {
+  box-sizing: border-box;
+  appearance: none;
+  width: 40px;
+  height: 22px;
+  margin: 0;
+  flex: none;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  position: relative;
+  cursor: pointer;
+}
+
+.switch input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: currentColor;
+  transition: transform 120ms ease;
+}
+
+.switch input:checked {
+  background: currentColor;
+}
+
+.switch input:checked::before {
+  transform: translateX(18px);
+  background: var(--popup-bg, #1c1c1c);
+}
+
+.switch input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 p {
@@ -38,6 +79,29 @@ p {
 #status {
   min-height: 1.4em;
   color: #c7c7c7;
+}
+
+#site-host {
+  margin: 10px 0 0;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+
+#site-host[hidden],
+#site[hidden] {
+  display: none;
+}
+
+#site {
+  width: 100%;
+  margin-top: 6px;
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }
 
 .swatches {

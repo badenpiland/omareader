@@ -30,7 +30,10 @@ for required in \
   "$ROOT/dist/LICENSE" \
   "$ROOT/dist/LICENSES/darkreader-MIT.txt" \
   "$ROOT/dist/LICENSES/omarchy-MIT.txt" \
-  "$ROOT/dist/content.js"
+  "$ROOT/dist/content.js" \
+  "$ROOT/dist/background.js" \
+  "$ROOT/dist/site-fixes.js" \
+  "$ROOT/dist/dynamic-theme-fixes.config"
 do
   if [[ ! -f "$required" ]]; then
     echo "Build is missing $required" >&2

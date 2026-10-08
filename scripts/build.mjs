@@ -151,6 +151,15 @@ function extensionKey() {
 }
 
 mkdirSync(dist, { recursive: true });
+const siteFixPath = join(root, "vendor/darkreader/dynamic-theme-fixes.config");
+const siteFixText = readFileSync(siteFixPath, "utf8");
+const { acceptSiteFixes } = await import("../src/site-fixes.js");
+try {
+  acceptSiteFixes(siteFixText);
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.message : error}\n`);
+  process.exit(1);
+}
 await esbuild.build({
   absWorkingDir: root,
   entryPoints: ["src/content.js"],
@@ -186,9 +195,10 @@ writeFileSync(join(dist, "LICENSES", "darkreader-MIT.txt"), licenseText);
 copyFileSync(join(root, "LICENSE"), join(dist, "LICENSE"));
 copyFileSync(join(root, "LICENSES", "omarchy-MIT.txt"), join(dist, "LICENSES", "omarchy-MIT.txt"));
 
-for (const file of ["background.js", "popup.js", "popup.html", "popup.css"]) {
+for (const file of ["background.js", "site-fixes.js", "popup.js", "popup.html", "popup.css"]) {
   copyFileSync(join(root, "src", file), join(dist, file));
 }
+copyFileSync(siteFixPath, join(dist, "dynamic-theme-fixes.config"));
 for (const mode of ["dark", "light"]) {
   for (const size of [16, 32, 48, 128]) {
     writeFileSync(join(dist, `icon-${mode}-${size}.png`), png(size, ICON_COLORS[mode]));
