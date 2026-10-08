@@ -53,17 +53,59 @@ function apply(state) {
   }
 }
 
+let retryMs = 300;
+const MAX_RETRY_MS = 5000;
+
+function contextAlive() {
+  try {
+    return Boolean(chrome.runtime?.id);
+  } catch {
+    return false;
+  }
+}
+
+// An update or reload leaves this script in the page with a dead extension
+// context. Stop retrying, and drop the theme paint if Dark Reader still can.
+function leaveOrphaned() {
+  try {
+    disable();
+  } catch {
+    // The page keeps whatever paint is already there.
+  }
+}
+
+function retry() {
+  if (!contextAlive()) {
+    leaveOrphaned();
+    return;
+  }
+  setTimeout(connect, retryMs);
+  retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
+}
+
 function connect() {
+  if (!contextAlive()) {
+    leaveOrphaned();
+    return;
+  }
   let port;
   try {
     port = chrome.runtime.connect({ name: "client" });
-  } catch {
-    setTimeout(connect, 300);
+  } catch (error) {
+    if (/context invalidated/i.test(String(error?.message))) {
+      leaveOrphaned();
+      return;
+    }
+    retry();
     return;
   }
-  port.onMessage.addListener(apply);
+  port.onMessage.addListener((state) => {
+    retryMs = 300;
+    apply(state);
+  });
   port.onDisconnect.addListener(() => {
-    setTimeout(connect, 300);
+    void chrome.runtime.lastError;
+    retry();
   });
   try {
     port.postMessage({ type: "getState", url: location.href });
