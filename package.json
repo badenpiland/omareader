@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "lint": "eslint . && (command -v ruff >/dev/null && ruff check host scripts/test-host.py || echo 'ruff not installed; skipped')",
     "test": "python3 scripts/test-host.py && node scripts/test-site-fixes.mjs && node scripts/test-background.mjs"
   },
   "license": "MIT",
@@ -13,6 +14,9 @@
     "darkreader": "4.9.133"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "@eslint/js": "10.0.1",
+    "esbuild": "0.28.2",
+    "eslint": "10.12.0",
+    "globals": "17.13.0"
   }
 }

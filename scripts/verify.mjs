@@ -197,7 +197,7 @@ async function main() {
   );
   await chmod(wrapperPath, 0o755);
 
-  let previousManifest = null;
+  let previousManifest;
   try {
     previousManifest = await readFile(hostManifest);
   } catch {

@@ -105,7 +105,7 @@ async function loadFixes() {
     applyFixesText(stored.siteFixesText);
     applied = true;
   } catch {
-    applied = false;
+    // The saved list is unusable. The bundled file is the fallback.
   }
   if (!applied) {
     try {

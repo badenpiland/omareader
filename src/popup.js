@@ -89,7 +89,7 @@ document.querySelector("#dark-reader-off").addEventListener("click", async () =>
   try {
     granted = await chrome.permissions.request({ permissions: ["management"] });
   } catch {
-    granted = false;
+    // Leave granted false and tell the user how to turn Dark Reader off.
   }
   if (!granted) {
     declineNote = "Turn Dark Reader off in chrome://extensions.";

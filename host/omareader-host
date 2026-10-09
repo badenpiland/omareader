@@ -228,7 +228,11 @@ def serve():
     waiting_for_theme = False
     while not _stop.is_set():
         window = 0.25 if waiting_for_theme else DEBOUNCE_SECONDS
-        timeout = None if pending_at is None else max(0.0, window - (time.monotonic() - pending_at))
+        if pending_at is None:
+            timeout = None
+        else:
+            elapsed = time.monotonic() - pending_at
+            timeout = max(0.0, window - elapsed)
         ready, _, _ = select.select([watcher.fd, _stop_read], [], [], timeout)
         if _stop.is_set() or _stop_read in ready:
             break

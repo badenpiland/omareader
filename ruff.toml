@@ -1,0 +1,5 @@
+target-version = "py311"
+extend-include = ["host/omareader-host"]
+
+[lint]
+select = ["E", "F", "I", "B"]

@@ -253,8 +253,11 @@ def test_transient_missing_theme():
                         break
                 else:
                     time.sleep(0.05)
-            assert not any(message.get("type") == "error" for message in messages), messages
-            palettes = [message for message in messages if message.get("type") == "palette"]
+            errors = [message for message in messages if message.get("type") == "error"]
+            assert not errors, messages
+            palettes = [
+                message for message in messages if message.get("type") == "palette"
+            ]
             assert len(palettes) == 1, messages
             assert palettes[0]["background"] == "#112233"
             assert palettes[0]["foreground"] == "#ddeeff"
