@@ -7,9 +7,53 @@ HOST_NAME="com.bhp.omareader"
 EXT_ID="mhglniaepbokfgnpeennihlifandcgjh"
 REPO="badenpiland/omareader"
 REF="${OMAREADER_REF:-main}"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 SHARE="$HOME/.local/share/omareader"
 HOST_DEST="$SHARE/omareader-host"
 CRX_DEST="$SHARE/omareader.crx"
+CHROME_JSON="$SHARE/google-chrome-extension.json"
+CHROME_CRX="/usr/share/omareader/omareader.crx"
+CHROME_EXT="/usr/share/google-chrome/extensions/${EXT_ID}.json"
+
+default_browser() {
+  local desktop
+  if command -v omarchy-default-browser >/dev/null 2>&1; then
+    omarchy-default-browser | head -n 1 | tr -d '[:space:]'
+    return
+  fi
+  if ! command -v xdg-settings >/dev/null 2>&1; then
+    echo "Could not find omarchy-default-browser or xdg-settings." >&2
+    exit 1
+  fi
+  desktop="$(env -u BROWSER xdg-settings get default-web-browser | head -n 1 | tr -d '[:space:]')"
+  case "$desktop" in
+    chromium.desktop) printf '%s\n' chromium ;;
+    google-chrome.desktop) printf '%s\n' chrome ;;
+    brave-browser.desktop) printf '%s\n' brave ;;
+    brave-origin.desktop) printf '%s\n' brave-origin ;;
+    microsoft-edge.desktop) printf '%s\n' edge ;;
+    firefox.desktop) printf '%s\n' firefox ;;
+    zen.desktop) printf '%s\n' zen ;;
+    *) printf '%s\n' "$desktop" ;;
+  esac
+}
+
+BROWSER_ID="$(default_browser)"
+case "$BROWSER_ID" in
+  chromium) BROWSER_BASE="$CONFIG_HOME/chromium"; PRETTY="Chromium" ;;
+  brave) BROWSER_BASE="$CONFIG_HOME/BraveSoftware/Brave-Browser"; PRETTY="Brave" ;;
+  brave-origin) BROWSER_BASE="$CONFIG_HOME/BraveSoftware/Brave-Origin"; PRETTY="Brave Origin" ;;
+  edge) BROWSER_BASE="$CONFIG_HOME/microsoft-edge"; PRETTY="Edge" ;;
+  chrome) BROWSER_BASE="$CONFIG_HOME/google-chrome"; PRETTY="Chrome" ;;
+  firefox | zen)
+    echo "Omareader is for Chromium-based browsers. The default browser is ${BROWSER_ID}." >&2
+    exit 1
+    ;;
+  *)
+    echo "Omareader does not recognize the default browser: ${BROWSER_ID}" >&2
+    exit 1
+    ;;
+esac
 
 read_version() {
   python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' "$1"
@@ -73,73 +117,60 @@ else
   download_crx "https://github.com/${REPO}/releases/download/v${VERSION}/omareader.crx"
 fi
 
-python3 - "$HOST_NAME" "$HOST_DEST" "$EXT_ID" "$CRX_DEST" "$VERSION" <<'PY'
-import json
-import sys
-from pathlib import Path
+mkdir -p "$BROWSER_BASE/NativeMessagingHosts"
+cat > "$BROWSER_BASE/NativeMessagingHosts/${HOST_NAME}.json" <<EOF
+{
+  "name": "${HOST_NAME}",
+  "description": "Omareader Omarchy theme host",
+  "path": "${HOST_DEST}",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://${EXT_ID}/"]
+}
+EOF
 
-host_name, host_dest, ext_id, crx, version = sys.argv[1:]
-home = Path.home()
-# Per-user External Extensions is honored by Chromium-branded builds. Chrome and
-# Edge were not installed on the machine where this was checked. Brave Origin
-# was: a restart loaded the crx from its per-user External Extensions folder.
-# The other Brave channels were not installed, so they are not on the auto list.
-auto_extension = {
-    "Chromium",
-    "Brave Origin",
+write_extension() {
+  local crx_path="$1"
+  local dest="$2"
+  mkdir -p "$(dirname -- "$dest")"
+  cat > "$dest" <<EOF
+{
+  "external_crx": "${crx_path}",
+  "external_version": "${VERSION}"
 }
-browsers = [
-    ("Chromium", home / ".config" / "chromium"),
-    ("Chrome", home / ".config" / "google-chrome"),
-    ("Chrome beta", home / ".config" / "google-chrome-beta"),
-    ("Chrome unstable", home / ".config" / "google-chrome-unstable"),
-    ("Brave", home / ".config" / "BraveSoftware" / "Brave-Browser"),
-    ("Brave beta", home / ".config" / "BraveSoftware" / "Brave-Browser-Beta"),
-    ("Brave nightly", home / ".config" / "BraveSoftware" / "Brave-Browser-Nightly"),
-    ("Brave Origin", home / ".config" / "BraveSoftware" / "Brave-Origin"),
-    ("Edge", home / ".config" / "microsoft-edge"),
-    ("Edge dev", home / ".config" / "microsoft-edge-dev"),
-]
-host_manifest = {
-    "name": host_name,
-    "description": "Omareader Omarchy theme host",
-    "path": host_dest,
-    "type": "stdio",
-    "allowed_origins": [f"chrome-extension://{ext_id}/"],
+EOF
 }
-ext_manifest = {
-    "external_crx": crx,
-    "external_version": version,
-}
-extension_names = []
-host_names = []
-for name, base in browsers:
-    if name != "Chromium" and not base.is_dir():
-        continue
-    host_dir = base / "NativeMessagingHosts"
-    host_dir.mkdir(parents=True, exist_ok=True)
-    (host_dir / f"{host_name}.json").write_text(json.dumps(host_manifest, indent=2) + "\n")
-    host_names.append(name)
-    if name in auto_extension:
-        ext_dir = base / "External Extensions"
-        ext_dir.mkdir(parents=True, exist_ok=True)
-        (ext_dir / f"{ext_id}.json").write_text(json.dumps(ext_manifest, indent=2) + "\n")
-        extension_names.append(name)
-        continue
-    print(
-        f"{name}: native host registered. Install the extension manually: "
-        f"chrome://extensions → Developer mode → drag {crx} in (or Load unpacked dist/)."
-    )
 
-if not host_names:
-    print("No browser config directory was updated.", file=sys.stderr)
-    sys.exit(1)
-print(f"Omareader {version} ({ext_id}) installed.")
-print("Extension auto-install registered for:")
-for name in extension_names:
-    print(f"  {name}")
-print("Native host registered for:")
-for name in host_names:
-    print(f"  {name}")
-PY
-echo "Restart whichever Chromium-based browser you use. Chromium and Brave Origin load the extension on that restart. Any other browser needs the manual install above first. If Dark Reader is installed and on, Omareader asks before turning it off."
+chrome_accepted() {
+  local choice
+  case "${OMAREADER_SYSTEM:-ask}" in
+    yes) return 0 ;;
+    no) return 1 ;;
+  esac
+  if [[ ! -r /dev/tty ]]; then
+    return 1
+  fi
+  printf '%s' "Google Chrome only loads extensions from a system folder. Use sudo to add Omareader there? [y/N] " >/dev/tty
+  if ! IFS= read -r choice </dev/tty; then
+    return 1
+  fi
+  case "$choice" in
+    y | Y | yes | YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if [[ "$BROWSER_ID" == "chrome" ]]; then
+  write_extension "$CHROME_CRX" "$CHROME_JSON"
+  if chrome_accepted; then
+    sudo install -Dm644 "$CRX_DEST" "$CHROME_CRX"
+    sudo install -Dm644 "$CHROME_JSON" "$CHROME_EXT"
+  else
+    echo "sudo install -Dm644 ${CRX_DEST} ${CHROME_CRX}"
+    echo "sudo install -Dm644 ${CHROME_JSON} ${CHROME_EXT}"
+  fi
+else
+  write_extension "$CRX_DEST" "$BROWSER_BASE/External Extensions/${EXT_ID}.json"
+fi
+
+echo "Omareader ${VERSION} (${EXT_ID}) installed for ${PRETTY}."
+echo "Restart ${PRETTY}. If Dark Reader is installed and on, Omareader asks before turning it off."

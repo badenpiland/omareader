@@ -6,7 +6,7 @@ Web pages use the Omarchy theme you already picked. Switch themes and the open t
 curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | bash
 ```
 
-Restart whichever Chromium-based browser you use.
+Restart that browser. Chrome asks for sudo once.
 
 ![The same page in Harbor, then Tokyo Night, without a reload](docs/switch.gif)
 
@@ -22,7 +22,9 @@ Link and syntax colors stay on Dark Reader’s usual path. They are not replaced
 
 ## Install
 
-Omareader works in Chromium-based browsers. The installer registers Chromium, and it registers Chrome, Brave, Brave Origin, and Edge when that browser already has a config directory. Chromium and Brave Origin load the extension on their next start. For any other Chromium-based browser, install the extension once: open `chrome://extensions`, turn on Developer mode, and drag in `~/.local/share/omareader/omareader.crx`. Then restart the browser you use. System-wide folders such as `/opt/google/chrome/extensions` need root and are left to you.
+The command follows the Omarchy default browser and installs Omareader only there. Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome ignores that per-user install, so the command asks once for sudo and writes the extension where Chrome will load it. Firefox and Zen are not supported.
+
+If a browser already refused the extension, it will not accept the installer again until the extension is installed by hand once, removed, and the command is run again.
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6 — 2026-10-08
+
+### Changed
+
+- The one-liner installs Omareader into the current default browser only. Chromium, Brave, Brave Origin, and Edge load on restart. Chrome asks once for sudo. Firefox and Zen are not supported.
+
 ## 0.1.5 — 2026-10-08
 
 ### Added

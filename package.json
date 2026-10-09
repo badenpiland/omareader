@@ -1,6 +1,6 @@
 {
   "name": "omareader",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "description": "Restyle Chromium pages with the active Omarchy theme.",
   "type": "module",
