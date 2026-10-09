@@ -49,6 +49,7 @@ _libc.inotify_rm_watch.restype = ctypes.c_int
 _write_lock = threading.Lock()
 _stop = threading.Event()
 _last_sent = ""
+_missing_since = None
 _stop_read, _stop_write = os.pipe()
 os.set_blocking(_stop_read, False)
 os.set_blocking(_stop_write, False)
@@ -144,20 +145,30 @@ def read_palette():
 
 
 def publish(force=False):
-    global _last_sent
+    global _last_sent, _missing_since
     try:
         palette = read_palette()
     except (OSError, ValueError, tomllib.TOMLDecodeError) as error:
         message = str(error)
+        # A theme swap removes the directory for a moment. Forced reads still report it.
+        if not force and message.startswith("missing "):
+            now = time.monotonic()
+            if _missing_since is None:
+                _missing_since = now
+            if now - _missing_since < 1.0:
+                return False
+        _missing_since = None
         if force or message != _last_sent:
             _last_sent = message
             write_message({"type": "error", "message": message})
-        return
+        return True
+    _missing_since = None
     encoded = json.dumps(palette, sort_keys=True)
     if not force and encoded == _last_sent:
-        return
+        return True
     _last_sent = encoded
     write_message(palette)
+    return True
 
 
 class Watcher:
@@ -215,18 +226,24 @@ def serve():
     thread = threading.Thread(target=stdin_loop, daemon=True)
     thread.start()
     pending_at = None
+    waiting_for_theme = False
     while not _stop.is_set():
-        timeout = None if pending_at is None else max(0.0, DEBOUNCE_SECONDS - (time.monotonic() - pending_at))
+        window = 0.25 if waiting_for_theme else DEBOUNCE_SECONDS
+        timeout = None if pending_at is None else max(0.0, window - (time.monotonic() - pending_at))
         ready, _, _ = select.select([watcher.fd, _stop_read], [], [], timeout)
         if _stop.is_set() or _stop_read in ready:
             break
         if watcher.fd in ready and watcher.consume():
             pending_at = time.monotonic()
             continue
-        if pending_at is None or time.monotonic() - pending_at < DEBOUNCE_SECONDS:
+        if pending_at is None or time.monotonic() - pending_at < window:
             continue
         watcher.reset()
-        publish()
+        if publish() is False:
+            pending_at = time.monotonic()
+            waiting_for_theme = True
+            continue
+        waiting_for_theme = False
         pending_at = None
 
 

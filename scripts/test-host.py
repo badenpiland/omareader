@@ -216,11 +216,61 @@ def test_invalid_utf8_still_answers_hello():
     print("invalid utf-8 skipped")
 
 
+def test_transient_missing_theme():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = Path(tmp)
+        current = state / "current"
+        current.mkdir()
+        write_theme(current, "paper", "#dfe4c4", "#1c2d28", "light")
+        env = os.environ.copy()
+        env["OMAREADER_STATE_DIR"] = str(state)
+        proc = subprocess.Popen(
+            [str(HOST)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            bufsize=0,
+        )
+        try:
+            first = read_message(proc.stdout)
+            assert first["theme"] == "paper"
+            theme = current / "theme"
+            for child in theme.iterdir():
+                child.unlink()
+            theme.rmdir()
+            time.sleep(0.3)
+            write_theme(current, "harbor", "#112233", "#ddeeff", "dark")
+            deadline = time.monotonic() + 2
+            messages = []
+            while time.monotonic() < deadline:
+                if select_ready(proc.stdout):
+                    messages.append(read_message(proc.stdout))
+                    if messages[-1].get("theme") == "harbor":
+                        time.sleep(0.4)
+                        while select_ready(proc.stdout):
+                            messages.append(read_message(proc.stdout))
+                        break
+                else:
+                    time.sleep(0.05)
+            assert not any(message.get("type") == "error" for message in messages), messages
+            palettes = [message for message in messages if message.get("type") == "palette"]
+            assert len(palettes) == 1, messages
+            assert palettes[0]["background"] == "#112233"
+            assert palettes[0]["foreground"] == "#ddeeff"
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+            proc.wait(timeout=2)
+    print("transient missing theme hidden")
+
+
 def main():
     test_dump_matches_live_theme()
     test_swap_pushes_a_new_palette()
     test_stdin_close_exits()
     test_invalid_utf8_still_answers_hello()
+    test_transient_missing_theme()
 
 
 if __name__ == "__main__":
