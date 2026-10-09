@@ -142,4 +142,4 @@ print("Native host registered for:")
 for name in host_names:
     print(f"  {name}")
 PY
-echo "Restart Chromium and Brave Origin once. Other browsers need the manual extension install above, then one restart. If Dark Reader is installed and on, Omareader asks before turning it off."
+echo "Restart whichever Chromium-based browser you use. Chromium and Brave Origin load the extension on that restart. Any other browser needs the manual install above first. If Dark Reader is installed and on, Omareader asks before turning it off."
