@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "lint": "eslint . && (command -v ruff >/dev/null && ruff check host scripts/test-host.py || echo 'ruff not installed; skipped')",
-    "test": "python3 scripts/test-host.py && node scripts/test-site-fixes.mjs && node scripts/test-background.mjs"
+    "test": "python3 scripts/test-host.py && node scripts/test-site-fixes.mjs && node scripts/test-background.mjs && bash scripts/test-install.sh"
   },
   "license": "MIT",
   "dependencies": {

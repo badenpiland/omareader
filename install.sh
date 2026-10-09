@@ -21,18 +21,35 @@ VERSION="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["ver
 mkdir -p "$SHARE"
 install -m 755 "$ROOT/host/omareader-host" "$HOST_DEST"
 
+download_crx() {
+  local url="$1"
+  echo "Downloading $url"
+  curl -fL --retry 3 -o "$CRX_DEST.partial" "$url"
+  if sums="$(curl -fsSL --retry 3 "$url.sha256")"; then
+    expected="${sums%% *}"
+    actual="$(sha256sum "$CRX_DEST.partial" | cut -d' ' -f1)"
+    if [[ "$expected" != "$actual" ]]; then
+      rm -f "$CRX_DEST.partial"
+      echo "Checksum mismatch for $url" >&2
+      exit 1
+    fi
+  else
+    echo "Warning: no $url.sha256 published; skipping checksum." >&2
+  fi
+  mv "$CRX_DEST.partial" "$CRX_DEST"
+  chmod 644 "$CRX_DEST"
+}
+
 if [[ -n "${OMAREADER_CRX:-}" ]]; then
   install -m 644 "$OMAREADER_CRX" "$CRX_DEST"
+elif [[ -n "${OMAREADER_CRX_URL:-}" ]]; then
+  download_crx "$OMAREADER_CRX_URL"
 elif [[ -f "$ROOT/omareader.crx" ]]; then
   install -m 644 "$ROOT/omareader.crx" "$CRX_DEST"
 elif [[ -f "$ROOT/release/omareader.crx" ]]; then
   install -m 644 "$ROOT/release/omareader.crx" "$CRX_DEST"
 else
-  url="https://github.com/${REPO}/releases/download/v${VERSION}/omareader.crx"
-  echo "Downloading $url"
-  curl -fL --retry 3 -o "$CRX_DEST.partial" "$url"
-  mv "$CRX_DEST.partial" "$CRX_DEST"
-  chmod 644 "$CRX_DEST"
+  download_crx "https://github.com/${REPO}/releases/download/v${VERSION}/omareader.crx"
 fi
 
 python3 - "$HOST_NAME" "$HOST_DEST" "$EXT_ID" "$CRX_DEST" "$VERSION" <<'PY'

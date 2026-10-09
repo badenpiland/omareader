@@ -34,7 +34,7 @@ npm run build
 # then load dist/ as an unpacked extension (chrome://extensions, Developer mode, Load unpacked)
 ```
 
-The extension id stays `mhglniaepbokfgnpeennihlifandcgjh`, so the native host still works. `scripts/pack.sh` prints the SHA-256 of the signed package. Publish that checksum with the release.
+The extension id stays `mhglniaepbokfgnpeennihlifandcgjh`, so the native host still works. `scripts/pack.sh` writes `release/omareader.crx` and `release/omareader.crx.sha256`. Upload both files to the GitHub release. `install.sh` checks that checksum when it is published, and warns if the `.sha256` file is missing.
 
 ```bash
 npm test
