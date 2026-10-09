@@ -1,6 +1,12 @@
 # Omareader
 
-Web pages use the Omarchy theme you already picked. Switch themes and the open tabs follow. 
+Web pages use the Omarchy theme you already picked. Switch themes and the open tabs follow.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | bash
+```
+
+Restart Chromium once. If Brave Origin is open, restart it too.
 
 ![The same page in Harbor, then Tokyo Night, without a reload](docs/switch.gif)
 
@@ -20,7 +26,7 @@ The installer auto-installs the extension for Chromium, which is the browser Oma
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 
-`install.sh` copies the host to `~/.local/share/omareader/` and downloads the signed extension for the version in `package.json`. It does not compile anything and it does not create a signing key.
+The command above copies the host to `~/.local/share/omareader/` and downloads the signed extension for the version on `main`. It checks the published checksum. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` does the same thing.
 
 ## Limits
 

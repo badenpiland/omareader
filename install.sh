@@ -3,23 +3,44 @@
 # Does not compile, and does not create a signing key.
 set -euo pipefail
 
-ROOT="$(cd -- "$(dirname -- "$0")" && pwd)"
 HOST_NAME="com.bhp.omareader"
 EXT_ID="mhglniaepbokfgnpeennihlifandcgjh"
 REPO="badenpiland/omareader"
+REF="${OMAREADER_REF:-main}"
 SHARE="$HOME/.local/share/omareader"
 HOST_DEST="$SHARE/omareader-host"
 CRX_DEST="$SHARE/omareader.crx"
 
-if [[ ! -f "$ROOT/host/omareader-host" ]]; then
-  echo "Missing $ROOT/host/omareader-host. Clone the repository, then run ./install.sh from it." >&2
-  exit 1
+read_version() {
+  python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' "$1"
+}
+
+script_path=""
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  script_path="${BASH_SOURCE[0]}"
+elif [[ -f "$0" ]]; then
+  script_path="$0"
 fi
 
-VERSION="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' "$ROOT/package.json")"
+ROOT=""
+if [[ -n "$script_path" ]]; then
+  ROOT="$(cd -- "$(dirname -- "$script_path")" && pwd)"
+fi
 
 mkdir -p "$SHARE"
-install -m 755 "$ROOT/host/omareader-host" "$HOST_DEST"
+if [[ -n "$ROOT" && -f "$ROOT/host/omareader-host" && -f "$ROOT/package.json" ]]; then
+  VERSION="$(read_version "$ROOT/package.json")"
+  install -m 755 "$ROOT/host/omareader-host" "$HOST_DEST"
+else
+  echo "Installing Omareader from https://github.com/${REPO}"
+  tmp="$(mktemp -d)"
+  curl -fsSL --retry 3 -o "$tmp/omareader-host" "https://raw.githubusercontent.com/${REPO}/${REF}/host/omareader-host"
+  curl -fsSL --retry 3 -o "$tmp/package.json" "https://raw.githubusercontent.com/${REPO}/${REF}/package.json"
+  VERSION="$(read_version "$tmp/package.json")"
+  install -m 755 "$tmp/omareader-host" "$HOST_DEST"
+  rm -rf "$tmp"
+  ROOT=""
+fi
 
 download_crx() {
   local url="$1"
