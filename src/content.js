@@ -1,10 +1,54 @@
 // SPDX-License-Identifier: MIT
-import { disable, enable } from "darkreader";
+import { disable, enable, setFetchMethod } from "darkreader";
+import { readableInvert, readablePoles, repairFixColors } from "./contrast.js";
+import { THEME_RESOURCE } from "./theme-fetch.js";
+
+// Dark Reader replaces sendMessage and drops its return value, so the
+// stylesheet fetch uses its own port. The page cannot read another host.
+setFetchMethod((url) => new Promise((resolve, reject) => {
+  let port;
+  try {
+    port = chrome.runtime.connect({ name: THEME_RESOURCE });
+  } catch (error) {
+    reject(new Error("Could not fetch a theme resource", { cause: error }));
+    return;
+  }
+  let settled = false;
+  const finish = (callback) => {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    callback();
+    try {
+      port.disconnect();
+    } catch {
+      // The port is already closed.
+    }
+  };
+  port.onMessage.addListener((message) => {
+    finish(() => {
+      if (!message || typeof message.text !== "string") {
+        reject(new Error(message?.error || "Could not fetch a theme resource"));
+        return;
+      }
+      resolve(new Response(message.text, {
+        status: 200,
+        headers: { "content-type": message.contentType || "text/css" },
+      }));
+    });
+  });
+  port.onDisconnect.addListener(() => {
+    finish(() => reject(new Error("Could not fetch a theme resource")));
+  });
+  port.postMessage({ url: String(url) });
+}));
 
 let lastKey = "";
 let earlySealed = false;
 
 function themeFrom(palette) {
+  const poles = readablePoles(palette.background, palette.foreground);
   const light = palette.mode === "light";
   return {
     mode: light ? 0 : 1,
@@ -12,13 +56,28 @@ function themeFrom(palette) {
     contrast: 100,
     grayscale: 0,
     sepia: 0,
-    darkSchemeBackgroundColor: palette.background,
-    darkSchemeTextColor: palette.foreground,
-    lightSchemeBackgroundColor: palette.background,
-    lightSchemeTextColor: palette.foreground,
+    darkSchemeBackgroundColor: poles.background,
+    darkSchemeTextColor: poles.foreground,
+    lightSchemeBackgroundColor: poles.background,
+    lightSchemeTextColor: poles.foreground,
     selectionColor: palette.selection || "auto",
     styleSystemControls: true,
   };
+}
+
+function themedFix(palette, fix) {
+  if (!fix || typeof fix !== "object") {
+    return fix;
+  }
+  const poles = readablePoles(palette.background, palette.foreground);
+  const css = typeof fix.css === "string"
+    ? repairFixColors(fix.css, poles.background, poles.foreground)
+    : fix.css;
+  const invert = readableInvert(fix.invert, palette?.mode);
+  if (css === fix.css && invert === fix.invert) {
+    return fix;
+  }
+  return { ...fix, css, invert };
 }
 
 function pausedHere(state) {
@@ -38,7 +97,7 @@ function apply(state) {
   // siteFix is this page's Dark Reader corrections. A later download has to
   // change this key so the engine repaints with the new list.
   const hasFix = Boolean(state && Object.prototype.hasOwnProperty.call(state, "siteFix"));
-  const fix = hasFix && state.siteFix && typeof state.siteFix === "object" ? state.siteFix : null;
+  const fix = hasFix && state.siteFix && typeof state.siteFix === "object" ? themedFix(palette, state.siteFix) : null;
   const next = active ? JSON.stringify([palette, hasFix ? fix : null]) : "";
   if (state?.enabled === false || pausedHere(state)) {
     sealEarly();

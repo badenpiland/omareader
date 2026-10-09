@@ -1,13 +1,13 @@
 {
   "name": "omareader",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "private": true,
   "description": "Restyle Chromium pages with the active Omarchy theme.",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "lint": "eslint . && (command -v ruff >/dev/null && ruff check host scripts/test-host.py || echo 'ruff not installed; skipped')",
-    "test": "python3 scripts/test-host.py && node scripts/test-site-fixes.mjs && node scripts/test-background.mjs && bash scripts/test-install.sh"
+    "test": "python3 scripts/test-host.py && node scripts/test-site-fixes.mjs && node scripts/test-background.mjs && node scripts/test-contrast.mjs && node scripts/test-theme-fetch.mjs && node scripts/test-update-notice.mjs && bash scripts/test-install.sh"
   },
   "license": "MIT",
   "dependencies": {

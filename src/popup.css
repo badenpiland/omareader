@@ -135,6 +135,15 @@ p {
   margin-top: 10px;
 }
 
+#update[hidden] {
+  display: none;
+}
+
+#update a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 #dark-reader {
   margin-top: 10px;
   padding-top: 10px;

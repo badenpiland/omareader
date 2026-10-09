@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+import { REPO_URL } from "./update-notice.js";
+
 const enabledInput = document.querySelector("#enabled");
 const enabledLabel = document.querySelector("#enabled-label");
 const siteHost = document.querySelector("#site-host");
@@ -12,6 +14,9 @@ const bgLabel = document.querySelector("#bg-label");
 const fgLabel = document.querySelector("#fg-label");
 const darkReader = document.querySelector("#dark-reader");
 const siteFixesInput = document.querySelector("#site-fixes");
+const updateNode = document.querySelector("#update");
+const updateInstalled = document.querySelector("#update-installed");
+const updateAvailable = document.querySelector("#update-available");
 const darkReaderText = document.querySelector("#dark-reader-text");
 const DARK_READER_KNOWN = "Dark Reader is also on. Both extensions restyle the page. Turn Dark Reader off?";
 const DARK_READER_UNKNOWN = "If Dark Reader is also on, both restyle pages. Turn it off?";
@@ -58,6 +63,15 @@ function render(state) {
   statusNode.textContent = state.hostError || declineNote;
   darkReader.hidden = !state.darkReaderPrompt;
   siteFixesInput.checked = state.siteFixesAutoUpdate !== false;
+  const available = typeof state.updateVersion === "string" ? state.updateVersion : "";
+  updateNode.hidden = available === "";
+  updateInstalled.textContent = available ? `${chrome.runtime.getManifest().version} is installed. ` : "";
+  updateAvailable.textContent = available;
+  if (available) {
+    updateAvailable.href = REPO_URL;
+  } else {
+    updateAvailable.removeAttribute("href");
+  }
   if (state.darkReaderPrompt) {
     darkReaderText.textContent = state.darkReaderKnown ? DARK_READER_KNOWN : DARK_READER_UNKNOWN;
   }

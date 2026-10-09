@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0 — 2026-10-09
+
+### Added
+
+- The popup says when the installed version is older than a GitHub release, including pre-releases, and links the available version to the repo.
+
+### Fixed
+
+- Text that would disappear into the theme background is drawn in the theme foreground.
+- Stylesheets served from another host are read, so the theme reaches pages such as Amazon.
+- The Amazon header wordmark stays light on a dark theme. Its orange smile is unchanged.
+
 ## 0.1.6 — 2026-10-08
 
 ### Changed

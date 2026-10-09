@@ -2,6 +2,14 @@
 import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 import { fromExtensionPage } from "./extension-page.js";
+import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
+import {
+  MAX_RELEASES_BYTES,
+  newerRelease,
+  parseVersion,
+  RELEASES_URL,
+  trustedReleasesUrl,
+} from "./update-notice.js";
 
 const HOST = "com.bhp.omareader";
 const EXTENSION_ORIGIN = chrome.runtime.getURL("");
@@ -24,6 +32,8 @@ let sites = null;
 let fixesText = "";
 let siteFixesAutoUpdate = true;
 let refreshTask = null;
+let updateVersion = "";
+let updateTask = null;
 
 function snapshot() {
   return {
@@ -35,6 +45,7 @@ function snapshot() {
     darkReaderPrompt,
     darkReaderKnown,
     siteFixesAutoUpdate,
+    updateVersion,
   };
 }
 
@@ -122,10 +133,11 @@ async function loadFixes() {
 
 const MAX_SITE_FIX_BYTES = 3 * 1024 * 1024;
 
-async function readCappedText(response) {
+async function readCappedText(response, maxBytes = MAX_SITE_FIX_BYTES) {
+  const tooLarge = maxBytes === MAX_SITE_FIX_BYTES ? "Site fixes are empty or too large" : "Release list is too large";
   const declared = Number(response.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > MAX_SITE_FIX_BYTES) {
-    throw new Error("Site fixes are empty or too large");
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new Error(tooLarge);
   }
   if (!response.body) {
     return response.text();
@@ -140,8 +152,8 @@ async function readCappedText(response) {
         break;
       }
       total += value.byteLength;
-      if (total > MAX_SITE_FIX_BYTES) {
-        throw new Error("Site fixes are empty or too large");
+      if (total > maxBytes) {
+        throw new Error(tooLarge);
       }
       chunks.push(value);
     }
@@ -203,6 +215,77 @@ async function refreshFixes() {
     }
   })();
   return refreshTask;
+}
+
+function updatesDue(stored, now) {
+  const checkedAt = Number(stored.updateCheckedAt) || 0;
+  const attemptAt = Number(stored.updateAttemptAt) || 0;
+  if (!checkedAt) {
+    return now - attemptAt >= RETRY_MS;
+  }
+  return now - checkedAt >= DAY_MS && now - attemptAt >= RETRY_MS;
+}
+
+async function loadUpdate() {
+  const stored = await chrome.storage.local.get({
+    updateVersion: "",
+    updateCheckedAt: 0,
+    updateAttemptAt: 0,
+  });
+  updateVersion = typeof stored.updateVersion === "string" && parseVersion(stored.updateVersion)
+    ? stored.updateVersion
+    : "";
+  if (updatesDue(stored, Date.now())) {
+    void refreshUpdate();
+  }
+}
+
+async function refreshUpdate() {
+  if (updateTask) {
+    return updateTask;
+  }
+  updateTask = (async () => {
+    const attemptAt = Date.now();
+    try {
+      const stored = await chrome.storage.local.get({
+        updateCheckedAt: 0,
+        updateAttemptAt: 0,
+      });
+      if (!updatesDue(stored, attemptAt)) {
+        return;
+      }
+      await chrome.storage.local.set({ updateAttemptAt: attemptAt });
+      const response = await fetch(RELEASES_URL, { cache: "no-store", redirect: "follow" });
+      if (!response.ok || !trustedReleasesUrl(response.url)) {
+        throw new Error("Release list was rejected");
+      }
+      const text = await readCappedText(response, MAX_RELEASES_BYTES);
+      const data = JSON.parse(text);
+      if (!Array.isArray(data)) {
+        throw new Error("Release list was rejected");
+      }
+      const next = newerRelease(data, chrome.runtime.getManifest().version);
+      const previous = updateVersion;
+      updateVersion = next;
+      await chrome.storage.local.set({
+        updateVersion: next,
+        updateCheckedAt: Date.now(),
+        updateAttemptAt: attemptAt,
+      });
+      if (next !== previous) {
+        broadcast();
+      }
+    } catch {
+      try {
+        await chrome.storage.local.set({ updateAttemptAt: attemptAt });
+      } catch {
+        // The notice already in memory stays. The next due check will try again.
+      }
+    } finally {
+      updateTask = null;
+    }
+  })();
+  return updateTask;
 }
 
 function normalizeHost(value) {
@@ -401,6 +484,21 @@ function setSitePaused(host, paused) {
 }
 
 chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === THEME_RESOURCE) {
+    if (port.sender?.id !== chrome.runtime.id || !port.sender.tab) {
+      return;
+    }
+    port.onMessage.addListener((message) => {
+      readThemeResource(message?.url, (href) => fetch(href)).then((result) => {
+        try {
+          port.postMessage(result);
+        } catch {
+          // The content script is already gone.
+        }
+      });
+    });
+    return;
+  }
   if (port.name !== "client") {
     return;
   }
@@ -440,6 +538,10 @@ chrome.runtime.onConnect.addListener((port) => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "site-fixes") {
     void refreshFixes();
+    return;
+  }
+  if (alarm.name === "update") {
+    void refreshUpdate();
     return;
   }
   // A pending backoff timer already covers this wake. Don't start a second attempt.
@@ -543,12 +645,16 @@ async function start() {
     chrome.storage.session.set({ palette });
   }
   await loadFixes();
+  await loadUpdate();
   applyAllIcons();
   await considerDarkReader(stored);
   chrome.alarms.create("reconnect", { periodInMinutes: 1 });
-  // Recreating this alarm on every wake would push the daily check out forever.
+  // Recreating these alarms on every wake would push the daily checks out forever.
   if (!(await chrome.alarms.get("site-fixes"))) {
     chrome.alarms.create("site-fixes", { periodInMinutes: 24 * 60 });
+  }
+  if (!(await chrome.alarms.get("update"))) {
+    chrome.alarms.create("update", { periodInMinutes: 24 * 60 });
   }
   await syncEarlyCss();
   connectHost();
