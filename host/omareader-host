@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Native messaging host: push the active Omarchy palette to Omareader."""
 
+import ctypes
 import json
 import os
 import select
@@ -35,8 +36,6 @@ STATE = Path(
     os.environ.get("OMAREADER_STATE_DIR", Path.home() / ".local/state/omarchy")
 )
 CURRENT = STATE / "current"
-
-import ctypes
 
 _libc = ctypes.CDLL("libc.so.6", use_errno=True)
 _libc.inotify_init1.argtypes = [ctypes.c_int]
