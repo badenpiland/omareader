@@ -31,6 +31,7 @@ for required in \
   "$ROOT/dist/LICENSES/darkreader-MIT.txt" \
   "$ROOT/dist/LICENSES/omarchy-MIT.txt" \
   "$ROOT/dist/content.js" \
+  "$ROOT/dist/early.css" \
   "$ROOT/dist/background.js" \
   "$ROOT/dist/extension-page.js" \
   "$ROOT/dist/site-fixes.js" \

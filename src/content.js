@@ -2,6 +2,7 @@
 import { disable, enable } from "darkreader";
 
 let lastKey = "";
+let earlySealed = false;
 
 function themeFrom(palette) {
   const light = palette.mode === "light";
@@ -39,6 +40,9 @@ function apply(state) {
   const hasFix = Boolean(state && Object.prototype.hasOwnProperty.call(state, "siteFix"));
   const fix = hasFix && state.siteFix && typeof state.siteFix === "object" ? state.siteFix : null;
   const next = active ? JSON.stringify([palette, hasFix ? fix : null]) : "";
+  if (state?.enabled === false || pausedHere(state)) {
+    sealEarly();
+  }
   if (next === lastKey) {
     return;
   }
@@ -50,6 +54,34 @@ function apply(state) {
   lastKey = next;
   if (active) {
     enable(themeFrom(palette), fix || undefined);
+    sealEarly();
+  }
+}
+
+function sealEarly() {
+  earlySealed = true;
+  document.documentElement?.removeAttribute("data-omareader-early");
+}
+
+function cssHex(value) {
+  return /^#[0-9a-fA-F]{6}$/.test(String(value || "")) ? value : "";
+}
+
+async function paintEarly() {
+  try {
+    const stored = await chrome.storage.session.get("palette");
+    const palette = stored?.palette;
+    const background = cssHex(palette?.background);
+    const foreground = cssHex(palette?.foreground);
+    if (earlySealed || !background || !foreground || !document.documentElement) {
+      return;
+    }
+    const root = document.documentElement;
+    root.style.setProperty("--omareader-bg", background);
+    root.style.setProperty("--omareader-fg", foreground);
+    root.setAttribute("data-omareader-early", "");
+  } catch {
+    // Session storage can be closed off. The port still applies the theme.
   }
 }
 
@@ -114,4 +146,5 @@ function connect() {
   }
 }
 
+paintEarly();
 connect();

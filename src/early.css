@@ -1,0 +1,5 @@
+/* SPDX-License-Identifier: MIT */
+html[data-omareader-early] {
+  background-color: var(--omareader-bg) !important;
+  color: var(--omareader-fg) !important;
+}

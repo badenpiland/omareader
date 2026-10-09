@@ -33,7 +33,7 @@ console.log("extension page senders accepted only for this extension");
 const manifest = JSON.parse(
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../src/manifest.json"), "utf8"),
 );
-assert.deepEqual(manifest.permissions, ["nativeMessaging", "storage", "alarms"]);
+assert.deepEqual(manifest.permissions, ["nativeMessaging", "storage", "alarms", "scripting"]);
 assert.deepEqual(manifest.optional_permissions, ["management"]);
 assert.equal(manifest.permissions.includes("management"), false);
 console.log("management is an optional permission");

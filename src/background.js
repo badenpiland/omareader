@@ -264,8 +264,38 @@ function rememberPalette(next) {
     selection: next.selection || "",
   };
   chrome.storage.local.set({ palette });
+  chrome.storage.session.set({ palette });
   applyIcon();
   broadcast();
+}
+
+const EARLY_ID = "omareader-early";
+
+async function syncEarlyCss() {
+  try {
+    await chrome.scripting.unregisterContentScripts({ ids: [EARLY_ID] });
+  } catch {
+    // The early sheet is not registered yet.
+  }
+  if (!enabled) {
+    return;
+  }
+  const script = {
+    id: EARLY_ID,
+    matches: ["<all_urls>"],
+    css: ["early.css"],
+    runAt: "document_start",
+    allFrames: true,
+  };
+  const excludeMatches = pausedSites.map((host) => `*://${host}/*`);
+  if (excludeMatches.length) {
+    script.excludeMatches = excludeMatches;
+  }
+  try {
+    await chrome.scripting.registerContentScripts([script]);
+  } catch {
+    // A bad paused host must not stop the rest of the worker.
+  }
 }
 
 function connectHost() {
@@ -334,6 +364,7 @@ function setEnabled(value) {
   chrome.storage.local.set({ enabled });
   applyAllIcons();
   broadcast();
+  void syncEarlyCss();
 }
 
 function setSitePaused(host, paused) {
@@ -351,6 +382,7 @@ function setSitePaused(host, paused) {
   chrome.storage.local.set({ pausedSites });
   applyAllIcons();
   broadcast();
+  void syncEarlyCss();
 }
 
 chrome.runtime.onConnect.addListener((port) => {
@@ -473,6 +505,11 @@ async function considerDarkReader(stored) {
 }
 
 async function start() {
+  try {
+    await chrome.storage.session.setAccessLevel({ accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS" });
+  } catch {
+    // Content scripts then wait for the port.
+  }
   const stored = await chrome.storage.local.get({
     enabled: true,
     pausedSites: [],
@@ -485,6 +522,9 @@ async function start() {
     ? stored.pausedSites.map(normalizeHost).filter(Boolean)
     : [];
   palette = stored.palette;
+  if (palette?.background && palette?.foreground) {
+    chrome.storage.session.set({ palette });
+  }
   await loadFixes();
   applyAllIcons();
   await considerDarkReader(stored);
@@ -493,6 +533,7 @@ async function start() {
   if (!(await chrome.alarms.get("site-fixes"))) {
     chrome.alarms.create("site-fixes", { periodInMinutes: 24 * 60 });
   }
+  await syncEarlyCss();
   connectHost();
   broadcast();
 }
