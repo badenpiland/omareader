@@ -146,9 +146,40 @@ def select_ready(stream):
     return ready
 
 
+def test_stdin_close_exits():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = Path(tmp)
+        current = state / "current"
+        current.mkdir()
+        write_theme(current, "paper", "#dfe4c4", "#1c2d28", "light")
+        env = os.environ.copy()
+        env["OMAREADER_STATE_DIR"] = str(state)
+        proc = subprocess.Popen(
+            [str(HOST)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            bufsize=0,
+        )
+        try:
+            first = read_message(proc.stdout)
+            assert first["type"] == "palette"
+            proc.stdin.close()
+            started = time.monotonic()
+            proc.wait(timeout=1)
+            assert time.monotonic() - started < 1
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=2)
+    print("stdin close exits")
+
+
 def main():
     test_dump_matches_live_theme()
     test_swap_pushes_a_new_palette()
+    test_stdin_close_exits()
 
 
 if __name__ == "__main__":

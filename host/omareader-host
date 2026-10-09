@@ -49,6 +49,17 @@ _libc.inotify_rm_watch.restype = ctypes.c_int
 _write_lock = threading.Lock()
 _stop = threading.Event()
 _last_sent = ""
+_stop_read, _stop_write = os.pipe()
+os.set_blocking(_stop_read, False)
+os.set_blocking(_stop_write, False)
+
+
+def request_stop():
+    _stop.set()
+    try:
+        os.write(_stop_write, b"\0")
+    except OSError:
+        return
 
 
 def write_message(payload):
@@ -191,7 +202,7 @@ def stdin_loop():
         except json.JSONDecodeError:
             continue
         if message is None:
-            _stop.set()
+            request_stop()
             return
         if isinstance(message, dict) and message.get("type") == "hello":
             publish(force=True)
@@ -205,11 +216,11 @@ def serve():
     thread.start()
     pending_at = None
     while not _stop.is_set():
-        timeout = 0.2
-        if pending_at is not None:
-            timeout = max(0.0, DEBOUNCE_SECONDS - (time.monotonic() - pending_at))
-        ready, _, _ = select.select([watcher.fd], [], [], timeout)
-        if ready and watcher.consume():
+        timeout = None if pending_at is None else max(0.0, DEBOUNCE_SECONDS - (time.monotonic() - pending_at))
+        ready, _, _ = select.select([watcher.fd, _stop_read], [], [], timeout)
+        if _stop.is_set() or _stop_read in ready:
+            break
+        if watcher.fd in ready and watcher.consume():
             pending_at = time.monotonic()
             continue
         if pending_at is None or time.monotonic() - pending_at < DEBOUNCE_SECONDS:
