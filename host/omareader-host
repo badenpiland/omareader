@@ -199,7 +199,7 @@ def stdin_loop():
     while not _stop.is_set():
         try:
             message = read_message()
-        except json.JSONDecodeError:
+        except ValueError:
             continue
         if message is None:
             request_stop()
