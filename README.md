@@ -37,8 +37,11 @@ npm run build
 The extension id stays `mhglniaepbokfgnpeennihlifandcgjh`, so the native host still works. `scripts/pack.sh` writes `release/omareader.crx` and `release/omareader.crx.sha256`. Upload both files to the GitHub release. `install.sh` checks that checksum when it is published, and warns if the `.sha256` file is missing.
 
 ```bash
+npm run lint
 npm test
 ```
+
+GitHub Actions runs the lint, the tests, and the build on every push and pull request. It does not sign a release.
 
 The public key in `src/manifest.json` pins the extension id. `key.pem` stays private and is how `scripts/pack.sh` signs `release/omareader.crx`. Do not generate a replacement key. A new key would publish a different extension id, and already-installed browsers would keep the old one.
 
