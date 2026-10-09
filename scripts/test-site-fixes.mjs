@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   acceptSiteFixes,
+  fixesAutoUpdateEnabled,
   fixesFor,
   parseDynamicThemeFixes,
   SITE_FIXES_URL,
@@ -58,7 +59,10 @@ try {
 }
 assert(tooLarge, "an oversized file is rejected");
 
-assert(trustedFixesUrl(SITE_FIXES_URL), "the Dark Reader list URL is trusted");
+assert(fixesAutoUpdateEnabled({}), "site-fix updates default on");
+assert(fixesAutoUpdateEnabled({ siteFixesAutoUpdate: true }), "an explicit true stays on");
+assert(!fixesAutoUpdateEnabled({ siteFixesAutoUpdate: false }), "the opt-out stops the download");
+assert(trustedFixesUrl(SITE_FIXES_URL) === true, "the Dark Reader list URL is trusted");
 assert(!trustedFixesUrl(SITE_FIXES_URL.replace("https:", "http:")), "plain HTTP is rejected");
 assert(
   !trustedFixesUrl("https://raw.githubusercontent.com/evil/darkreader/main/src/config/dynamic-theme-fixes.config"),

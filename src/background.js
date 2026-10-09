@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { acceptSiteFixes, fixesFor, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
+import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 import { fromExtensionPage } from "./extension-page.js";
 
@@ -22,6 +22,7 @@ let darkReaderPrompt = false;
 let darkReaderKnown = false;
 let sites = null;
 let fixesText = "";
+let siteFixesAutoUpdate = true;
 let refreshTask = null;
 
 function snapshot() {
@@ -33,6 +34,7 @@ function snapshot() {
     hostError,
     darkReaderPrompt,
     darkReaderKnown,
+    siteFixesAutoUpdate,
   };
 }
 
@@ -95,7 +97,9 @@ async function loadFixes() {
     siteFixesText: "",
     siteFixesFetchedAt: 0,
     siteFixesAttemptAt: 0,
+    siteFixesAutoUpdate: true,
   });
+  siteFixesAutoUpdate = fixesAutoUpdateEnabled(stored);
   let applied = false;
   try {
     applyFixesText(stored.siteFixesText);
@@ -167,8 +171,10 @@ async function refreshFixes() {
       const stored = await chrome.storage.local.get({
         siteFixesFetchedAt: 0,
         siteFixesAttemptAt: 0,
+        siteFixesAutoUpdate: true,
       });
-      if (!fixesDue(stored, attemptAt)) {
+      siteFixesAutoUpdate = fixesAutoUpdateEnabled(stored);
+      if (!siteFixesAutoUpdate || !fixesDue(stored, attemptAt)) {
         return;
       }
       await chrome.storage.local.set({ siteFixesAttemptAt: attemptAt });
@@ -359,6 +365,15 @@ function scheduleReconnect() {
   }, step.delay);
 }
 
+function setSiteFixesAutoUpdate(enabled) {
+  siteFixesAutoUpdate = enabled !== false;
+  chrome.storage.local.set({ siteFixesAutoUpdate });
+  broadcast();
+  if (siteFixesAutoUpdate) {
+    void refreshFixes();
+  }
+}
+
 function setEnabled(value) {
   enabled = Boolean(value);
   chrome.storage.local.set({ enabled });
@@ -412,6 +427,8 @@ chrome.runtime.onConnect.addListener((port) => {
       setSitePaused(message.host, Boolean(message.paused));
     } else if (message.type === "darkReaderChoice") {
       void resolveDarkReader(Boolean(message.disable));
+    } else if (message.type === "setSiteFixesAutoUpdate") {
+      setSiteFixesAutoUpdate(message.enabled);
     }
   });
   postTo(port);

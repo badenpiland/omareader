@@ -11,6 +11,7 @@ const fg = document.querySelector("#fg");
 const bgLabel = document.querySelector("#bg-label");
 const fgLabel = document.querySelector("#fg-label");
 const darkReader = document.querySelector("#dark-reader");
+const siteFixesInput = document.querySelector("#site-fixes");
 const darkReaderText = document.querySelector("#dark-reader-text");
 const DARK_READER_KNOWN = "Dark Reader is also on. Both extensions restyle the page. Turn Dark Reader off?";
 const DARK_READER_UNKNOWN = "If Dark Reader is also on, both restyle pages. Turn it off?";
@@ -56,6 +57,7 @@ function render(state) {
   }
   statusNode.textContent = state.hostError || declineNote;
   darkReader.hidden = !state.darkReaderPrompt;
+  siteFixesInput.checked = state.siteFixesAutoUpdate !== false;
   if (state.darkReaderPrompt) {
     darkReaderText.textContent = state.darkReaderKnown ? DARK_READER_KNOWN : DARK_READER_UNKNOWN;
   }
@@ -96,4 +98,7 @@ document.querySelector("#dark-reader-off").addEventListener("click", async () =>
 });
 document.querySelector("#dark-reader-keep").addEventListener("click", () => {
   port.postMessage({ type: "darkReaderChoice", disable: false });
+});
+siteFixesInput.addEventListener("change", () => {
+  port.postMessage({ type: "setSiteFixesAutoUpdate", enabled: siteFixesInput.checked });
 });

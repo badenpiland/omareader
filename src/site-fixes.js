@@ -16,6 +16,11 @@ export const SITE_FIXES_URL =
 
 const MAX_SITE_FIX_CHARS = 3 * 1024 * 1024;
 
+// Missing or true keeps the daily download. Only an explicit false opts out.
+export function fixesAutoUpdateEnabled(stored) {
+  return stored?.siteFixesAutoUpdate !== false;
+}
+
 export function trustedFixesUrl(url) {
   try {
     const parsed = new URL(url);
