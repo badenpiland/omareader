@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — 2026-10-13
+
+### Fixed
+
+- Packed extension failed to start, host-message.js was missing.
+
 ## 0.2.1 — 2026-10-13
 
 ### Security

@@ -1,7 +1,7 @@
 # Maintainer: Baden Piland <github@ps.pilandcloud.com>
 pkgname=omareader-bin
 _pkg=omareader
-pkgver=0.2.1
+pkgver=0.2.2
 pkgrel=1
 pkgdesc="Restyle Chromium pages with the active Omarchy theme (extension + native host)"
 arch=('any')
