@@ -19,8 +19,8 @@ conflicts=("$_pkg")
 _extid=mhglniaepbokfgnpeennihlifandcgjh
 source=("$_pkg::git+$url.git#tag=v$pkgver"
         "$_pkg-$pkgver.crx::$url/releases/download/v$pkgver/omareader.crx")
-sha256sums=('4764a9a66df00c311331d319a77420b6a9d7eebf3e41514847e61bf647db0498'
-            '716f74efc3742663c2d5658fec43c7f5a4785705ca51bd48ccb01bcf2e84c851')
+sha256sums=('f240ada159b973b5cf5cceca4d83524ffbda86fe73a1ce03e4b34707df950d02'
+            '7c777f1841afa64f2eaef669a039f245b2b9ea359582c693a5decf975c1028ba')
 # makepkg treats a CRX as a zip. Leave the signed file intact.
 noextract=("${_pkg}-${pkgver}.crx")
 
