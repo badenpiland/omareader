@@ -47,6 +47,13 @@ assert.deepEqual(manifest.optional_permissions, ["management"]);
 assert.equal(manifest.permissions.includes("management"), false);
 console.log("management is an optional permission");
 
+const build = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "build.mjs"), "utf8");
+const background = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../src/background.js"), "utf8");
+for (const match of background.matchAll(/from "\.\/([^"]+)"/g)) {
+  assert.equal(build.includes(`"${match[1]}"`), true, `${match[1]} is copied into the extension`);
+}
+console.log("background imports are copied by the build");
+
 assert.equal(normalizeHex("#ABC"), "#aabbcc");
 assert.equal(normalizeHex("#aabbccdd"), "#aabbcc");
 assert.equal(normalizeHex("blue"), "");
