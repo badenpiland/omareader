@@ -268,12 +268,98 @@ def test_transient_missing_theme():
     print("transient missing theme hidden")
 
 
+def start_host(state):
+    env = os.environ.copy()
+    env["OMAREADER_STATE_DIR"] = str(state)
+    return subprocess.Popen(
+        [str(HOST)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        bufsize=0,
+    )
+
+
+def test_oversized_theme_file_is_rejected():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = Path(tmp)
+        current = state / "current"
+        current.mkdir()
+        write_theme(current, "paper", "#dfe4c4", "#1c2d28", "light")
+        colors = current / "theme" / "colors.toml"
+        colors.write_bytes(b"x" * (64 * 1024 + 1))
+        result = subprocess.run(
+            [str(HOST), "--dump"],
+            env={**os.environ, "OMAREADER_STATE_DIR": str(state)},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode != 0, result.stdout
+        assert "too large" in result.stderr
+    print("oversized theme file rejected")
+
+
+def test_theme_name_is_truncated():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = Path(tmp)
+        current = state / "current"
+        current.mkdir()
+        name = "n" * 150
+        write_theme(current, name, "#dfe4c4", "#1c2d28", "light")
+        dumped = json.loads(
+            subprocess.check_output(
+                [str(HOST), "--dump"],
+                env={**os.environ, "OMAREADER_STATE_DIR": str(state)},
+                text=True,
+            )
+        )
+        assert dumped["theme"] == "n" * 100
+    print("theme name truncated")
+
+
+def test_deep_json_still_answers_hello():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = Path(tmp)
+        current = state / "current"
+        current.mkdir()
+        write_theme(current, "paper", "#dfe4c4", "#1c2d28", "light")
+        proc = start_host(state)
+        try:
+            first = read_message(proc.stdout)
+            assert first["type"] == "palette"
+            body = b"[" * 2000 + b"]" * 2000
+            proc.stdin.write(struct.pack("<I", len(body)))
+            proc.stdin.write(body)
+            proc.stdin.flush()
+            write_message(proc.stdin, {"type": "hello"})
+            deadline = time.monotonic() + 2
+            seen = None
+            while time.monotonic() < deadline:
+                if select_ready(proc.stdout):
+                    seen = read_message(proc.stdout)
+                    break
+                time.sleep(0.05)
+            assert seen and seen["type"] == "palette", seen
+            assert seen["background"] == "#dfe4c4"
+            assert proc.poll() is None
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+            proc.wait(timeout=2)
+    print("deep json skipped")
+
+
 def main():
     test_dump_matches_live_theme()
     test_swap_pushes_a_new_palette()
     test_stdin_close_exits()
     test_invalid_utf8_still_answers_hello()
     test_transient_missing_theme()
+    test_oversized_theme_file_is_rejected()
+    test_theme_name_is_truncated()
+    test_deep_json_still_answers_hello()
 
 
 if __name__ == "__main__":

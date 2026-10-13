@@ -32,6 +32,8 @@ WATCH_MASK = (
     | IN_MOVE_SELF
 )
 DEBOUNCE_SECONDS = 0.2
+MAX_THEME_BYTES = 64 * 1024
+# OMAREADER_STATE_DIR overrides this. Production uses ~/.local/state/omarchy.
 STATE = Path(
     os.environ.get("OMAREADER_STATE_DIR", Path.home() / ".local/state/omarchy")
 )
@@ -113,13 +115,20 @@ def luminance(color):
     return 0.2126 * red + 0.7152 * green + 0.0722 * blue
 
 
+def read_capped(path):
+    with path.open("rb") as handle:
+        data = handle.read(MAX_THEME_BYTES + 1)
+    if len(data) > MAX_THEME_BYTES:
+        raise ValueError(f"{path.name} is too large")
+    return data
+
+
 def read_palette():
     colors_path = CURRENT / "theme" / "colors.toml"
     name_path = CURRENT / "theme.name"
     if not colors_path.is_file():
         raise ValueError(f"missing {colors_path}")
-    with colors_path.open("rb") as handle:
-        colors = tomllib.load(handle)
+    colors = tomllib.loads(read_capped(colors_path).decode())
     background = normalize_hex(colors.get("background"))
     foreground = normalize_hex(colors.get("foreground"))
     if not background or not foreground:
@@ -132,7 +141,7 @@ def read_palette():
         mode = "light" if luminance(background) > 0.5 else "dark"
     theme = ""
     if name_path.is_file():
-        theme = name_path.read_text(encoding="utf-8").strip()
+        theme = read_capped(name_path).decode().strip()[:100]
     return {
         "type": "palette",
         "theme": theme,
@@ -209,7 +218,8 @@ def stdin_loop():
     while not _stop.is_set():
         try:
             message = read_message()
-        except ValueError:
+        except Exception:
+            # A bad message, including deep JSON, must not stop the next hello.
             continue
         if message is None:
             request_stop()
