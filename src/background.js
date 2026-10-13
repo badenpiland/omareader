@@ -489,7 +489,7 @@ chrome.runtime.onConnect.addListener((port) => {
       return;
     }
     port.onMessage.addListener((message) => {
-      readThemeResource(message?.url, (href) => fetch(href)).then((result) => {
+      readThemeResource(message?.url, fetch).then((result) => {
         try {
           port.postMessage(result);
         } catch {
