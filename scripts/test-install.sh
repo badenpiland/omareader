@@ -78,9 +78,14 @@ cmp "$WORK/good/omareader.crx" "$good_home/.local/share/omareader/omareader.crx"
 test -f "$good_home/.config/chromium/External Extensions/mhglniaepbokfgnpeennihlifandcgjh.json"
 
 bare_home="$WORK/home-bare"
+set +e
 install_into "$bare_home" "http://127.0.0.1:${PORT}/bare/omareader.crx" >/tmp/omareader-install-bare.out 2>/tmp/omareader-install-bare.err
-cmp "$WORK/bare/omareader.crx" "$bare_home/.local/share/omareader/omareader.crx"
-grep -q "skipping checksum" /tmp/omareader-install-bare.err
+status=$?
+set -e
+test "$status" -ne 0
+grep -q "No checksum published" /tmp/omareader-install-bare.err
+test ! -e "$bare_home/.local/share/omareader/omareader.crx"
+test ! -e "$bare_home/.local/share/omareader/omareader.crx.partial"
 
 bad_home="$WORK/home-bad"
 set +e
@@ -180,3 +185,154 @@ grep -q "Chromium-based" /tmp/omareader-install-zen.err
 test ! -e "$zen_home/.local/share/omareader"
 
 echo "default browser install checked"
+
+quote_home="$WORK/say\"hi"
+mkdir -p "$quote_home"
+run_install "$quote_home" "$GOOD_URL" chromium >/tmp/omareader-install-quote.out
+python3 - "$quote_home" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+home = Path(sys.argv[1])
+host = json.loads((home / ".config/chromium/NativeMessagingHosts/com.bhp.omareader.json").read_text())
+ext = json.loads((home / ".config/chromium/External Extensions/mhglniaepbokfgnpeennihlifandcgjh.json").read_text())
+share = home / ".local/share/omareader"
+assert host["path"] == str(share / "omareader-host")
+assert host["allowed_origins"] == ["chrome-extension://mhglniaepbokfgnpeennihlifandcgjh/"]
+assert ext["external_crx"] == str(share / "omareader.crx")
+assert ext["external_version"]
+PY
+echo "quoted home json checked"
+
+printf 'remote-crx\n' > "$WORK/remote-crx-body"
+REMOTE_SHA="$(sha256sum "$WORK/remote-crx-body" | cut -d' ' -f1)"
+REMOTE_SRC="$WORK/remote-src"
+mkdir -p "$REMOTE_SRC"
+cp "$ROOT/install.sh" "$REMOTE_SRC/install.sh"
+CURL_BIN="$WORK/bin-remote"
+mkdir -p "$CURL_BIN"
+cat > "$CURL_BIN/curl" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+out=""
+url=""
+prev=""
+for arg in "$@"; do
+  if [[ "$prev" == "-o" ]]; then
+    out="$arg"
+    prev=""
+    continue
+  fi
+  case "$arg" in
+    -o) prev="-o" ;;
+    -*) ;;
+    *) url="$arg" ;;
+  esac
+done
+printf '%s\n' "$url" >> "${OMAREADER_CURL_LOG:?}"
+write_out() {
+  if [[ -n "$out" ]]; then
+    cat > "$out"
+  else
+    cat
+  fi
+}
+mode="${OMAREADER_CURL_MODE:-ok}"
+if [[ "$mode" == "fail" ]]; then
+  exit 1
+fi
+case "$url" in
+  *api.github.com/repos/badenpiland/omareader/releases/latest*)
+    printf '%s\n' '{"tag_name":"v9.9.9"}' | write_out
+    ;;
+  */host/omareader-host)
+    printf '%s\n' '#!/usr/bin/env python3' | write_out
+    ;;
+  */package.json)
+    version="${OMAREADER_CURL_VERSION:-9.9.9}"
+    printf '{"version":"%s"}\n' "$version" | write_out
+    ;;
+  *.sha256)
+    printf '%s  omareader.crx\n' "${OMAREADER_CURL_SHA:?}" | write_out
+    ;;
+  *omareader.crx)
+    printf 'remote-crx\n' | write_out
+    ;;
+  *)
+    printf 'unexpected url %s\n' "$url" >&2
+    exit 1
+    ;;
+esac
+EOF
+cat > "$CURL_BIN/mktemp" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+dir="$(/usr/bin/mktemp "$@")"
+printf '%s\n' "$dir" >> "${OMAREADER_MKTEMP_LOG:?}"
+printf '%s\n' "$dir"
+EOF
+chmod +x "$CURL_BIN/curl" "$CURL_BIN/mktemp"
+
+run_remote() {
+  local home="$1"
+  shift
+  mkdir -p "$home"
+  : > "$WORK/curl.log"
+  : > "$WORK/mktemp.log"
+  HOME="$home" \
+    XDG_CONFIG_HOME="$home/.config" \
+    OMAREADER_SYSTEM=no \
+    OMAREADER_SUDO_LOG="$WORK/sudo-called" \
+    OMAREADER_TEST_BROWSER=chromium \
+    OMAREADER_CURL_LOG="$WORK/curl.log" \
+    OMAREADER_MKTEMP_LOG="$WORK/mktemp.log" \
+    OMAREADER_CURL_SHA="$REMOTE_SHA" \
+    PATH="$CURL_BIN:$BIN:$PATH" \
+    "$@" \
+    "$REMOTE_SRC/install.sh"
+}
+
+remote_home="$WORK/home-remote"
+run_remote "$remote_home" >/tmp/omareader-install-remote.out
+grep -q "api.github.com/repos/badenpiland/omareader/releases/latest" "$WORK/curl.log"
+grep -q "/v9.9.9/host/omareader-host" "$WORK/curl.log"
+grep -q "/releases/download/v9.9.9/omareader.crx" "$WORK/curl.log"
+cmp "$WORK/remote-crx-body" "$remote_home/.local/share/omareader/omareader.crx"
+test -s "$WORK/mktemp.log"
+while IFS= read -r tmpdir; do
+  test ! -e "$tmpdir"
+done < "$WORK/mktemp.log"
+
+ref_home="$WORK/home-ref"
+run_remote "$ref_home" env OMAREADER_REF=v9.9.9 >/tmp/omareader-install-ref.out
+grep -q "/v9.9.9/host/omareader-host" "$WORK/curl.log"
+if grep -q "api.github.com" "$WORK/curl.log"; then
+  echo "explicit ref still called the releases API" >&2
+  exit 1
+fi
+
+mismatch_home="$WORK/home-mismatch"
+set +e
+run_remote "$mismatch_home" env OMAREADER_REF=v1.2.3 OMAREADER_CURL_VERSION=9.9.9 >/tmp/omareader-install-mismatch.out 2>/tmp/omareader-install-mismatch.err
+status=$?
+set -e
+test "$status" -ne 0
+grep -q "does not match" /tmp/omareader-install-mismatch.err
+if grep -q "api.github.com" "$WORK/curl.log"; then
+  echo "version mismatch still called the releases API" >&2
+  exit 1
+fi
+
+fail_home="$WORK/home-fail"
+set +e
+run_remote "$fail_home" env OMAREADER_REF=v9.9.9 OMAREADER_CURL_MODE=fail >/tmp/omareader-install-fail.out 2>/tmp/omareader-install-fail.err
+status=$?
+set -e
+test "$status" -ne 0
+test -s "$WORK/mktemp.log"
+while IFS= read -r tmpdir; do
+  test ! -e "$tmpdir"
+done < "$WORK/mktemp.log"
+
+echo "remote release install checked"

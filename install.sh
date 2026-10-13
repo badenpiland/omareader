@@ -3,10 +3,18 @@
 # Does not compile, and does not create a signing key.
 set -euo pipefail
 
+tmp=""
+cleanup() {
+  if [[ -n "${tmp}" ]]; then
+    rm -rf "${tmp}"
+  fi
+}
+trap cleanup EXIT
+
 HOST_NAME="com.bhp.omareader"
 EXT_ID="mhglniaepbokfgnpeennihlifandcgjh"
 REPO="badenpiland/omareader"
-REF="${OMAREADER_REF:-main}"
+REF="${OMAREADER_REF:-}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 SHARE="$HOME/.local/share/omareader"
 HOST_DEST="$SHARE/omareader-host"
@@ -59,6 +67,62 @@ read_version() {
   python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' "$1"
 }
 
+latest_release_tag() {
+  python3 -c 'import json, re, sys
+data = json.load(sys.stdin)
+tag = data.get("tag_name")
+if not isinstance(tag, str) or re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag) is None:
+    sys.stderr.write("latest release tag is not a version\n")
+    raise SystemExit(1)
+sys.stdout.write(tag + "\n")'
+}
+
+write_host_json() {
+  local dest="$1"
+  mkdir -p "$(dirname -- "$dest")"
+  python3 - "$dest" "$HOST_NAME" "$HOST_DEST" "$EXT_ID" <<'PY'
+import json
+import sys
+
+dest, name, path, ext_id = sys.argv[1:5]
+with open(dest, "w", encoding="utf-8") as handle:
+    json.dump(
+        {
+            "name": name,
+            "description": "Omareader Omarchy theme host",
+            "path": path,
+            "type": "stdio",
+            "allowed_origins": [f"chrome-extension://{ext_id}/"],
+        },
+        handle,
+        indent=2,
+    )
+    handle.write("\n")
+PY
+}
+
+write_extension() {
+  local crx_path="$1"
+  local dest="$2"
+  mkdir -p "$(dirname -- "$dest")"
+  python3 - "$dest" "$crx_path" "$VERSION" <<'PY'
+import json
+import sys
+
+dest, crx_path, version = sys.argv[1:4]
+with open(dest, "w", encoding="utf-8") as handle:
+    json.dump(
+        {
+            "external_crx": crx_path,
+            "external_version": version,
+        },
+        handle,
+        indent=2,
+    )
+    handle.write("\n")
+PY
+}
+
 script_path=""
 if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
   script_path="${BASH_SOURCE[0]}"
@@ -76,13 +140,20 @@ if [[ -n "$ROOT" && -f "$ROOT/host/omareader-host" && -f "$ROOT/package.json" ]]
   VERSION="$(read_version "$ROOT/package.json")"
   install -m 755 "$ROOT/host/omareader-host" "$HOST_DEST"
 else
-  echo "Installing Omareader from https://github.com/${REPO}"
+  if [[ -z "$REF" ]]; then
+    # releases/latest omits pre-releases, so the published release has to be a normal one.
+    REF="$(curl -fsSL --retry 3 "https://api.github.com/repos/${REPO}/releases/latest" | latest_release_tag)"
+  fi
+  echo "Installing Omareader ${REF} from https://github.com/${REPO}"
   tmp="$(mktemp -d)"
   curl -fsSL --retry 3 -o "$tmp/omareader-host" "https://raw.githubusercontent.com/${REPO}/${REF}/host/omareader-host"
   curl -fsSL --retry 3 -o "$tmp/package.json" "https://raw.githubusercontent.com/${REPO}/${REF}/package.json"
   VERSION="$(read_version "$tmp/package.json")"
+  if [[ "$REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ && "$REF" != "v${VERSION}" ]]; then
+    echo "Release tag ${REF} does not match package version ${VERSION}." >&2
+    exit 1
+  fi
   install -m 755 "$tmp/omareader-host" "$HOST_DEST"
-  rm -rf "$tmp"
   ROOT=""
 fi
 
@@ -90,16 +161,17 @@ download_crx() {
   local url="$1"
   echo "Downloading $url"
   curl -fL --retry 3 -o "$CRX_DEST.partial" "$url"
-  if sums="$(curl -fsSL --retry 3 "$url.sha256")"; then
-    expected="${sums%% *}"
-    actual="$(sha256sum "$CRX_DEST.partial" | cut -d' ' -f1)"
-    if [[ "$expected" != "$actual" ]]; then
-      rm -f "$CRX_DEST.partial"
-      echo "Checksum mismatch for $url" >&2
-      exit 1
-    fi
-  else
-    echo "Warning: no $url.sha256 published; skipping checksum." >&2
+  if ! sums="$(curl -fsSL --retry 3 "$url.sha256")"; then
+    rm -f "$CRX_DEST.partial"
+    echo "No checksum published for $url" >&2
+    exit 1
+  fi
+  expected="${sums%% *}"
+  actual="$(sha256sum "$CRX_DEST.partial" | cut -d' ' -f1)"
+  if [[ "$expected" != "$actual" ]]; then
+    rm -f "$CRX_DEST.partial"
+    echo "Checksum mismatch for $url" >&2
+    exit 1
   fi
   mv "$CRX_DEST.partial" "$CRX_DEST"
   chmod 644 "$CRX_DEST"
@@ -117,28 +189,7 @@ else
   download_crx "https://github.com/${REPO}/releases/download/v${VERSION}/omareader.crx"
 fi
 
-mkdir -p "$BROWSER_BASE/NativeMessagingHosts"
-cat > "$BROWSER_BASE/NativeMessagingHosts/${HOST_NAME}.json" <<EOF
-{
-  "name": "${HOST_NAME}",
-  "description": "Omareader Omarchy theme host",
-  "path": "${HOST_DEST}",
-  "type": "stdio",
-  "allowed_origins": ["chrome-extension://${EXT_ID}/"]
-}
-EOF
-
-write_extension() {
-  local crx_path="$1"
-  local dest="$2"
-  mkdir -p "$(dirname -- "$dest")"
-  cat > "$dest" <<EOF
-{
-  "external_crx": "${crx_path}",
-  "external_version": "${VERSION}"
-}
-EOF
-}
+write_host_json "$BROWSER_BASE/NativeMessagingHosts/${HOST_NAME}.json"
 
 chrome_accepted() {
   local choice

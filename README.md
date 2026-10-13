@@ -28,7 +28,7 @@ If a browser already refused the extension, it will not accept the installer aga
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 
-The command above copies the host to `~/.local/share/omareader/` and downloads the signed extension for the version on `main`. It checks the published checksum. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` does the same thing.
+The command above fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release. It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
 
 ## Install on Arch/Omarchy
 
@@ -52,7 +52,7 @@ npm run build
 # then load dist/ as an unpacked extension (chrome://extensions, Developer mode, Load unpacked)
 ```
 
-The extension id stays `mhglniaepbokfgnpeennihlifandcgjh`, so the native host still works. `scripts/pack.sh` writes `release/omareader.crx` and `release/omareader.crx.sha256`. Upload both files to the GitHub release. `install.sh` checks that checksum when it is published, and warns if the `.sha256` file is missing. After the release is published, update the Omarchy suggestion at https://github.com/omacom/omarchy/discussions/14632: comment with the version, the install command, and any behavior change that matters for inclusion, and correct the original post if a claim there is no longer true.
+The extension id stays `mhglniaepbokfgnpeennihlifandcgjh`, so the native host still works. `scripts/pack.sh` writes `release/omareader.crx` and `release/omareader.crx.sha256`. Upload both files to the GitHub release. `install.sh` checks that checksum and refuses to install when the `.sha256` file is missing. After the release is published, update the Omarchy suggestion at https://github.com/omacom/omarchy/discussions/14632: comment with the version, the install command, and any behavior change that matters for inclusion, and correct the original post if a claim there is no longer true.
 
 ```bash
 npm run lint
