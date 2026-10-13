@@ -134,8 +134,7 @@ async function loadFixes() {
 
 const MAX_SITE_FIX_BYTES = 3 * 1024 * 1024;
 
-async function readCappedText(response, maxBytes = MAX_SITE_FIX_BYTES) {
-  const tooLarge = maxBytes === MAX_SITE_FIX_BYTES ? "Site fixes are empty or too large" : "Release list is too large";
+async function readCappedText(response, maxBytes, tooLarge) {
   const declared = Number(response.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) {
     throw new Error(tooLarge);
@@ -195,7 +194,9 @@ async function refreshFixes() {
       if (!response.ok || !trustedFixesUrl(response.url)) {
         throw new Error("Site-fix download was rejected");
       }
-      const text = sanitizeFetchedFixes(await readCappedText(response));
+      const text = sanitizeFetchedFixes(
+        await readCappedText(response, MAX_SITE_FIX_BYTES, "Site fixes are empty or too large"),
+      );
       const changed = applyFixesText(text);
       await chrome.storage.local.set({
         siteFixesText: text,
@@ -260,7 +261,7 @@ async function refreshUpdate() {
       if (!response.ok || !trustedReleasesUrl(response.url)) {
         throw new Error("Release list was rejected");
       }
-      const text = await readCappedText(response, MAX_RELEASES_BYTES);
+      const text = await readCappedText(response, MAX_RELEASES_BYTES, "Release list is too large");
       const data = JSON.parse(text);
       if (!Array.isArray(data)) {
         throw new Error("Release list was rejected");

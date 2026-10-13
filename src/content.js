@@ -46,9 +46,23 @@ setFetchMethod((url) => new Promise((resolve, reject) => {
 
 let lastKey = "";
 let earlySealed = false;
+let polesKey = "";
+let polesValue = null;
+
+function polesFor(palette) {
+  const background = palette?.background;
+  const foreground = palette?.foreground;
+  const key = `${background}\0${foreground}`;
+  if (polesValue && key === polesKey) {
+    return polesValue;
+  }
+  polesKey = key;
+  polesValue = readablePoles(background, foreground);
+  return polesValue;
+}
 
 function themeFrom(palette) {
-  const poles = readablePoles(palette.background, palette.foreground);
+  const poles = polesFor(palette);
   const light = palette.mode === "light";
   return {
     mode: light ? 0 : 1,
@@ -69,7 +83,7 @@ function themedFix(palette, fix) {
   if (!fix || typeof fix !== "object") {
     return fix;
   }
-  const poles = readablePoles(palette.background, palette.foreground);
+  const poles = polesFor(palette);
   const css = typeof fix.css === "string"
     ? repairFixColors(fix.css, poles.background, poles.foreground)
     : fix.css;
