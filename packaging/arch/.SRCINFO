@@ -1,7 +1,7 @@
 pkgbase = omareader-bin
 	pkgdesc = Restyle Chromium pages with the active Omarchy theme (extension + native host)
 	pkgver = 0.2.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://github.com/badenpiland/omareader
 	arch = any
 	license = MIT

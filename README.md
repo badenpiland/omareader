@@ -30,6 +30,16 @@ The palette has to come from your machine, so the extension and the native host 
 
 The command above copies the host to `~/.local/share/omareader/` and downloads the signed extension for the version on `main`. It checks the published checksum. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` does the same thing.
 
+## Install on Arch/Omarchy
+
+```bash
+yay -S omareader-bin
+```
+
+This package registers the signed extension and the native host for Chromium, Google Chrome, Brave, Brave Origin, and Microsoft Edge. Restart the browser after installing. Firefox and Zen are not supported.
+
+The extension id is `mhglniaepbokfgnpeennihlifandcgjh`. A fresh profile in each of those browsers loaded that id without an extra enable step. If a browser instead shows the extension as added externally and leaves it off, turn it on once from the extensions page.
+
 ## Limits
 
 `chrome://` pages and the Chrome Web Store cannot be themed.

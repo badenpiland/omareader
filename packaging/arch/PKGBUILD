@@ -2,7 +2,7 @@
 pkgname=omareader-bin
 _pkg=omareader
 pkgver=0.2.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Restyle Chromium pages with the active Omarchy theme (extension + native host)"
 arch=('any')
 url="https://github.com/badenpiland/omareader"
@@ -47,8 +47,8 @@ package() {
     install -dm755 "$pkgdir$d"
     printf '%s\n' "$ext" > "$pkgdir$d/$_extid.json"
   done
-  # Brave has no documented system host dir, so ship /etc/brave as well as Chromium's.
-  for d in /etc/chromium/native-messaging-hosts /etc/opt/chrome/native-messaging-hosts /etc/opt/edge/native-messaging-hosts /etc/brave/native-messaging-hosts; do
+  # Brave and Brave Origin read Chrome's host directory, not /etc/brave.
+  for d in /etc/chromium/native-messaging-hosts /etc/opt/chrome/native-messaging-hosts /etc/opt/edge/native-messaging-hosts; do
     install -dm755 "$pkgdir$d"
     printf '%s\n' "$host" > "$pkgdir$d/com.bhp.omareader.json"
   done
