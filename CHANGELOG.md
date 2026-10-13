@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.1 — 2026-10-13
+
+### Security
+
+- A stylesheet from another host is fetched with no cookies and no redirects, and only `text/css` is accepted. Localhost, private and link-local addresses, and names ending in `.local`, `.lan`, `.home.arpa`, `.ts.net`, or `.internal` are refused.
+- The daily site-fix list is pinned to Dark Reader 4.9.133. A downloaded list drops `@import` and any `url()` that is not a `data:` URL. The bundled list is unchanged.
+- `install.sh` installs the native host and the extension from the latest GitHub release, and it stops when the CRX has no checksum.
+- The native host reads at most 64 KiB of `colors.toml` or `theme.name`.
+
+### Fixed
+
+- The popup keeps a theme name to 100 characters.
+- While the theme host is connected, the extension does not wake every minute to reconnect.
+
 ## 0.2.0 — 2026-10-09
 
 ### Added
