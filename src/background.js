@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
+import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 import { fromExtensionPage } from "./extension-page.js";
 import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
@@ -194,7 +194,7 @@ async function refreshFixes() {
       if (!response.ok || !trustedFixesUrl(response.url)) {
         throw new Error("Site-fix download was rejected");
       }
-      const text = await readCappedText(response);
+      const text = sanitizeFetchedFixes(await readCappedText(response));
       const changed = applyFixesText(text);
       await chrome.storage.local.set({
         siteFixesText: text,

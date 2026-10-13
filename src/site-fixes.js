@@ -9,12 +9,70 @@ const COMMANDS = {
   "IGNORE CSS URL": "ignoreCSSUrl",
 };
 
-// Dark Reader publishes this file on main as site fixes land. The extension
-// fetches it; the vendored copy is the offline fallback.
+// Pinned to Dark Reader 4.9.133. The vendored copy is the offline fallback.
 export const SITE_FIXES_URL =
-  "https://raw.githubusercontent.com/darkreader/darkreader/main/src/config/dynamic-theme-fixes.config";
+  "https://raw.githubusercontent.com/darkreader/darkreader/92637d8c3fbb210853c005e3f25dbbec46dd21fc/src/config/dynamic-theme-fixes.config";
 
 const MAX_SITE_FIX_CHARS = 3 * 1024 * 1024;
+
+function dataUrlValue(raw) {
+  let value = raw.trim();
+  const quote = value[0];
+  if ((quote === '"' || quote === "'") && value.endsWith(quote) && value.length >= 2) {
+    value = value.slice(1, -1).trim();
+  }
+  return value.toLowerCase().startsWith("data:");
+}
+
+function urlCallEnd(text, from) {
+  let quote = "";
+  for (let index = from; index < text.length; index += 1) {
+    const char = text[index];
+    if (quote) {
+      if (char === "\\") {
+        index += 1;
+        continue;
+      }
+      if (char === quote) {
+        quote = "";
+      }
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === ")") {
+      return index;
+    }
+  }
+  return -1;
+}
+
+// Drop @import and any url() that is not a data: URL. data: images stay.
+export function sanitizeFetchedFixes(text) {
+  const source = String(text).replace(/@import\b[^;]*(;|$)/gi, "");
+  const lower = source.toLowerCase();
+  let out = "";
+  let cursor = 0;
+  while (cursor < source.length) {
+    const start = lower.indexOf("url(", cursor);
+    if (start < 0) {
+      out += source.slice(cursor);
+      break;
+    }
+    out += source.slice(cursor, start);
+    const end = urlCallEnd(source, start + 4);
+    if (end < 0) {
+      break;
+    }
+    if (dataUrlValue(source.slice(start + 4, end))) {
+      out += source.slice(start, end + 1);
+    }
+    cursor = end + 1;
+  }
+  return out;
+}
 
 // Missing or true keeps the daily download. Only an explicit false opts out.
 export function fixesAutoUpdateEnabled(stored) {

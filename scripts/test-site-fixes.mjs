@@ -6,6 +6,7 @@ import {
   fixesAutoUpdateEnabled,
   fixesFor,
   parseDynamicThemeFixes,
+  sanitizeFetchedFixes,
   SITE_FIXES_URL,
   trustedFixesUrl,
 } from "../src/site-fixes.js";
@@ -62,7 +63,25 @@ assert(tooLarge, "an oversized file is rejected");
 assert(fixesAutoUpdateEnabled({}), "site-fix updates default on");
 assert(fixesAutoUpdateEnabled({ siteFixesAutoUpdate: true }), "an explicit true stays on");
 assert(!fixesAutoUpdateEnabled({ siteFixesAutoUpdate: false }), "the opt-out stops the download");
+const fetched = [
+  "*\nCSS\n",
+  "body { background: url(\"https://evil.test/x.png\"); }\n",
+  "@import \"https://evil.test/a.css\";\n",
+  "@import url(//evil.test/b.css);\n",
+  "div { background: URL(/secret); }\n",
+  "img { content: url('data:image/png;base64,aaaa'); }\n",
+].join("");
+const cleaned = sanitizeFetchedFixes(fetched);
+assert(!cleaned.toLowerCase().includes("@import"), "fetched @import is removed");
+assert(!cleaned.includes("https://evil.test"), "fetched https url() is removed");
+assert(!cleaned.includes("//evil.test"), "fetched protocol-relative url() is removed");
+assert(!cleaned.includes("/secret"), "fetched path url() is removed");
+assert(cleaned.includes("data:image/png;base64,aaaa"), "fetched data url() stays");
 assert(trustedFixesUrl(SITE_FIXES_URL) === true, "the Dark Reader list URL is trusted");
+assert(
+  SITE_FIXES_URL.includes("/92637d8c3fbb210853c005e3f25dbbec46dd21fc/"),
+  "the Dark Reader list is pinned to 4.9.133",
+);
 assert(!trustedFixesUrl(SITE_FIXES_URL.replace("https:", "http:")), "plain HTTP is rejected");
 assert(
   !trustedFixesUrl("https://raw.githubusercontent.com/evil/darkreader/main/src/config/dynamic-theme-fixes.config"),
