@@ -1,0 +1,21 @@
+pkgbase = omareader-bin
+	pkgdesc = Restyle Chromium pages with the active Omarchy theme (extension + native host)
+	pkgver = 0.2.0
+	pkgrel = 1
+	url = https://github.com/badenpiland/omareader
+	arch = any
+	license = MIT
+	depends = python>=3.11
+	optdepends = chromium: Chromium (or omarchy-chromium-bin)
+	optdepends = google-chrome: Google Chrome (AUR)
+	optdepends = brave-bin: Brave (AUR)
+	optdepends = brave-origin-bin: Brave Origin (AUR)
+	optdepends = microsoft-edge-stable-bin: Microsoft Edge (AUR)
+	provides = omareader
+	conflicts = omareader
+	source = omareader::git+https://github.com/badenpiland/omareader.git#tag=v0.2.0
+	source = omareader-0.2.0.crx::https://github.com/badenpiland/omareader/releases/download/v0.2.0/omareader.crx
+	sha256sums = 4764a9a66df00c311331d319a77420b6a9d7eebf3e41514847e61bf647db0498
+	sha256sums = 716f74efc3742663c2d5658fec43c7f5a4785705ca51bd48ccb01bcf2e84c851
+
+pkgname = omareader-bin
