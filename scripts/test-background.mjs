@@ -47,12 +47,22 @@ assert.deepEqual(manifest.optional_permissions, ["management"]);
 assert.equal(manifest.permissions.includes("management"), false);
 console.log("management is an optional permission");
 
-const build = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "build.mjs"), "utf8");
-const background = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../src/background.js"), "utf8");
-for (const match of background.matchAll(/from "\.\/([^"]+)"/g)) {
-  assert.equal(build.includes(`"${match[1]}"`), true, `${match[1]} is copied into the extension`);
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const build = readFileSync(join(repoRoot, "scripts/build.mjs"), "utf8");
+const copyList = build.match(/for \(const file of \[([\s\S]*?)\]\)/);
+assert.ok(copyList, "build copy list is present");
+const copied = [...copyList[1].matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+for (const name of ["background.js", "popup.js"]) {
+  const source = readFileSync(join(repoRoot, "src", name), "utf8");
+  for (const match of source.matchAll(/from "\.\/([^"]+)"/g)) {
+    assert.equal(copied.includes(match[1]), true, `${name} imports ${match[1]}, which the build does not copy`);
+  }
 }
-console.log("background imports are copied by the build");
+const contentBuild = build.match(/await esbuild\.build\(\{([\s\S]*?)\}\);/);
+assert.ok(contentBuild, "content.js esbuild call is present");
+assert.match(contentBuild[1], /entryPoints:\s*\[[^\]]*["']src\/content\.js["']/);
+assert.match(contentBuild[1], /bundle:\s*true/);
+console.log("copied scripts import files the build ships");
 
 assert.equal(normalizeHex("#ABC"), "#aabbcc");
 assert.equal(normalizeHex("#aabbccdd"), "#aabbcc");
