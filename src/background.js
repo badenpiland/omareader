@@ -3,6 +3,7 @@ import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 import { fromExtensionPage } from "./extension-page.js";
 import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
+import { hostFailureText, paletteFromHost } from "./host-message.js";
 import {
   MAX_RELEASES_BYTES,
   newerRelease,
@@ -345,13 +346,13 @@ function applyAllIcons() {
 }
 
 function rememberPalette(next) {
-  palette = {
-    theme: next.theme || "",
-    mode: next.mode === "light" ? "light" : "dark",
-    background: next.background,
-    foreground: next.foreground,
-    selection: next.selection || "",
-  };
+  const incoming = paletteFromHost(next);
+  if (!incoming) {
+    hostError = hostFailureText("", "Omarchy theme colors are unreadable");
+    broadcast();
+    return;
+  }
+  palette = incoming;
   chrome.storage.local.set({ palette });
   chrome.storage.session.set({ palette });
   applyIcon();
@@ -396,35 +397,37 @@ function connectHost() {
     port = chrome.runtime.connectNative(HOST);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    hostError = /not found/i.test(message)
-      ? "Theme host not installed — run ./install.sh"
-      : message;
+    hostError = hostFailureText(message, "Theme host disconnected");
     scheduleReconnect();
     broadcast();
     return;
   }
   nativePort = port;
+  disarmReconnectAlarm();
   port.onMessage.addListener((message) => {
     if (!message || typeof message !== "object") {
       return;
     }
     if (message.type === "error") {
-      hostError = message.message || "Omarchy theme is unreadable";
+      hostError = hostFailureText(message.message, "Omarchy theme is unreadable");
       broadcast();
       return;
     }
-    if (message.type === "palette" && message.background && message.foreground) {
+    if (message.type === "palette" && paletteFromHost(message)) {
       hostError = "";
       reconnectDelay = RECONNECT_MIN_MS;
       rememberPalette(message);
+      return;
+    }
+    if (message.type === "palette") {
+      hostError = hostFailureText("", "Omarchy theme colors are unreadable");
+      broadcast();
     }
   });
   port.onDisconnect.addListener(() => {
     nativePort = null;
     const message = chrome.runtime.lastError?.message || "";
-    hostError = /not found/i.test(message)
-      ? "Theme host not installed — run ./install.sh"
-      : message || "Theme host disconnected";
+    hostError = hostFailureText(message, "Theme host disconnected");
     broadcast();
     scheduleReconnect();
   });
@@ -436,10 +439,23 @@ function connectHost() {
   }
 }
 
+function armReconnectAlarm() {
+  chrome.alarms.create("reconnect", { periodInMinutes: 1 });
+}
+
+function disarmReconnectAlarm() {
+  try {
+    chrome.alarms.clear("reconnect");
+  } catch {
+    // The alarm is already gone, or this wake has no alarms API.
+  }
+}
+
 function scheduleReconnect() {
   if (reconnectTimer) {
     return;
   }
+  armReconnectAlarm();
   const step = nextDelay(reconnectDelay);
   reconnectDelay = step.next;
   reconnectTimer = setTimeout(() => {
@@ -640,7 +656,7 @@ async function start() {
   pausedSites = Array.isArray(stored.pausedSites)
     ? stored.pausedSites.map(normalizeHost).filter(Boolean)
     : [];
-  palette = stored.palette;
+  palette = paletteFromHost(stored.palette);
   if (palette?.background && palette?.foreground) {
     chrome.storage.session.set({ palette });
   }
@@ -648,7 +664,7 @@ async function start() {
   await loadUpdate();
   applyAllIcons();
   await considerDarkReader(stored);
-  chrome.alarms.create("reconnect", { periodInMinutes: 1 });
+  // The reconnect alarm is created only while the host is down.
   // Recreating these alarms on every wake would push the daily checks out forever.
   if (!(await chrome.alarms.get("site-fixes"))) {
     chrome.alarms.create("site-fixes", { periodInMinutes: 24 * 60 });
