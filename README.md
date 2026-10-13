@@ -14,7 +14,7 @@ Restart that browser. Chrome asks for sudo once.
 
 Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, and selection color whenever `omarchy theme set` swaps that directory.
 
-The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once before turning it off. If Omareader cannot see other extensions yet, that question says so. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads Dark Reader's public site-fix list from raw.githubusercontent.com. No browsing data is sent. Uncheck “Update site fixes daily” in the popup to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. When one is newer, the popup names the installed version and links the available version to the repo. That check sends no browsing data.
+The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once before turning it off. If Omareader cannot see other extensions yet, that question says so. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “Update site fixes daily” in the popup to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. When one is newer, the popup names the installed version and links the available version to the repo. That check sends no browsing data.
 
 Alt+Shift+O turns Omareader on or off. The toolbar shows the dark glasses while it is on, and the light glasses while it is off. Pause on this site leaves that host alone and shows the light glasses on its tabs.
 
@@ -39,6 +39,17 @@ yay -S omareader-bin
 This package registers the signed extension and the native host for Chromium, Google Chrome, Brave, Brave Origin, and Microsoft Edge. Restart the browser after installing. Firefox and Zen are not supported.
 
 The extension id is `mhglniaepbokfgnpeennihlifandcgjh`. A fresh profile in each of those browsers loaded that id without an extra enable step. If a browser instead shows the extension as added externally and leaves it off, turn it on once from the extensions page.
+
+## Permissions & network
+
+The content script matches `<all_urls>`, in every frame, including `about:blank`, with an origin fallback. That is how the theme reaches the page and the frames inside it. The `<all_urls>` host permission is how the extension reads a stylesheet the page linked from another host.
+
+Two requests go out once a day. These fetches send no cookies and no page data.
+
+- Dark Reader's site-fix list, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`: `https://raw.githubusercontent.com/darkreader/darkreader/92637d8c3fbb210853c005e3f25dbbec46dd21fc/src/config/dynamic-theme-fixes.config`
+- This repo's GitHub releases: `https://api.github.com/repos/badenpiland/omareader/releases?per_page=20`
+
+Uncheck "Update site fixes daily" in the popup to stop the Dark Reader download. The release check runs once a day.
 
 ## Limits
 
