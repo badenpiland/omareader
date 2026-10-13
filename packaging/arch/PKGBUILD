@@ -8,6 +8,7 @@ arch=('any')
 url="https://github.com/badenpiland/omareader"
 license=('MIT')
 depends=('python>=3.11')
+makedepends=('git')
 optdepends=('chromium: Chromium (or omarchy-chromium-bin)'
             'google-chrome: Google Chrome (AUR)'
             'brave-bin: Brave (AUR)'
@@ -20,6 +21,8 @@ source=("$_pkg::git+$url.git#tag=v$pkgver"
         "$_pkg-$pkgver.crx::$url/releases/download/v$pkgver/omareader.crx")
 sha256sums=('4764a9a66df00c311331d319a77420b6a9d7eebf3e41514847e61bf647db0498'
             '716f74efc3742663c2d5658fec43c7f5a4785705ca51bd48ccb01bcf2e84c851')
+# makepkg treats a CRX as a zip. Leave the signed file intact.
+noextract=("${_pkg}-${pkgver}.crx")
 
 prepare() {
   # The CRX is already signed. Refuse a build whose manifest version is not pkgver.

@@ -5,6 +5,7 @@ pkgbase = omareader-bin
 	url = https://github.com/badenpiland/omareader
 	arch = any
 	license = MIT
+	makedepends = git
 	depends = python>=3.11
 	optdepends = chromium: Chromium (or omarchy-chromium-bin)
 	optdepends = google-chrome: Google Chrome (AUR)
@@ -13,6 +14,7 @@ pkgbase = omareader-bin
 	optdepends = microsoft-edge-stable-bin: Microsoft Edge (AUR)
 	provides = omareader
 	conflicts = omareader
+	noextract = omareader-0.2.0.crx
 	source = omareader::git+https://github.com/badenpiland/omareader.git#tag=v0.2.0
 	source = omareader-0.2.0.crx::https://github.com/badenpiland/omareader/releases/download/v0.2.0/omareader.crx
 	sha256sums = 4764a9a66df00c311331d319a77420b6a9d7eebf3e41514847e61bf647db0498
