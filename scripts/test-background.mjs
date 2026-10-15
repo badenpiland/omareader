@@ -46,8 +46,7 @@ assert.deepEqual(manifest.permissions, ["nativeMessaging", "storage", "alarms", 
 assert.deepEqual(manifest.optional_permissions, ["management"]);
 assert.equal(manifest.permissions.includes("management"), false);
 assert.equal(manifest.options_ui, undefined);
-assert.equal(manifest.commands.toggle.suggested_key.default, "Alt+Shift+O");
-assert.equal(manifest.commands["pause-site"].suggested_key.default, "Alt+Shift+P");
+assert.equal(manifest.commands["pause-site"], undefined);
 console.log("management is an optional permission");
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -65,7 +64,7 @@ const contentBuild = build.match(/await esbuild\.build\(\{([\s\S]*?)\}\);/);
 assert.ok(contentBuild, "content.js esbuild call is present");
 assert.match(contentBuild[1], /entryPoints:\s*\[[^\]]*["']src\/content\.js["']/);
 assert.match(contentBuild[1], /bundle:\s*true/);
-assert.match(readFileSync(join(repoRoot, "src/background.js"), "utf8"), /command === "pause-site"/);
+assert.doesNotMatch(readFileSync(join(repoRoot, "src/background.js"), "utf8"), /pause-site/);
 console.log("copied scripts import files the build ships");
 
 assert.equal(normalizeHex("#ABC"), "#aabbcc");

@@ -29,7 +29,7 @@
       },
       "description": "Turn Omareader on or off"
     },
-    "pause-site": {
+    "toggle-site": {
       "suggested_key": {
         "default": "Alt+Shift+P"
       },
