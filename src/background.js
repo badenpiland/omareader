@@ -331,8 +331,8 @@ function iconPaths(mode) {
   return path;
 }
 
-function applyIcon(tabId, url) {
-  const path = iconPaths(iconMode(typeof url === "string" ? hostFromUrl(url) : ""));
+function applyTabIcon(tabId, host) {
+  const path = iconPaths(iconMode(host));
   if (typeof tabId === "number") {
     chrome.action.setIcon({ tabId, path });
     return;
@@ -340,16 +340,35 @@ function applyIcon(tabId, url) {
   chrome.action.setIcon({ path });
 }
 
+function applyIcon(tabId, url) {
+  applyTabIcon(tabId, typeof url === "string" ? hostFromUrl(url) : "");
+}
+
+function tabHost(tab) {
+  return hostFromUrl(tab?.url) || hostFromUrl(tab?.pendingUrl);
+}
+
+// A tab with no url yet keeps its current icon while Omareader is on.
+// Guessing from an empty host would paint the dark glasses over a paused site.
+function applyOpenTab(tab) {
+  if (!tab || typeof tab.id !== "number") {
+    return;
+  }
+  const host = tabHost(tab);
+  if (!host && enabled) {
+    return;
+  }
+  applyTabIcon(tab.id, host);
+}
+
 function applyAllIcons() {
-  applyIcon();
+  applyTabIcon(undefined, "");
   chrome.tabs.query({}, (tabs) => {
     if (chrome.runtime.lastError || !Array.isArray(tabs)) {
       return;
     }
     for (const tab of tabs) {
-      if (typeof tab.id === "number") {
-        applyIcon(tab.id, tab.url);
-      }
+      applyOpenTab(tab);
     }
   });
 }
@@ -655,10 +674,17 @@ async function applyReaderCommand(command, tab) {
   }
   if (effect.type === "setEnabled") {
     setEnabled(effect.enabled);
-  } else if (effect.type === "setSitePaused") {
-    setSitePaused(effect.host, effect.paused);
+    showCommandBadge(effect.tabId, effect.badge);
+    return;
   }
-  showCommandBadge(effect.tabId, effect.badge);
+  if (effect.type === "setSitePaused") {
+    setSitePaused(effect.host, effect.paused);
+    // The query inside setSitePaused also paints every open tab. Set this tab
+    // from the host the command just toggled, including when that tab has no url yet.
+    if (typeof effect.tabId === "number") {
+      applyTabIcon(effect.tabId, effect.host);
+    }
+  }
 }
 
 chrome.commands.onCommand.addListener((command, tab) => {
@@ -670,13 +696,17 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
     if (chrome.runtime.lastError || !tab) {
       return;
     }
-    applyIcon(tab.id, tab.url);
+    applyOpenTab(tab);
   });
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url || changeInfo.status === "loading") {
-    applyIcon(tabId, tab.url);
+    applyOpenTab({
+      id: tabId,
+      url: typeof changeInfo.url === "string" ? changeInfo.url : tab.url,
+      pendingUrl: tab.pendingUrl,
+    });
   }
 });
 

@@ -6,6 +6,7 @@ import { deflateSync } from "node:zlib";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import esbuild from "esbuild";
+import { createDarkReaderPlugin } from "./proxy-source.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -160,6 +161,8 @@ try {
   process.stderr.write(`${error instanceof Error ? error.message : error}\n`);
   process.exit(1);
 }
+const darkReaderPath = join(root, "node_modules/darkreader/darkreader.mjs");
+const darkReaderPlugin = createDarkReaderPlugin(darkReaderPath);
 await esbuild.build({
   absWorkingDir: root,
   entryPoints: ["src/content.js"],
@@ -168,6 +171,17 @@ await esbuild.build({
   outfile: "dist/content.js",
   target: "chrome120",
   legalComments: "none",
+  plugins: [darkReaderPlugin],
+});
+await esbuild.build({
+  absWorkingDir: root,
+  entryPoints: ["src/page-proxy.js"],
+  bundle: true,
+  format: "iife",
+  outfile: "dist/page-proxy.js",
+  target: "chrome120",
+  legalComments: "none",
+  plugins: [darkReaderPlugin],
 });
 
 const darkReaderLicensePath = join(root, "node_modules", "darkreader", "LICENSE");
@@ -179,14 +193,30 @@ if (!darkReaderCopyright) {
   process.stderr.write("node_modules/darkreader/LICENSE has no Dark Reader Ltd. copyright line\n");
   process.exit(1);
 }
-const contentPath = join(dist, "content.js");
 const banner = `/*!
  * Omareader includes Dark Reader (https://darkreader.org/), MIT License.
  * ${darkReaderCopyright.trim()}
  * The full license is LICENSES/darkreader-MIT.txt in this extension.
  */
 `;
-writeFileSync(contentPath, banner + readFileSync(contentPath));
+for (const name of ["content.js", "page-proxy.js"]) {
+  const filePath = join(dist, name);
+  writeFileSync(filePath, banner + readFileSync(filePath));
+}
+const builtContent = readFileSync(join(dist, "content.js"), "utf8");
+if (builtContent.includes('createElement("script")') || builtContent.includes("createElement('script')") || builtContent.includes("proxyScript.append")) {
+  process.stderr.write("dist/content.js still injects an inline script\n");
+  process.exit(1);
+}
+const builtProxy = readFileSync(join(dist, "page-proxy.js"), "utf8");
+if (!builtProxy.includes("__darkreader__inlineScriptsAllowed") || !builtProxy.includes("data-omareader-proxy")) {
+  process.stderr.write("dist/page-proxy.js is missing the Dark Reader proxy\n");
+  process.exit(1);
+}
+if (builtProxy.includes('createElement("script")') || builtProxy.includes("createElement('script')")) {
+  process.stderr.write("dist/page-proxy.js injects an inline script\n");
+  process.exit(1);
+}
 const licenseText = darkReaderLicense.endsWith("\n") ? darkReaderLicense : `${darkReaderLicense}\n`;
 mkdirSync(join(root, "LICENSES"), { recursive: true });
 mkdirSync(join(dist, "LICENSES"), { recursive: true });

@@ -33,6 +33,7 @@ for required in \
   "$ROOT/dist/LICENSES/omarchy-font-MIT.txt" \
   "$ROOT/dist/omarchy-font.ttf" \
   "$ROOT/dist/content.js" \
+  "$ROOT/dist/page-proxy.js" \
   "$ROOT/dist/early.css" \
   "$ROOT/dist/background.js" \
   "$ROOT/dist/dark-reader.js" \
@@ -51,6 +52,10 @@ if ! grep -q "Dark Reader Ltd." "$ROOT/dist/LICENSES/darkreader-MIT.txt"; then
 fi
 if ! grep -q "Dark Reader Ltd." "$ROOT/dist/content.js"; then
   echo "dist/content.js is missing the Dark Reader copyright notice." >&2
+  exit 1
+fi
+if ! grep -q "Dark Reader Ltd." "$ROOT/dist/page-proxy.js"; then
+  echo "dist/page-proxy.js is missing the Dark Reader copyright notice." >&2
   exit 1
 fi
 
