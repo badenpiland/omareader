@@ -14,11 +14,21 @@ Restart that browser. Chrome asks for sudo once.
 
 Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, and selection color whenever `omarchy theme set` swaps that directory.
 
-The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once, and only when the Dark Reader extension is installed and enabled. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “Update site fixes daily” in the popup to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. When one is newer, the popup names the installed version and links the available version to the repo. That check sends no browsing data.
+The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once, and only when the Dark Reader extension is installed and enabled. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “Fetch site fixes daily” in Details to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. The popup shows the installed version. When a release is newer, it links “Update to” that version. When the check finds nothing newer, it says this version is up to date. Before that check finishes, and when the check fails, it shows the installed version and does not say up to date. That check sends no browsing data.
 
-Alt+Shift+O turns Omareader on or off. The toolbar shows the dark glasses while it is on, and the light glasses while it is off. Pause on this site leaves that host alone and shows the light glasses on its tabs.
+The toolbar shows the dark glasses while Omareader is on, and the light glasses while it is off. Pause on this site leaves that host alone and shows the light glasses on its tabs.
 
 Link and syntax colors stay on Dark Reader’s usual path. They are not replaced with the terminal’s red, green, and blue. Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. On a dark theme the Amazon header wordmark stays the light sprite Amazon ships, and the orange smile stays orange.
+
+## Shortcuts
+
+Alt+Shift+O turns Omareader on or off. The toolbar badge shows ON or OFF for a moment.
+
+Alt+Shift+P pauses the current site, or themes it again. That is the same switch as pause on this site in the popup. The badge shows P for a moment when the site is paused, and T when the theme comes back.
+
+Change either shortcut at `chrome://extensions/shortcuts`.
+
+Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy's Hyprland defaults bind letter keys with SUPER. That is `default/hypr/bindings.conf` and `default/hypr/bindings/*.conf` in [basecamp/omarchy](https://github.com/basecamp/omarchy), and the current `default/hypr/bindings/*.lua` in [omacom/omarchy](https://github.com/omacom/omarchy). Obsidian is SUPER+O and SUPER+SHIFT+O. Pseudo window is SUPER+P, and Google Photos is SUPER+SHIFT+P. The chords that leave SUPER out are Ctrl+Alt+Delete, Alt+Tab, Alt+Shift+Tab, Ctrl+Alt+Tab, Ctrl+Alt+Shift+Tab, Print, Alt+Print, the media keys, F9, and Right Alt held for dictation. The older tiling config also binds Alt+F11 and Shift+F11. A Japanese layout binds Ctrl+Shift+semicolon for zoom, and a terminal receives Ctrl+Space without consuming it. Chrome refuses a Ctrl+Alt suggested key, because that pair is AltGr. Chromium already uses Ctrl+P to print, Ctrl+Shift+O for the bookmark manager, and Alt+Shift+T to focus the toolbar. Alt+Shift+P is outside that set.
 
 ## Install
 
@@ -49,7 +59,7 @@ Two requests go out once a day. These fetches send no cookies and no page data.
 - Dark Reader's site-fix list, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`: `https://raw.githubusercontent.com/darkreader/darkreader/92637d8c3fbb210853c005e3f25dbbec46dd21fc/src/config/dynamic-theme-fixes.config`
 - This repo's GitHub releases: `https://api.github.com/repos/badenpiland/omareader/releases?per_page=20`
 
-Uncheck "Update site fixes daily" in the popup to stop the Dark Reader download. The release check runs once a day.
+Uncheck "Fetch site fixes daily" in Details to stop the Dark Reader download. The release check runs once a day.
 
 ## Limits
 
@@ -86,5 +96,7 @@ MIT, see [LICENSE](LICENSE).
 
 Bundles the Dark Reader engine (MIT, Copyright (c) Dark Reader Ltd.), see [LICENSES/darkreader-MIT.txt](LICENSES/darkreader-MIT.txt).
 Icon derived from the Omarchy mark (MIT, Copyright (c) David Heinemeier Hansson), see [LICENSES/omarchy-MIT.txt](LICENSES/omarchy-MIT.txt).
+
+The popup wordmark is set in Omarchy Font (MIT, Copyright (c) 2026 Mark Cuda), a fan tracing of the Omarchy wordmark. See [LICENSES/omarchy-font-MIT.txt](LICENSES/omarchy-font-MIT.txt).
 
 Not affiliated with or endorsed by Dark Reader Ltd. or the Omarchy project.

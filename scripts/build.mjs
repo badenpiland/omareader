@@ -194,8 +194,9 @@ writeFileSync(join(root, "LICENSES", "darkreader-MIT.txt"), licenseText);
 writeFileSync(join(dist, "LICENSES", "darkreader-MIT.txt"), licenseText);
 copyFileSync(join(root, "LICENSE"), join(dist, "LICENSE"));
 copyFileSync(join(root, "LICENSES", "omarchy-MIT.txt"), join(dist, "LICENSES", "omarchy-MIT.txt"));
+copyFileSync(join(root, "LICENSES", "omarchy-font-MIT.txt"), join(dist, "LICENSES", "omarchy-font-MIT.txt"));
 
-for (const file of ["background.js", "dark-reader.js", "reconnect-delay.js", "extension-page.js", "host-message.js", "site-fixes.js", "theme-fetch.js", "update-notice.js", "popup.js", "popup.html", "popup.css", "early.css"]) {
+for (const file of ["background.js", "commands.js", "dark-reader.js", "reconnect-delay.js", "extension-page.js", "host-message.js", "site-fixes.js", "theme-fetch.js", "update-notice.js", "popup.js", "popup.html", "popup.css", "omarchy-font.ttf", "early.css"]) {
   copyFileSync(join(root, "src", file), join(dist, file));
 }
 copyFileSync(siteFixPath, join(dist, "dynamic-theme-fixes.config"));

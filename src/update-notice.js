@@ -79,3 +79,28 @@ export function newerRelease(releases, currentVersion) {
   }
   return best;
 }
+
+function versionLabel(version) {
+  const text = typeof version === "string" ? version.trim() : "";
+  const bare = text.replace(/^v/i, "");
+  return bare ? `v${bare}` : "";
+}
+
+// One popup line. Versions always wear a v. "Up to date" waits for a check
+// that finished and found nothing newer. A newer release is a link to that release.
+export function updateLine(installed, available, checked) {
+  const label = versionLabel(installed);
+  const newer = versionLabel(available);
+  if (newer) {
+    return {
+      installed: label ? `${label} · ` : "",
+      available: `Update to ${newer}`,
+      href: `${REPO_URL}/releases/tag/${newer}`,
+    };
+  }
+  return {
+    installed: checked === true && label ? `${label} · Up to date` : label,
+    available: "",
+    href: "",
+  };
+}
