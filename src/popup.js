@@ -3,10 +3,12 @@ import { updateLine } from "./update-notice.js";
 
 const enabledInput = document.querySelector("#enabled");
 const enabledLabel = document.querySelector("#enabled-label");
+const siteLine = document.querySelector("#site-line");
 const siteHost = document.querySelector("#site-host");
 const siteButton = document.querySelector("#site");
 const themeNode = document.querySelector("#theme");
 const statusNode = document.querySelector("#status");
+const details = document.querySelector("#details");
 const swatches = document.querySelector(".swatches");
 const bg = document.querySelector("#bg");
 const fg = document.querySelector("#fg");
@@ -23,15 +25,43 @@ let declineNote = "";
 let latest = null;
 let host = "";
 
+function syncDetails() {
+  siteLine.hidden = !host;
+  details.hidden = siteLine.hidden && swatches.hidden;
+}
+
 function renderSite() {
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
-  siteHost.hidden = !host;
   siteButton.hidden = !host;
-  if (!host) {
+  if (host) {
+    siteHost.textContent = host;
+  }
+  if (!siteButton.hidden) {
+    siteButton.textContent = paused ? "Theme this site" : "Pause on this site";
+  }
+  syncDetails();
+}
+
+function applyPalette(palette) {
+  const root = document.documentElement;
+  if (!palette?.background || !palette?.foreground) {
+    themeNode.textContent = "Waiting for Omarchy";
+    swatches.hidden = true;
+    root.style.removeProperty("--popup-bg");
+    root.style.removeProperty("--popup-fg");
+    root.style.colorScheme = "";
     return;
   }
-  siteHost.textContent = host;
-  siteButton.textContent = paused ? "Theme this site" : "Pause on this site";
+  const name = palette.theme || "current theme";
+  themeNode.textContent = `${name} · ${palette.mode}`;
+  swatches.hidden = false;
+  bg.style.background = palette.background;
+  fg.style.background = palette.foreground;
+  bgLabel.textContent = palette.background;
+  fgLabel.textContent = palette.foreground;
+  root.style.setProperty("--popup-bg", palette.background);
+  root.style.setProperty("--popup-fg", palette.foreground);
+  root.style.colorScheme = palette.mode === "light" ? "light" : "dark";
 }
 
 function render(state) {
@@ -42,30 +72,17 @@ function render(state) {
   enabledInput.checked = state.enabled !== false;
   enabledLabel.textContent = enabledInput.checked ? "On" : "Off";
   renderSite();
-  const palette = state.palette;
-  if (!palette?.background || !palette?.foreground) {
-    themeNode.textContent = "Waiting for Omarchy";
-    swatches.hidden = true;
-  } else {
-    const name = palette.theme || "current theme";
-    themeNode.textContent = `${name} · ${palette.mode}`;
-    swatches.hidden = false;
-    bg.style.background = palette.background;
-    fg.style.background = palette.foreground;
-    bgLabel.textContent = palette.background;
-    fgLabel.textContent = palette.foreground;
-    document.body.style.background = palette.background;
-    document.documentElement.style.setProperty("--popup-bg", palette.background);
-    document.body.style.color = palette.foreground;
-    statusNode.style.color = palette.foreground;
-  }
-  statusNode.textContent = state.hostError || declineNote;
+  applyPalette(state.palette);
+  const note = state.hostError || declineNote;
+  statusNode.textContent = note;
+  statusNode.hidden = note === "";
   darkReader.hidden = !state.darkReaderPrompt;
   siteFixesInput.checked = state.siteFixesAutoUpdate !== false;
   applyUpdate(state.updateVersion, state.updateChecked);
   if (state.darkReaderPrompt) {
     darkReaderText.textContent = state.darkReaderKnown ? DARK_READER_KNOWN : DARK_READER_UNKNOWN;
   }
+  syncDetails();
 }
 
 function applyUpdate(available, checked) {

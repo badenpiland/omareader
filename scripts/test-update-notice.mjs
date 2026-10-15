@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import {
   compareVersions,
   newerRelease,
@@ -104,5 +104,38 @@ const snapshot = background.match(/function snapshot\(\) \{([\s\S]*?)\n\}/);
 assert.ok(snapshot, "snapshot is present");
 assert.match(snapshot[1], /updateChecked/);
 assert.match(background, /updateChecked = Number\(stored\.updateCheckedAt\) > 0/);
+
+const details = popupHtml.match(/<details id="details"[\s\S]*<\/details>/);
+assert.ok(details, "troubleshooting details are present");
+assert.match(details[0], /id="site-host"/);
+assert.match(details[0], /id="bg-label"/);
+assert.match(details[0], /id="fg-label"/);
+assert.match(details[0], /<summary>Details<\/summary>/);
+const outsideDetails = popupHtml.replace(details[0], "");
+assert.equal(outsideDetails.includes("site-host"), false);
+assert.equal(outsideDetails.includes("bg-label"), false);
+assert.equal(outsideDetails.includes("fg-label"), false);
+assert.match(popupHtml, /<h1>omareader<\/h1>/);
+assert.equal(popupHtml.includes("mhglniaepbokfgnpeennihlifandcgjh"), false);
+assert.match(popupJs, /details\.hidden/);
+assert.match(popupJs, /siteHost\.textContent = host/);
+assert.match(popupJs, /bgLabel\.textContent = palette\.background/);
+assert.doesNotMatch(popupJs, /mhglniaepbokfgnpeennihlifandcgjh/);
+
+const popupCss = readFileSync(new URL("../src/popup.css", import.meta.url), "utf8");
+assert.match(popupCss, /font-family:\s*"Omarchy Font"/);
+assert.match(popupCss, /url\("omarchy-font\.ttf"\)/);
+assert.ok(statSync(new URL("../src/omarchy-font.ttf", import.meta.url)).size > 1000);
+const fontLicense = readFileSync(new URL("../LICENSES/omarchy-font-MIT.txt", import.meta.url), "utf8");
+assert.match(fontLicense, /Copyright \(c\) 2026 Mark Cuda/);
+assert.match(fontLicense, /Permission is hereby granted/);
+const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+assert.match(readme, /LICENSES\/omarchy-font-MIT\.txt/);
+const build = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
+assert.match(build, /"omarchy-font\.ttf"/);
+assert.match(build, /omarchy-font-MIT\.txt/);
+const pack = readFileSync(new URL("../scripts/pack.sh", import.meta.url), "utf8");
+assert.match(pack, /omarchy-font\.ttf/);
+assert.match(pack, /omarchy-font-MIT\.txt/);
 
 console.log("update notice checked");

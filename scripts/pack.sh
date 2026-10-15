@@ -30,6 +30,8 @@ for required in \
   "$ROOT/dist/LICENSE" \
   "$ROOT/dist/LICENSES/darkreader-MIT.txt" \
   "$ROOT/dist/LICENSES/omarchy-MIT.txt" \
+  "$ROOT/dist/LICENSES/omarchy-font-MIT.txt" \
+  "$ROOT/dist/omarchy-font.ttf" \
   "$ROOT/dist/content.js" \
   "$ROOT/dist/early.css" \
   "$ROOT/dist/background.js" \

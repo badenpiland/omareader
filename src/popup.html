@@ -8,16 +8,15 @@
   </head>
   <body>
     <header>
-      <h1>Omareader</h1>
+      <h1>omareader</h1>
       <label class="switch">
         <input id="enabled" type="checkbox" />
         <span id="enabled-label">On</span>
       </label>
     </header>
-    <p id="site-host" hidden></p>
-    <button id="site" type="button" hidden>Pause on this site</button>
     <p id="theme">Waiting for Omarchy</p>
-    <p id="status"></p>
+    <button id="site" type="button" hidden>Pause on this site</button>
+    <p id="status" hidden></p>
     <section id="dark-reader" hidden>
       <p id="dark-reader-text">Dark Reader is also on. Both extensions restyle the page. Turn Dark Reader off?</p>
       <div class="choices">
@@ -30,16 +29,22 @@
       <span>Update site fixes daily</span>
     </label>
     <p id="update"><span id="update-installed"></span><a id="update-available" hidden target="_blank" rel="noreferrer"></a></p>
-    <div class="swatches" hidden>
-      <div>
-        <i id="bg"></i>
-        <span id="bg-label"></span>
+    <details id="details" hidden>
+      <summary>Details</summary>
+      <p id="site-line" hidden><span class="k">Site</span> <span id="site-host"></span></p>
+      <div class="swatches" hidden>
+        <div>
+          <span class="k">Background</span>
+          <i id="bg"></i>
+          <span id="bg-label"></span>
+        </div>
+        <div>
+          <span class="k">Foreground</span>
+          <i id="fg"></i>
+          <span id="fg-label"></span>
+        </div>
       </div>
-      <div>
-        <i id="fg"></i>
-        <span id="fg-label"></span>
-      </div>
-    </div>
+    </details>
     <script type="module" src="popup.js"></script>
   </body>
 </html>
