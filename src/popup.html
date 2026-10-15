@@ -8,16 +8,25 @@
   </head>
   <body>
     <header>
-      <h1>Omareader</h1>
-      <label class="switch">
-        <input id="enabled" type="checkbox" />
-        <span id="enabled-label">On</span>
-      </label>
+      <h1>omareader</h1>
     </header>
-    <p id="site-host" hidden></p>
-    <button id="site" type="button" hidden>Pause on this site</button>
-    <p id="theme">Waiting for Omarchy</p>
-    <p id="status"></p>
+    <p class="line">
+      <span class="k">Theme</span>
+      <span id="theme">Waiting for Omarchy</span>
+    </p>
+    <div id="enabled-ctrl" class="ctrl">
+      <button id="enabled" type="button" class="outline" aria-keyshortcuts="Alt+Shift+O">
+        <span class="lead"><span class="ico power" aria-hidden="true"></span><span id="enabled-label">turn off everywhere</span></span>
+      </button>
+      <p class="keys"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>o</kbd></p>
+    </div>
+    <div id="site-ctrl" class="ctrl" hidden>
+      <button id="site" type="button" class="outline" aria-keyshortcuts="Alt+Shift+P">
+        <span class="lead"><span id="site-icon" class="ico pause" aria-hidden="true"></span><span id="site-label">pause on this site</span></span>
+      </button>
+      <p class="keys"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>p</kbd></p>
+    </div>
+    <p id="status" hidden></p>
     <p id="legacy" hidden><span id="legacy-text"></span><button id="legacy-dismiss" type="button">Dismiss</button></p>
     <section id="dark-reader" hidden>
       <p id="dark-reader-text">Dark Reader is also on. Both extensions restyle the page. Turn Dark Reader off?</p>
@@ -26,21 +35,27 @@
         <button id="dark-reader-keep" type="button">Leave it on</button>
       </div>
     </section>
-    <label class="fixes">
-      <input id="site-fixes" type="checkbox" checked />
-      <span>Update site fixes daily</span>
-    </label>
-    <p id="update" hidden><span id="update-installed"></span><a id="update-available" target="_blank" rel="noreferrer"></a> is available.</p>
-    <div class="swatches" hidden>
-      <div>
-        <i id="bg"></i>
-        <span id="bg-label"></span>
+    <details id="details">
+      <summary>Details</summary>
+      <div class="rows">
+        <p id="site-line" class="pair" hidden><span class="k">site:</span> <span id="site-host"></span></p>
+        <div class="swatches" hidden>
+          <div class="pair">
+            <span class="k">background:</span>
+            <span class="v"><i id="bg"></i><span id="bg-label"></span></span>
+          </div>
+          <div class="pair">
+            <span class="k">foreground:</span>
+            <span class="v"><i id="fg"></i><span id="fg-label"></span></span>
+          </div>
+        </div>
+        <label class="fixes">
+          <input id="site-fixes" type="checkbox" checked />
+          <span>Fetch site fixes daily</span>
+        </label>
       </div>
-      <div>
-        <i id="fg"></i>
-        <span id="fg-label"></span>
-      </div>
-    </div>
+    </details>
+    <p id="update"><span id="update-installed"></span><a id="update-available" hidden target="_blank" rel="noreferrer"></a></p>
     <script type="module" src="popup.js"></script>
   </body>
 </html>

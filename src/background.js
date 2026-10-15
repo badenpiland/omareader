@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
+import { decideDarkReaderPrompt } from "./dark-reader.js";
 import { fromExtensionPage } from "./extension-page.js";
 import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
 import { HOST_MISSING, hostFailureText, paletteFromHost } from "./host-message.js";
+import { COMMAND_BADGE_MS, hostFromUrl, normalizeHost, runReaderCommand } from "./commands.js";
 import {
   displayHostError,
   hostInstallReport,
@@ -41,6 +43,7 @@ let fixesText = "";
 let siteFixesAutoUpdate = true;
 let refreshTask = null;
 let updateVersion = "";
+let updateChecked = false;
 let updateTask = null;
 let hostSawMessage = false;
 let hostDown = false;
@@ -108,6 +111,7 @@ function snapshot() {
     darkReaderKnown,
     siteFixesAutoUpdate,
     updateVersion,
+    updateChecked,
   };
 }
 
@@ -298,6 +302,7 @@ async function loadUpdate() {
   updateVersion = typeof stored.updateVersion === "string" && parseVersion(stored.updateVersion)
     ? stored.updateVersion
     : "";
+  updateChecked = Number(stored.updateCheckedAt) > 0;
   if (updatesDue(stored, Date.now())) {
     void refreshUpdate();
   }
@@ -329,42 +334,45 @@ async function refreshUpdate() {
       }
       const next = newerRelease(data, chrome.runtime.getManifest().version);
       const previous = updateVersion;
+      const wasChecked = updateChecked;
       updateVersion = next;
-      await chrome.storage.local.set({
-        updateVersion: next,
-        updateCheckedAt: Date.now(),
-        updateAttemptAt: attemptAt,
-      });
-      if (next !== previous) {
+      updateChecked = true;
+      try {
+        await chrome.storage.local.set({
+          updateVersion: next,
+          updateCheckedAt: Date.now(),
+          updateAttemptAt: attemptAt,
+        });
+      } catch {
+        // The open popup follows memory. The next due check will try again.
+      }
+      if (next !== previous || !wasChecked) {
         broadcast();
       }
     } catch {
+      // A failed check must not claim the install is up to date. A newer
+      // release already found stays. The next due check tries again.
+      const wasChecked = updateChecked;
+      if (!updateVersion) {
+        updateChecked = false;
+      }
       try {
-        await chrome.storage.local.set({ updateAttemptAt: attemptAt });
+        const patch = { updateAttemptAt: attemptAt };
+        if (wasChecked && !updateVersion) {
+          patch.updateCheckedAt = 0;
+        }
+        await chrome.storage.local.set(patch);
       } catch {
-        // The notice already in memory stays. The next due check will try again.
+        // The open popup follows memory. The next due check will try again.
+      }
+      if (wasChecked && !updateChecked) {
+        broadcast();
       }
     } finally {
       updateTask = null;
     }
   })();
   return updateTask;
-}
-
-function normalizeHost(value) {
-  const host = String(value || "").trim().toLowerCase().replace(/\.$/, "");
-  if (!host || host.length > 253 || /[\s/]/.test(host)) {
-    return "";
-  }
-  return host;
-}
-
-function hostFromUrl(url) {
-  try {
-    return normalizeHost(new URL(url).hostname);
-  } catch {
-    return "";
-  }
 }
 
 // Dark glasses while this tab is themed. Light glasses when Omareader is off,
@@ -676,6 +684,11 @@ chrome.runtime.onConnect.addListener((port) => {
       postTo(port);
       return;
     }
+    // Pages report the extension proxy. That message must not change other settings.
+    if (message.type === "darkReaderExtension" && port.sender?.tab) {
+      void noteDarkReaderExtension();
+      return;
+    }
     // Content scripts share the "client" port name. Only extension pages may change settings.
     if (!fromExtensionPage(port.sender, EXTENSION_ORIGIN)) {
       return;
@@ -713,10 +726,89 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-chrome.commands.onCommand.addListener((command) => {
-  if (command === "toggle") {
-    setEnabled(!enabled);
+let commandBadgeTimer = null;
+let commandBadgeTarget = null;
+
+function paintBadgeText(details) {
+  chrome.action.setBadgeText(details, () => {
+    void chrome.runtime.lastError;
+  });
+}
+
+function paintBadgeColor(details) {
+  chrome.action.setBadgeBackgroundColor(details, () => {
+    void chrome.runtime.lastError;
+  });
+}
+
+function clearCommandBadge(target) {
+  if (!target) {
+    return;
   }
+  if (typeof target.tabId === "number") {
+    paintBadgeText({ tabId: target.tabId, text: "" });
+    return;
+  }
+  if (darkReaderPrompt) {
+    paintBadgeText({ text: "!" });
+    paintBadgeColor({ color: "#9ECE6A" });
+    return;
+  }
+  paintBadgeText({ text: "" });
+}
+
+function showCommandBadge(tabId, text) {
+  if (commandBadgeTimer) {
+    clearTimeout(commandBadgeTimer);
+    commandBadgeTimer = null;
+    clearCommandBadge(commandBadgeTarget);
+  }
+  const target = typeof tabId === "number" ? { tabId } : {};
+  commandBadgeTarget = target;
+  paintBadgeText({ ...target, text });
+  paintBadgeColor({ ...target, color: "#9ECE6A" });
+  commandBadgeTimer = setTimeout(() => {
+    commandBadgeTimer = null;
+    clearCommandBadge(target);
+    commandBadgeTarget = null;
+  }, COMMAND_BADGE_MS);
+}
+
+function focusedReaderTab() {
+  return new Promise((resolve) => {
+    try {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+        if (chrome.runtime.lastError || !Array.isArray(tabs)) {
+          resolve(undefined);
+          return;
+        }
+        resolve(tabs[0]);
+      });
+    } catch {
+      resolve(undefined);
+    }
+  });
+}
+
+async function applyReaderCommand(command, tab) {
+  const effect = await runReaderCommand(command, tab, {
+    isEnabled: () => enabled,
+    isPaused: (host) => pausedSites.includes(host),
+    focusedTab: focusedReaderTab,
+  });
+  if (!effect) {
+    return;
+  }
+  if (effect.type === "setEnabled") {
+    setEnabled(effect.enabled);
+  } else if (effect.type === "setSitePaused") {
+    setSitePaused(effect.host, effect.paused);
+  }
+  showCommandBadge(effect.tabId, effect.badge);
+}
+
+chrome.commands.onCommand.addListener((command, tab) => {
+  void applyReaderCommand(command, tab);
 });
 
 chrome.tabs.onActivated.addListener(({ tabId }) => {
@@ -743,7 +835,7 @@ function showDarkReaderPrompt(known) {
 
 async function managementGranted() {
   try {
-    return await chrome.permissions.contains({ permissions: ["management"] });
+    return (await chrome.permissions.contains({ permissions: ["management"] })) === true;
   } catch {
     return false;
   }
@@ -764,26 +856,55 @@ async function resolveDarkReader(disable) {
   broadcast();
 }
 
+async function lookupDarkReaderEnabled() {
+  try {
+    const info = await chrome.management.get(DARK_READER_ID);
+    return info?.enabled === true;
+  } catch {
+    return false;
+  }
+}
+
 async function considerDarkReader(stored) {
   // darkReaderOffered is the previous release, which turned Dark Reader off
   // without asking. Don't ask those installs again.
-  if (stored.darkReaderChoice || stored.darkReaderOffered) {
+  const granted = await managementGranted();
+  const extensionEnabled = granted ? await lookupDarkReaderEnabled() : null;
+  const decision = decideDarkReaderPrompt({
+    stored,
+    managementGranted: granted,
+    extensionEnabled,
+    proxyInjected: false,
+  });
+  if (decision.prompt) {
+    showDarkReaderPrompt(decision.known);
+  }
+}
+
+async function noteDarkReaderExtension() {
+  if (darkReaderPrompt) {
     return;
   }
-  if (!(await managementGranted())) {
-    showDarkReaderPrompt(false);
+  const stored = await chrome.storage.local.get({
+    darkReaderChoice: "",
+    darkReaderOffered: false,
+  });
+  if (darkReaderPrompt) {
     return;
   }
-  let info;
-  try {
-    info = await chrome.management.get(DARK_READER_ID);
-  } catch {
+  const granted = await managementGranted();
+  const extensionEnabled = granted ? await lookupDarkReaderEnabled() : null;
+  const decision = decideDarkReaderPrompt({
+    stored,
+    managementGranted: granted,
+    extensionEnabled,
+    proxyInjected: true,
+  });
+  if (!decision.prompt) {
     return;
   }
-  if (!info?.enabled) {
-    return;
-  }
-  showDarkReaderPrompt(true);
+  showDarkReaderPrompt(decision.known);
+  broadcast();
 }
 
 async function start() {

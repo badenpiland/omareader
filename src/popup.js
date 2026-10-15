@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
-import { REPO_URL } from "./update-notice.js";
+import { updateLine } from "./update-notice.js";
 
-const enabledInput = document.querySelector("#enabled");
+const enabledButton = document.querySelector("#enabled");
+const enabledCtrl = document.querySelector("#enabled-ctrl");
 const enabledLabel = document.querySelector("#enabled-label");
+const siteLine = document.querySelector("#site-line");
 const siteHost = document.querySelector("#site-host");
+const siteCtrl = document.querySelector("#site-ctrl");
 const siteButton = document.querySelector("#site");
+const siteLabel = document.querySelector("#site-label");
+const siteIcon = document.querySelector("#site-icon");
 const themeNode = document.querySelector("#theme");
 const statusNode = document.querySelector("#status");
 const legacyNode = document.querySelector("#legacy");
@@ -16,7 +21,6 @@ const bgLabel = document.querySelector("#bg-label");
 const fgLabel = document.querySelector("#fg-label");
 const darkReader = document.querySelector("#dark-reader");
 const siteFixesInput = document.querySelector("#site-fixes");
-const updateNode = document.querySelector("#update");
 const updateInstalled = document.querySelector("#update-installed");
 const updateAvailable = document.querySelector("#update-available");
 const darkReaderText = document.querySelector("#dark-reader-text");
@@ -26,15 +30,47 @@ let declineNote = "";
 let latest = null;
 let host = "";
 
-function renderSite() {
+function syncDetails() {
+  siteLine.hidden = !host;
+}
+
+function renderControls() {
+  const enabled = latest?.enabled !== false;
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
-  siteHost.hidden = !host;
-  siteButton.hidden = !host;
-  if (!host) {
+  enabledLabel.textContent = enabled ? "turn off everywhere" : "turn on everywhere";
+  enabledCtrl.classList.toggle("muted", !enabled);
+  siteCtrl.hidden = !host;
+  siteCtrl.classList.toggle("muted", Boolean(host) && (!enabled || paused));
+  if (host) {
+    siteHost.textContent = host;
+    const theming = enabled && !paused;
+    siteLabel.textContent = enabled && paused ? "theme this site" : "pause on this site";
+    siteIcon.classList.toggle("pause", theming || !enabled);
+    siteIcon.classList.toggle("play", enabled && paused);
+  }
+  syncDetails();
+}
+
+function applyPalette(palette) {
+  const root = document.documentElement;
+  if (!palette?.background || !palette?.foreground) {
+    themeNode.textContent = "Waiting for Omarchy";
+    swatches.hidden = true;
+    root.style.removeProperty("--popup-bg");
+    root.style.removeProperty("--popup-fg");
+    root.style.colorScheme = "";
     return;
   }
-  siteHost.textContent = host;
-  siteButton.textContent = paused ? "Theme this site" : "Pause on this site";
+  const name = palette.theme || "current theme";
+  themeNode.textContent = `${name} · ${palette.mode}`;
+  swatches.hidden = false;
+  bg.style.background = palette.background;
+  fg.style.background = palette.foreground;
+  bgLabel.textContent = palette.background;
+  fgLabel.textContent = palette.foreground;
+  root.style.setProperty("--popup-bg", palette.background);
+  root.style.setProperty("--popup-fg", palette.foreground);
+  root.style.colorScheme = palette.mode === "light" ? "light" : "dark";
 }
 
 function render(state) {
@@ -42,59 +78,62 @@ function render(state) {
     return;
   }
   latest = state;
-  enabledInput.checked = state.enabled !== false;
-  enabledLabel.textContent = enabledInput.checked ? "On" : "Off";
-  renderSite();
-  const palette = state.palette;
-  if (!palette?.background || !palette?.foreground) {
-    themeNode.textContent = "Waiting for Omarchy";
-    swatches.hidden = true;
-  } else {
-    const name = palette.theme || "current theme";
-    themeNode.textContent = `${name} · ${palette.mode}`;
-    swatches.hidden = false;
-    bg.style.background = palette.background;
-    fg.style.background = palette.foreground;
-    bgLabel.textContent = palette.background;
-    fgLabel.textContent = palette.foreground;
-    document.body.style.background = palette.background;
-    document.documentElement.style.setProperty("--popup-bg", palette.background);
-    document.body.style.color = palette.foreground;
-    statusNode.style.color = palette.foreground;
-    legacyNode.style.color = palette.foreground;
-  }
+  renderControls();
+  applyPalette(state.palette);
   const legacy = typeof state.legacyNotice === "string" ? state.legacyNotice : "";
   legacyNode.hidden = legacy === "";
   legacyText.textContent = legacy;
-  statusNode.textContent = state.hostError || declineNote;
-  statusNode.hidden = legacy !== "" && statusNode.textContent === "";
+  const note = state.hostError || declineNote;
+  statusNode.textContent = note;
+  statusNode.hidden = note === "";
   darkReader.hidden = !state.darkReaderPrompt;
   siteFixesInput.checked = state.siteFixesAutoUpdate !== false;
-  const available = typeof state.updateVersion === "string" ? state.updateVersion : "";
-  updateNode.hidden = available === "";
-  updateInstalled.textContent = available ? `${chrome.runtime.getManifest().version} is installed. ` : "";
-  updateAvailable.textContent = available;
-  if (available) {
-    updateAvailable.href = REPO_URL;
-  } else {
-    updateAvailable.removeAttribute("href");
-  }
+  applyUpdate(state.updateVersion, state.updateChecked);
   if (state.darkReaderPrompt) {
     darkReaderText.textContent = state.darkReaderKnown ? DARK_READER_KNOWN : DARK_READER_UNKNOWN;
   }
+  syncDetails();
 }
+
+function applyUpdate(available, checked) {
+  const line = updateLine(chrome.runtime.getManifest().version, available, checked);
+  updateInstalled.textContent = line.installed;
+  updateAvailable.hidden = line.available === "";
+  updateAvailable.textContent = line.available;
+  if (line.href) {
+    updateAvailable.href = line.href;
+  } else {
+    updateAvailable.removeAttribute("href");
+  }
+}
+
+applyUpdate("", false);
 
 const port = chrome.runtime.connect({ name: "client" });
 port.onMessage.addListener(render);
-enabledInput.addEventListener("change", () => {
-  enabledLabel.textContent = enabledInput.checked ? "On" : "Off";
-  port.postMessage({ type: "setEnabled", enabled: enabledInput.checked });
+enabledButton.addEventListener("click", () => {
+  const enabled = latest?.enabled === false;
+  if (latest) {
+    latest.enabled = enabled;
+  }
+  renderControls();
+  port.postMessage({ type: "setEnabled", enabled });
 });
 siteButton.addEventListener("click", () => {
   if (!host) {
     return;
   }
   const paused = Boolean(latest?.pausedSites?.includes(host));
+  if (latest) {
+    const next = new Set(latest.pausedSites || []);
+    if (paused) {
+      next.delete(host);
+    } else {
+      next.add(host);
+    }
+    latest.pausedSites = [...next];
+  }
+  renderControls();
   port.postMessage({ type: "setSitePaused", host, paused: !paused });
 });
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -103,7 +142,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   } catch {
     host = "";
   }
-  renderSite();
+  renderControls();
 });
 document.querySelector("#dark-reader-off").addEventListener("click", async () => {
   let granted = false;
