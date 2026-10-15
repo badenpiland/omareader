@@ -15,7 +15,6 @@ const fg = document.querySelector("#fg");
 const bgLabel = document.querySelector("#bg-label");
 const fgLabel = document.querySelector("#fg-label");
 const darkReader = document.querySelector("#dark-reader");
-const siteFixesInput = document.querySelector("#site-fixes");
 const updateInstalled = document.querySelector("#update-installed");
 const updateAvailable = document.querySelector("#update-available");
 const darkReaderText = document.querySelector("#dark-reader-text");
@@ -77,7 +76,6 @@ function render(state) {
   statusNode.textContent = note;
   statusNode.hidden = note === "";
   darkReader.hidden = !state.darkReaderPrompt;
-  siteFixesInput.checked = state.siteFixesAutoUpdate !== false;
   applyUpdate(state.updateVersion, state.updateChecked);
   if (state.darkReaderPrompt) {
     darkReaderText.textContent = state.darkReaderKnown ? DARK_READER_KNOWN : DARK_READER_UNKNOWN;
@@ -135,6 +133,6 @@ document.querySelector("#dark-reader-off").addEventListener("click", async () =>
 document.querySelector("#dark-reader-keep").addEventListener("click", () => {
   port.postMessage({ type: "darkReaderChoice", disable: false });
 });
-siteFixesInput.addEventListener("change", () => {
-  port.postMessage({ type: "setSiteFixesAutoUpdate", enabled: siteFixesInput.checked });
+document.querySelector("#settings").addEventListener("click", () => {
+  void chrome.runtime.openOptionsPage();
 });

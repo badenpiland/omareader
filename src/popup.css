@@ -210,6 +210,24 @@ button,
   color: inherit;
 }
 
+#settings {
+  display: block;
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 12px/1.4 inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+#settings:hover {
+  background: transparent;
+}
+
 #details {
   font-size: 12px;
 }
