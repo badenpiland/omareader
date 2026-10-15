@@ -135,7 +135,8 @@ p {
   margin-top: 10px;
 }
 
-#update[hidden] {
+#update[hidden],
+#update [hidden] {
   display: none;
 }
 

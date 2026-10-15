@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   compareVersions,
   newerRelease,
@@ -6,6 +7,7 @@ import {
   RELEASES_URL,
   REPO_URL,
   trustedReleasesUrl,
+  updateLine,
 } from "../src/update-notice.js";
 
 assert.deepEqual(parseVersion("v0.1.7"), [0, 1, 7, 0]);
@@ -58,5 +60,45 @@ assert.equal(trustedReleasesUrl("http://api.github.com/repos/badenpiland/omaread
 assert.equal(trustedReleasesUrl("https://example.com/repos/badenpiland/omareader/releases"), false);
 assert.equal(trustedReleasesUrl("https://api.github.com/repos/other/omareader/releases"), false);
 assert.equal(REPO_URL, "https://github.com/badenpiland/omareader");
+
+assert.deepEqual(updateLine("0.2.2", "", false), {
+  installed: "v0.2.2",
+  available: "",
+  tail: "",
+});
+assert.deepEqual(updateLine("0.2.2", "", true), {
+  installed: "v0.2.2 · Up to date",
+  available: "",
+  tail: "",
+});
+assert.deepEqual(updateLine("v0.2.2", "", true), {
+  installed: "v0.2.2 · Up to date",
+  available: "",
+  tail: "",
+});
+assert.equal(updateLine("0.2.2", "", false).installed.includes("Up to date"), false);
+assert.equal(updateLine("0.2.2", "", undefined).installed.includes("Up to date"), false);
+assert.deepEqual(updateLine("0.2.2", "0.2.3", true), {
+  installed: "0.2.2 is installed. ",
+  available: "0.2.3",
+  tail: " is available.",
+});
+assert.deepEqual(updateLine("0.2.2", "0.2.3", false), updateLine("0.2.2", "0.2.3", true));
+assert.equal(updateLine(" 0.2.2 ", "", false).installed, "v0.2.2");
+assert.deepEqual(updateLine("", "", true), { installed: "", available: "", tail: "" });
+assert.equal(updateLine("0.2.2", 12, true).installed, "v0.2.2 · Up to date");
+
+const popupJs = readFileSync(new URL("../src/popup.js", import.meta.url), "utf8");
+const popupHtml = readFileSync(new URL("../src/popup.html", import.meta.url), "utf8");
+const background = readFileSync(new URL("../src/background.js", import.meta.url), "utf8");
+assert.match(popupJs, /updateLine\(\s*chrome\.runtime\.getManifest\(\)\.version/);
+assert.doesNotMatch(popupJs, /0\.2\.\d/);
+assert.doesNotMatch(popupHtml, /0\.2\.\d/);
+assert.match(popupHtml, /<p id="update">/);
+assert.doesNotMatch(popupHtml, /<p id="update"[^>]*\shidden/);
+const snapshot = background.match(/function snapshot\(\) \{([\s\S]*?)\n\}/);
+assert.ok(snapshot, "snapshot is present");
+assert.match(snapshot[1], /updateChecked/);
+assert.match(background, /updateChecked = Number\(stored\.updateCheckedAt\) > 0/);
 
 console.log("update notice checked");

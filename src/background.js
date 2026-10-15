@@ -34,6 +34,7 @@ let fixesText = "";
 let siteFixesAutoUpdate = true;
 let refreshTask = null;
 let updateVersion = "";
+let updateChecked = false;
 let updateTask = null;
 
 function snapshot() {
@@ -47,6 +48,7 @@ function snapshot() {
     darkReaderKnown,
     siteFixesAutoUpdate,
     updateVersion,
+    updateChecked,
   };
 }
 
@@ -237,6 +239,7 @@ async function loadUpdate() {
   updateVersion = typeof stored.updateVersion === "string" && parseVersion(stored.updateVersion)
     ? stored.updateVersion
     : "";
+  updateChecked = Number(stored.updateCheckedAt) > 0;
   if (updatesDue(stored, Date.now())) {
     void refreshUpdate();
   }
@@ -268,20 +271,39 @@ async function refreshUpdate() {
       }
       const next = newerRelease(data, chrome.runtime.getManifest().version);
       const previous = updateVersion;
+      const wasChecked = updateChecked;
       updateVersion = next;
-      await chrome.storage.local.set({
-        updateVersion: next,
-        updateCheckedAt: Date.now(),
-        updateAttemptAt: attemptAt,
-      });
-      if (next !== previous) {
+      updateChecked = true;
+      try {
+        await chrome.storage.local.set({
+          updateVersion: next,
+          updateCheckedAt: Date.now(),
+          updateAttemptAt: attemptAt,
+        });
+      } catch {
+        // The open popup follows memory. The next due check will try again.
+      }
+      if (next !== previous || !wasChecked) {
         broadcast();
       }
     } catch {
+      // A failed check must not claim the install is up to date. A newer
+      // release already found stays. The next due check tries again.
+      const wasChecked = updateChecked;
+      if (!updateVersion) {
+        updateChecked = false;
+      }
       try {
-        await chrome.storage.local.set({ updateAttemptAt: attemptAt });
+        const patch = { updateAttemptAt: attemptAt };
+        if (wasChecked && !updateVersion) {
+          patch.updateCheckedAt = 0;
+        }
+        await chrome.storage.local.set(patch);
       } catch {
-        // The notice already in memory stays. The next due check will try again.
+        // The open popup follows memory. The next due check will try again.
+      }
+      if (wasChecked && !updateChecked) {
+        broadcast();
       }
     } finally {
       updateTask = null;
