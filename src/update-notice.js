@@ -80,6 +80,22 @@ export function newerRelease(releases, currentVersion) {
   return best;
 }
 
+// A saved check belongs to the version that ran it. After the extension updates,
+// that result is stale: drop it so the popup does not offer an older release, and
+// check again. A saved release is kept only while it is newer than the install.
+export function restoreUpdate(stored, installed) {
+  const current = versionText(installed ?? "");
+  if (!parseVersion(current) || versionText(stored?.updateCheckedFor ?? "") !== current) {
+    return { updateVersion: "", updateChecked: false, stale: true };
+  }
+  const saved = typeof stored.updateVersion === "string" ? stored.updateVersion : "";
+  return {
+    updateVersion: compareVersions(saved, current) === 1 ? versionText(saved) : "",
+    updateChecked: Number(stored.updateCheckedAt) > 0,
+    stale: false,
+  };
+}
+
 function versionLabel(version) {
   const text = typeof version === "string" ? version.trim() : "";
   const bare = text.replace(/^v/i, "");
@@ -90,7 +106,8 @@ function versionLabel(version) {
 // that finished and found nothing newer. A newer release is a link to that release.
 export function updateLine(installed, available, checked) {
   const label = versionLabel(installed);
-  const newer = versionLabel(available);
+  // Only a release newer than the install is offered.
+  const newer = compareVersions(available, installed) === 1 ? versionLabel(available) : "";
   if (newer) {
     return {
       installed: label ? `${label} · ` : "",
