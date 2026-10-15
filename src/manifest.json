@@ -28,6 +28,12 @@
         "default": "Alt+Shift+O"
       },
       "description": "Turn Omareader on or off"
+    },
+    "pause-site": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Pause or theme the current site"
     }
   },
   "action": {

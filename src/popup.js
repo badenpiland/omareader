@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 import { updateLine } from "./update-notice.js";
 
-const enabledInput = document.querySelector("#enabled");
+const enabledButton = document.querySelector("#enabled");
+const enabledCtrl = document.querySelector("#enabled-ctrl");
 const enabledLabel = document.querySelector("#enabled-label");
 const siteLine = document.querySelector("#site-line");
 const siteHost = document.querySelector("#site-host");
+const siteCtrl = document.querySelector("#site-ctrl");
 const siteButton = document.querySelector("#site");
+const siteLabel = document.querySelector("#site-label");
+const siteIcon = document.querySelector("#site-icon");
 const themeNode = document.querySelector("#theme");
 const statusNode = document.querySelector("#status");
 const swatches = document.querySelector(".swatches");
@@ -28,14 +32,19 @@ function syncDetails() {
   siteLine.hidden = !host;
 }
 
-function renderSite() {
+function renderControls() {
+  const enabled = latest?.enabled !== false;
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
-  siteButton.hidden = !host;
+  enabledLabel.textContent = enabled ? "turn off everywhere" : "turn on everywhere";
+  enabledCtrl.classList.toggle("muted", !enabled);
+  siteCtrl.hidden = !host;
+  siteCtrl.classList.toggle("muted", Boolean(host) && (!enabled || paused));
   if (host) {
     siteHost.textContent = host;
-  }
-  if (!siteButton.hidden) {
-    siteButton.textContent = paused ? "Theme this site" : "Pause on this site";
+    const theming = enabled && !paused;
+    siteLabel.textContent = enabled && paused ? "theme this site" : "pause on this site";
+    siteIcon.classList.toggle("pause", theming || !enabled);
+    siteIcon.classList.toggle("play", enabled && paused);
   }
   syncDetails();
 }
@@ -67,9 +76,7 @@ function render(state) {
     return;
   }
   latest = state;
-  enabledInput.checked = state.enabled !== false;
-  enabledLabel.textContent = enabledInput.checked ? "On" : "Off";
-  renderSite();
+  renderControls();
   applyPalette(state.palette);
   const note = state.hostError || declineNote;
   statusNode.textContent = note;
@@ -99,15 +106,29 @@ applyUpdate("", false);
 
 const port = chrome.runtime.connect({ name: "client" });
 port.onMessage.addListener(render);
-enabledInput.addEventListener("change", () => {
-  enabledLabel.textContent = enabledInput.checked ? "On" : "Off";
-  port.postMessage({ type: "setEnabled", enabled: enabledInput.checked });
+enabledButton.addEventListener("click", () => {
+  const enabled = latest?.enabled === false;
+  if (latest) {
+    latest.enabled = enabled;
+  }
+  renderControls();
+  port.postMessage({ type: "setEnabled", enabled });
 });
 siteButton.addEventListener("click", () => {
   if (!host) {
     return;
   }
   const paused = Boolean(latest?.pausedSites?.includes(host));
+  if (latest) {
+    const next = new Set(latest.pausedSites || []);
+    if (paused) {
+      next.delete(host);
+    } else {
+      next.add(host);
+    }
+    latest.pausedSites = [...next];
+  }
+  renderControls();
   port.postMessage({ type: "setSitePaused", host, paused: !paused });
 });
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -116,7 +137,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   } catch {
     host = "";
   }
-  renderSite();
+  renderControls();
 });
 document.querySelector("#dark-reader-off").addEventListener("click", async () => {
   let granted = false;

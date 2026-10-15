@@ -592,6 +592,16 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.commands.onCommand.addListener((command) => {
   if (command === "toggle") {
     setEnabled(!enabled);
+    return;
+  }
+  if (command === "pause-site") {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const host = hostFromUrl(tabs?.[0]?.url || "");
+      if (!host) {
+        return;
+      }
+      setSitePaused(host, !pausedSites.includes(host));
+    });
   }
 });
 

@@ -9,16 +9,23 @@
   <body>
     <header>
       <h1>omareader</h1>
-      <label class="switch">
-        <span id="enabled-label">On</span>
-        <input id="enabled" type="checkbox" />
-      </label>
     </header>
     <p class="line">
       <span class="k">Theme</span>
       <span id="theme">Waiting for Omarchy</span>
     </p>
-    <button id="site" type="button" hidden>Pause on this site</button>
+    <div id="enabled-ctrl" class="ctrl">
+      <button id="enabled" type="button" class="outline" aria-keyshortcuts="Alt+Shift+O">
+        <span class="lead"><span class="ico power" aria-hidden="true"></span><span id="enabled-label">turn off everywhere</span></span>
+      </button>
+      <p class="keys"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>o</kbd></p>
+    </div>
+    <div id="site-ctrl" class="ctrl" hidden>
+      <button id="site" type="button" class="outline" aria-keyshortcuts="Alt+Shift+P">
+        <span class="lead"><span id="site-icon" class="ico pause" aria-hidden="true"></span><span id="site-label">pause on this site</span></span>
+      </button>
+      <p class="keys"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>p</kbd></p>
+    </div>
     <p id="status" hidden></p>
     <section id="dark-reader" hidden>
       <p id="dark-reader-text">Dark Reader is also on. Both extensions restyle the page. Turn Dark Reader off?</p>
