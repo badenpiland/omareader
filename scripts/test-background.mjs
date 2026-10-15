@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RECONNECT_MAX_MS, RECONNECT_MIN_MS, nextDelay } from "../src/reconnect-delay.js";
+import { decideDarkReaderPrompt, extensionProxyInjected } from "../src/dark-reader.js";
 import { fromExtensionPage } from "../src/extension-page.js";
 import {
   clipText,
@@ -85,3 +86,104 @@ assert.equal(hostFailureText("", "Theme host disconnected"), "Theme host disconn
 assert.equal(hostFailureText("x".repeat(500)).length, HOST_ERROR_LIMIT);
 assert.equal(clipText("abcd", 2), "ab");
 console.log("host palette and errors checked");
+
+function element(attributes) {
+  return {
+    getAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(attributes, name) ? attributes[name] : null;
+    },
+  };
+}
+
+// Omareader's bundled engine writes these. They must not count as the extension.
+assert.equal(extensionProxyInjected(element({
+  "data-darkreader-mode": "dynamic",
+  "data-darkreader-scheme": "dark",
+})), false);
+assert.equal(extensionProxyInjected(element({
+  "data-darkreader-proxy-injected": "true",
+  "data-darkreader-mode": "dynamic",
+})), true);
+assert.equal(extensionProxyInjected(element({ "data-darkreader-proxy-injected": "" })), false);
+assert.equal(extensionProxyInjected(null), false);
+
+const bundledEngine = readFileSync(join(repoRoot, "node_modules/darkreader/darkreader.js"), "utf8");
+assert.equal(bundledEngine.includes("data-darkreader-mode"), true);
+assert.equal(
+  bundledEngine.includes("darkreaderProxyInjected"),
+  false,
+  "bundled darkreader enable() must not emit the extension proxy marker",
+);
+
+const fresh = { darkReaderChoice: "", darkReaderOffered: false };
+const absent = { prompt: false, known: false };
+const present = { prompt: true, known: true };
+
+// Reproduction: management permission is not granted (fresh install, including
+// a system external extension) and the separate Dark Reader extension is absent.
+assert.deepEqual(decideDarkReaderPrompt({
+  stored: fresh,
+  managementGranted: false,
+  extensionEnabled: null,
+  proxyInjected: false,
+}), absent);
+assert.deepEqual(decideDarkReaderPrompt({
+  stored: fresh,
+  managementGranted: false,
+  extensionEnabled: null,
+  proxyInjected: extensionProxyInjected(element({
+    "data-darkreader-mode": "dynamic",
+    "data-darkreader-scheme": "dark",
+  })),
+}), absent);
+
+assert.deepEqual(decideDarkReaderPrompt({
+  stored: fresh,
+  managementGranted: false,
+  extensionEnabled: null,
+  proxyInjected: true,
+}), present);
+assert.deepEqual(decideDarkReaderPrompt({
+  stored: fresh,
+  managementGranted: true,
+  extensionEnabled: true,
+  proxyInjected: false,
+}), present);
+assert.deepEqual(decideDarkReaderPrompt({
+  stored: fresh,
+  managementGranted: true,
+  extensionEnabled: false,
+  proxyInjected: false,
+}), absent);
+assert.deepEqual(decideDarkReaderPrompt({
+  stored: fresh,
+  managementGranted: true,
+  extensionEnabled: false,
+  proxyInjected: true,
+}), absent);
+assert.deepEqual(decideDarkReaderPrompt({
+  stored: { darkReaderChoice: "keep", darkReaderOffered: false },
+  managementGranted: true,
+  extensionEnabled: true,
+  proxyInjected: true,
+}), absent);
+assert.deepEqual(decideDarkReaderPrompt({
+  stored: { darkReaderChoice: "", darkReaderOffered: true },
+  managementGranted: false,
+  extensionEnabled: null,
+  proxyInjected: true,
+}), absent);
+
+const backgroundSource = readFileSync(join(repoRoot, "src/background.js"), "utf8");
+assert.equal(
+  backgroundSource.includes("showDarkReaderPrompt(false)"),
+  false,
+  "a missing management permission must not show the Dark Reader prompt",
+);
+assert.match(backgroundSource, /decideDarkReaderPrompt\(/);
+const contentSource = readFileSync(join(repoRoot, "src/content.js"), "utf8");
+assert.match(contentSource, /extensionProxyInjected/);
+assert.doesNotMatch(contentSource, /data-darkreader-mode/);
+const pack = readFileSync(join(repoRoot, "scripts/pack.sh"), "utf8");
+assert.match(pack, /dist\/dark-reader\.js/);
+console.log("dark reader prompt only when that extension is enabled");

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { disable, enable, setFetchMethod } from "darkreader";
 import { readableInvert, readablePoles, repairFixColors } from "./contrast.js";
+import { DARK_READER_PROXY_ATTRIBUTE, extensionProxyInjected } from "./dark-reader.js";
 import { THEME_RESOURCE } from "./theme-fetch.js";
 
 // Dark Reader replaces sendMessage and drops its return value, so the
@@ -188,6 +189,33 @@ function retry() {
   retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
 }
 
+function watchDarkReaderExtension(port) {
+  let reported = false;
+  let observer = null;
+  const report = () => {
+    if (reported || !extensionProxyInjected(document.documentElement)) {
+      return;
+    }
+    reported = true;
+    observer?.disconnect();
+    try {
+      port.postMessage({ type: "darkReaderExtension" });
+    } catch {
+      reported = false;
+    }
+  };
+  const root = document.documentElement;
+  if (root) {
+    observer = new MutationObserver(report);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: [DARK_READER_PROXY_ATTRIBUTE],
+    });
+  }
+  port.onDisconnect.addListener(() => observer?.disconnect());
+  report();
+}
+
 function connect() {
   if (!contextAlive()) {
     leaveOrphaned();
@@ -204,6 +232,7 @@ function connect() {
     retry();
     return;
   }
+  watchDarkReaderExtension(port);
   port.onMessage.addListener((state) => {
     retryMs = 300;
     apply(state);
