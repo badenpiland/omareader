@@ -7,6 +7,8 @@ const siteHost = document.querySelector("#site-host");
 const siteButton = document.querySelector("#site");
 const themeNode = document.querySelector("#theme");
 const statusNode = document.querySelector("#status");
+const legacyNode = document.querySelector("#legacy");
+const legacyText = document.querySelector("#legacy-text");
 const swatches = document.querySelector(".swatches");
 const bg = document.querySelector("#bg");
 const fg = document.querySelector("#fg");
@@ -59,8 +61,13 @@ function render(state) {
     document.documentElement.style.setProperty("--popup-bg", palette.background);
     document.body.style.color = palette.foreground;
     statusNode.style.color = palette.foreground;
+    legacyNode.style.color = palette.foreground;
   }
+  const legacy = typeof state.legacyNotice === "string" ? state.legacyNotice : "";
+  legacyNode.hidden = legacy === "";
+  legacyText.textContent = legacy;
   statusNode.textContent = state.hostError || declineNote;
+  statusNode.hidden = legacy !== "" && statusNode.textContent === "";
   darkReader.hidden = !state.darkReaderPrompt;
   siteFixesInput.checked = state.siteFixesAutoUpdate !== false;
   const available = typeof state.updateVersion === "string" ? state.updateVersion : "";
@@ -115,4 +122,7 @@ document.querySelector("#dark-reader-keep").addEventListener("click", () => {
 });
 siteFixesInput.addEventListener("change", () => {
   port.postMessage({ type: "setSiteFixesAutoUpdate", enabled: siteFixesInput.checked });
+});
+document.querySelector("#legacy-dismiss").addEventListener("click", () => {
+  port.postMessage({ type: "dismissLegacyNotice" });
 });

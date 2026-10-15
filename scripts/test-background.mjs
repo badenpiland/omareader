@@ -52,12 +52,25 @@ const build = readFileSync(join(repoRoot, "scripts/build.mjs"), "utf8");
 const copyList = build.match(/for \(const file of \[([\s\S]*?)\]\)/);
 assert.ok(copyList, "build copy list is present");
 const copied = [...copyList[1].matchAll(/"([^"]+)"/g)].map((match) => match[1]);
-for (const name of ["background.js", "popup.js"]) {
+const pending = ["background.js", "popup.js"];
+const visited = new Set();
+while (pending.length) {
+  const name = pending.pop();
+  if (!name.endsWith(".js") || visited.has(name)) {
+    continue;
+  }
+  visited.add(name);
   const source = readFileSync(join(repoRoot, "src", name), "utf8");
   for (const match of source.matchAll(/from "\.\/([^"]+)"/g)) {
-    assert.equal(copied.includes(match[1]), true, `${name} imports ${match[1]}, which the build does not copy`);
+    assert.equal(
+      copied.includes(match[1]),
+      true,
+      `${name} imports ${match[1]}, which the build does not copy`,
+    );
+    pending.push(match[1]);
   }
 }
+assert.equal(copied.includes("legacy-notice.js"), true);
 const contentBuild = build.match(/await esbuild\.build\(\{([\s\S]*?)\}\);/);
 assert.ok(contentBuild, "content.js esbuild call is present");
 assert.match(contentBuild[1], /entryPoints:\s*\[[^\]]*["']src\/content\.js["']/);

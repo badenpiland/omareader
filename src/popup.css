@@ -81,6 +81,42 @@ p {
   color: #c7c7c7;
 }
 
+#status[hidden] {
+  display: none;
+}
+
+#legacy[hidden] {
+  display: none;
+}
+
+#legacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #c7c7c7;
+}
+
+#legacy span {
+  flex: 1;
+}
+
+#legacy button {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#legacy button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 #site-host {
   margin: 10px 0 0;
   font-family: ui-monospace, monospace;

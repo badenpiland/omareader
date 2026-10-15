@@ -34,6 +34,13 @@ def read_message(stream):
     return json.loads(read_exact(stream, size))
 
 
+def read_palette(stream):
+    message = read_message(stream)
+    while message.get("type") == "host":
+        message = read_message(stream)
+    return message
+
+
 def write_message(stream, payload):
     data = json.dumps(payload).encode()
     stream.write(struct.pack("<I", len(data)))
@@ -96,12 +103,12 @@ def test_swap_pushes_a_new_palette():
             bufsize=0,
         )
         try:
-            first = read_message(proc.stdout)
+            first = read_palette(proc.stdout)
             assert first["theme"] == "paper"
             assert first["mode"] == "light"
             assert first["background"] == "#dfe4c4"
             write_message(proc.stdin, {"type": "hello"})
-            again = read_message(proc.stdout)
+            again = read_palette(proc.stdout)
             assert again["background"] == "#dfe4c4"
 
             nxt = current / "next-theme"
@@ -163,7 +170,7 @@ def test_stdin_close_exits():
             bufsize=0,
         )
         try:
-            first = read_message(proc.stdout)
+            first = read_palette(proc.stdout)
             assert first["type"] == "palette"
             proc.stdin.close()
             started = time.monotonic()
@@ -193,7 +200,7 @@ def test_invalid_utf8_still_answers_hello():
             bufsize=0,
         )
         try:
-            first = read_message(proc.stdout)
+            first = read_palette(proc.stdout)
             assert first["type"] == "palette"
             body = b"\xff\xfe"
             proc.stdin.write(struct.pack("<I", len(body)))
@@ -204,7 +211,7 @@ def test_invalid_utf8_still_answers_hello():
             seen = None
             while time.monotonic() < deadline:
                 if select_ready(proc.stdout):
-                    seen = read_message(proc.stdout)
+                    seen = read_palette(proc.stdout)
                     break
                 time.sleep(0.05)
             assert seen and seen["type"] == "palette", seen
@@ -233,7 +240,7 @@ def test_transient_missing_theme():
             bufsize=0,
         )
         try:
-            first = read_message(proc.stdout)
+            first = read_palette(proc.stdout)
             assert first["theme"] == "paper"
             theme = current / "theme"
             for child in theme.iterdir():
@@ -268,9 +275,11 @@ def test_transient_missing_theme():
     print("transient missing theme hidden")
 
 
-def start_host(state):
+def start_host(state, extra_env=None):
     env = os.environ.copy()
     env["OMAREADER_STATE_DIR"] = str(state)
+    if extra_env:
+        env.update(extra_env)
     return subprocess.Popen(
         [str(HOST)],
         stdin=subprocess.PIPE,
@@ -327,7 +336,7 @@ def test_deep_json_still_answers_hello():
         write_theme(current, "paper", "#dfe4c4", "#1c2d28", "light")
         proc = start_host(state)
         try:
-            first = read_message(proc.stdout)
+            first = read_palette(proc.stdout)
             assert first["type"] == "palette"
             body = b"[" * 2000 + b"]" * 2000
             proc.stdin.write(struct.pack("<I", len(body)))
@@ -338,7 +347,7 @@ def test_deep_json_still_answers_hello():
             seen = None
             while time.monotonic() < deadline:
                 if select_ready(proc.stdout):
-                    seen = read_message(proc.stdout)
+                    seen = read_palette(proc.stdout)
                     break
                 time.sleep(0.05)
             assert seen and seen["type"] == "palette", seen
@@ -351,8 +360,82 @@ def test_deep_json_still_answers_hello():
     print("deep json skipped")
 
 
+def report_env(system_host):
+    env = os.environ.copy()
+    env["OMAREADER_SYSTEM_HOST"] = str(system_host)
+    return env
+
+
+def read_report(system_host):
+    return json.loads(
+        subprocess.check_output(
+            [str(HOST), "--report"],
+            env=report_env(system_host),
+            text=True,
+        )
+    )
+
+
+def test_report_names_the_launched_path():
+    missing = Path("/no/such/omareader-host")
+    report = read_report(missing)
+    assert report["type"] == "host"
+    assert report["path"] == str(HOST.absolute())
+    assert report["install"] == "user"
+    assert report["packaged"] is False
+    print("user host without a package")
+
+    report = read_report(HOST.absolute())
+    assert report["install"] == "system"
+    assert report["packaged"] is True
+    assert report["path"] == str(HOST.absolute())
+    print("packaged host path")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        packaged = Path(tmp) / "omareader-host"
+        packaged.write_text("#!/bin/sh\n", encoding="utf-8")
+        report = read_report(packaged)
+        assert report["install"] == "user"
+        assert report["packaged"] is True
+        assert report["path"] == str(HOST.absolute())
+    print("per-user host sees the packaged file")
+
+
+def test_handshake_precedes_palette():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = Path(tmp)
+        current = state / "current"
+        current.mkdir()
+        write_theme(current, "paper", "#dfe4c4", "#1c2d28", "light")
+        packaged = state / "system-host"
+        packaged.write_text("#!/bin/sh\n", encoding="utf-8")
+        proc = start_host(state, {"OMAREADER_SYSTEM_HOST": str(packaged)})
+        try:
+            first = read_message(proc.stdout)
+            assert first["type"] == "host", first
+            assert first["install"] == "user"
+            assert first["packaged"] is True
+            assert first["path"] == str(HOST.absolute())
+            second = read_message(proc.stdout)
+            assert second["type"] == "palette", second
+            assert second["theme"] == "paper"
+            write_message(proc.stdin, {"type": "hello"})
+            third = read_message(proc.stdout)
+            assert third["type"] == "host", third
+            assert third["install"] == "user"
+            fourth = read_message(proc.stdout)
+            assert fourth["type"] == "palette"
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+            proc.wait(timeout=2)
+    print("handshake precedes palette")
+
+
 def main():
     test_dump_matches_live_theme()
+    test_report_names_the_launched_path()
+    test_handshake_precedes_palette()
     test_swap_pushes_a_new_palette()
     test_stdin_close_exits()
     test_invalid_utf8_still_answers_hello()

@@ -38,9 +38,13 @@ package() {
   install -Dm755 "$_pkg/host/omareader-host" "$pkgdir/usr/lib/$_pkg/omareader-host"
   install -Dm644 "$_pkg-$pkgver.crx" "$pkgdir/usr/share/$_pkg/omareader.crx"
 
-  local ext host d
+  local ext host probe d
   ext=$(printf '{\n  "external_crx": "/usr/share/%s/omareader.crx",\n  "external_version": "%s"\n}\n' "$_pkg" "$pkgver")
   host=$(printf '{\n  "name": "com.bhp.omareader",\n  "description": "Omareader Omarchy theme host",\n  "path": "/usr/lib/%s/omareader-host",\n  "type": "stdio",\n  "allowed_origins": ["chrome-extension://%s/"]\n}\n' "$_pkg" "$_extid")
+  # install.sh registers com.bhp.omareader in the user config, and Chromium
+  # prefers that file. This name exists only in the system directories, so the
+  # extension can see the package when the per-user host is stale or missing.
+  probe=$(printf '{\n  "name": "com.bhp.omareader.pkg",\n  "description": "Omareader packaged host probe",\n  "path": "/usr/lib/%s/omareader-host",\n  "type": "stdio",\n  "allowed_origins": ["chrome-extension://%s/"]\n}\n' "$_pkg" "$_extid")
 
   # Chromium's directory also serves Brave and Brave Origin.
   for d in /usr/share/chromium/extensions /usr/share/google-chrome/extensions /usr/share/microsoft-edge/extensions; do
@@ -51,6 +55,7 @@ package() {
   for d in /etc/chromium/native-messaging-hosts /etc/opt/chrome/native-messaging-hosts /etc/opt/edge/native-messaging-hosts; do
     install -dm755 "$pkgdir$d"
     printf '%s\n' "$host" > "$pkgdir$d/com.bhp.omareader.json"
+    printf '%s\n' "$probe" > "$pkgdir$d/com.bhp.omareader.pkg.json"
   done
 
   install -Dm644 "$_pkg/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"

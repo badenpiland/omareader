@@ -3,7 +3,14 @@ import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 import { fromExtensionPage } from "./extension-page.js";
 import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
-import { hostFailureText, paletteFromHost } from "./host-message.js";
+import { HOST_MISSING, hostFailureText, paletteFromHost } from "./host-message.js";
+import {
+  displayHostError,
+  hostInstallReport,
+  legacyDecision,
+  PACKAGE_HOST,
+  shouldProbePackage,
+} from "./legacy-notice.js";
 import {
   MAX_RELEASES_BYTES,
   newerRelease,
@@ -35,6 +42,59 @@ let siteFixesAutoUpdate = true;
 let refreshTask = null;
 let updateVersion = "";
 let updateTask = null;
+let hostSawMessage = false;
+let hostDown = false;
+let hostReport = null;
+let heldReport = null;
+let probe = "unknown";
+let probeStarted = false;
+let legacyDismissed = false;
+let legacyNoticeText = "";
+let legacyConflict = false;
+
+function legacyInputs() {
+  const waiting = Boolean(nativePort) && !hostSawMessage;
+  // Until this process speaks, keep the previous answer. An old host has no
+  // report to hold, so a package probe that already succeeded still counts.
+  if (waiting) {
+    return {
+      report: heldReport,
+      unidentified: !heldReport && probe === "yes",
+      unreachable: false,
+      probe,
+      dismissed: legacyDismissed,
+    };
+  }
+  return {
+    report: nativePort ? hostReport : heldReport,
+    unidentified: Boolean(nativePort) && hostSawMessage && !hostReport,
+    unreachable: hostDown && !nativePort,
+    probe,
+    dismissed: legacyDismissed,
+  };
+}
+
+function refreshLegacy() {
+  if (shouldProbePackage(legacyInputs())) {
+    startProbe();
+  }
+  const inputs = legacyInputs();
+  const decision = legacyDecision(inputs);
+  if (decision.dismiss === "clear" && legacyDismissed) {
+    legacyDismissed = false;
+    chrome.storage.local.set({ legacyNoticeDismissed: false });
+  }
+  legacyNoticeText = decision.notice;
+  legacyConflict = decision.conflict;
+  return decision;
+}
+
+function shownHostError() {
+  return displayHostError(hostError, { notice: legacyNoticeText, conflict: legacyConflict }, {
+    missingText: HOST_MISSING,
+    probePending: probe === "unknown" && probeStarted,
+  });
+}
 
 function snapshot() {
   return {
@@ -42,7 +102,8 @@ function snapshot() {
     enabled,
     pausedSites,
     palette,
-    hostError,
+    hostError: shownHostError(),
+    legacyNotice: legacyNoticeText,
     darkReaderPrompt,
     darkReaderKnown,
     siteFixesAutoUpdate,
@@ -389,6 +450,29 @@ async function syncEarlyCss() {
   }
 }
 
+function noteHostMessage(message) {
+  const report = hostInstallReport(message);
+  if (report) {
+    hostReport = report;
+    heldReport = report;
+    hostSawMessage = true;
+    return;
+  }
+  if (message?.type === "error" || message?.type === "palette") {
+    hostSawMessage = true;
+    if (!hostReport) {
+      heldReport = null;
+    }
+  }
+}
+
+function markHostDown() {
+  nativePort = null;
+  hostDown = true;
+  hostSawMessage = false;
+  hostReport = null;
+}
+
 function connectHost() {
   if (nativePort) {
     return;
@@ -399,16 +483,23 @@ function connectHost() {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     hostError = hostFailureText(message, "Theme host disconnected");
+    markHostDown();
+    refreshLegacy();
     scheduleReconnect();
     broadcast();
     return;
   }
   nativePort = port;
+  hostDown = false;
+  hostSawMessage = false;
+  hostReport = null;
   disarmReconnectAlarm();
   port.onMessage.addListener((message) => {
     if (!message || typeof message !== "object") {
       return;
     }
+    noteHostMessage(message);
+    refreshLegacy();
     if (message.type === "error") {
       hostError = hostFailureText(message.message, "Omarchy theme is unreadable");
       broadcast();
@@ -423,21 +514,74 @@ function connectHost() {
     if (message.type === "palette") {
       hostError = hostFailureText("", "Omarchy theme colors are unreadable");
       broadcast();
+      return;
+    }
+    if (message.type === "host") {
+      broadcast();
     }
   });
   port.onDisconnect.addListener(() => {
-    nativePort = null;
     const message = chrome.runtime.lastError?.message || "";
     hostError = hostFailureText(message, "Theme host disconnected");
+    markHostDown();
+    refreshLegacy();
     broadcast();
     scheduleReconnect();
   });
   try {
     port.postMessage({ type: "hello" });
   } catch {
-    nativePort = null;
+    markHostDown();
+    refreshLegacy();
     scheduleReconnect();
+    broadcast();
   }
+}
+
+function startProbe() {
+  if (probeStarted) {
+    return;
+  }
+  probeStarted = true;
+  let port;
+  try {
+    port = chrome.runtime.connectNative(PACKAGE_HOST);
+  } catch {
+    probe = "no";
+    return;
+  }
+  let settled = false;
+  const finish = (reached) => {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    probe = reached ? "yes" : "no";
+    try {
+      port.disconnect();
+    } catch {
+      // The probe port is already closed.
+    }
+    refreshLegacy();
+    broadcast();
+  };
+  port.onMessage.addListener((message) => {
+    const report = hostInstallReport(message);
+    if (report?.install === "system" || report?.packaged === true) {
+      finish(true);
+    }
+  });
+  port.onDisconnect.addListener(() => {
+    void chrome.runtime.lastError;
+    finish(false);
+  });
+}
+
+function dismissLegacyNotice() {
+  legacyDismissed = true;
+  chrome.storage.local.set({ legacyNoticeDismissed: true });
+  refreshLegacy();
+  broadcast();
 }
 
 function armReconnectAlarm() {
@@ -544,6 +688,8 @@ chrome.runtime.onConnect.addListener((port) => {
       void resolveDarkReader(Boolean(message.disable));
     } else if (message.type === "setSiteFixesAutoUpdate") {
       setSiteFixesAutoUpdate(message.enabled);
+    } else if (message.type === "dismissLegacyNotice") {
+      dismissLegacyNotice();
     }
   });
   postTo(port);
@@ -652,7 +798,9 @@ async function start() {
     palette: null,
     darkReaderChoice: "",
     darkReaderOffered: false,
+    legacyNoticeDismissed: false,
   });
+  legacyDismissed = stored.legacyNoticeDismissed === true;
   enabled = stored.enabled !== false;
   pausedSites = Array.isArray(stored.pausedSites)
     ? stored.pausedSites.map(normalizeHost).filter(Boolean)

@@ -37,6 +37,11 @@ MAX_THEME_BYTES = 64 * 1024
 STATE = Path(
     os.environ.get("OMAREADER_STATE_DIR", Path.home() / ".local/state/omarchy")
 )
+# Pacman installs the host here. install.sh never does. OMAREADER_SYSTEM_HOST
+# overrides it in tests.
+SYSTEM_HOST = Path(
+    os.environ.get("OMAREADER_SYSTEM_HOST") or "/usr/lib/omareader/omareader-host"
+)
 CURRENT = STATE / "current"
 
 _libc = ctypes.CDLL("libc.so.6", use_errno=True)
@@ -152,6 +157,35 @@ def read_palette():
     }
 
 
+def launched_host_path():
+    return Path(sys.argv[0]).absolute()
+
+
+def packaged_host_present(path):
+    try:
+        return path.is_file()
+    except OSError:
+        return False
+
+
+def host_install_report():
+    # Compare the path Chromium launched, not the symlink target. A per-user
+    # path is the install.sh host even when that file points at the package.
+    path = launched_host_path()
+    system = SYSTEM_HOST.absolute()
+    install = "system" if path == system else "user"
+    return {
+        "type": "host",
+        "path": str(path),
+        "install": install,
+        "packaged": packaged_host_present(system),
+    }
+
+
+def announce():
+    write_message(host_install_report())
+
+
 def publish(force=False):
     global _last_sent, _missing_since
     try:
@@ -225,12 +259,14 @@ def stdin_loop():
             request_stop()
             return
         if isinstance(message, dict) and message.get("type") == "hello":
+            announce()
             publish(force=True)
 
 
 def serve():
     watcher = Watcher()
     watcher.reset()
+    announce()
     publish(force=True)
     thread = threading.Thread(target=stdin_loop, daemon=True)
     thread.start()
@@ -261,8 +297,13 @@ def serve():
 
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "--dump":
+    command = sys.argv[1] if len(sys.argv) > 1 else ""
+    if command == "--dump":
         json.dump(read_palette(), sys.stdout)
+        sys.stdout.write("\n")
+        return
+    if command == "--report":
+        json.dump(host_install_report(), sys.stdout)
         sys.stdout.write("\n")
         return
     try:
