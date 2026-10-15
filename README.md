@@ -1,14 +1,29 @@
-# Omareader
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="mockups/icon-dark.png">
+    <img alt="" src="mockups/icon-light.png" width="64" height="64" align="middle">
+  </picture>
+  &nbsp;
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/banner-dark.png">
+    <img alt="Omareader" src="docs/banner-light.png" width="520" height="94" align="middle">
+  </picture>
+</p>
 
-Web pages use the Omarchy theme you already picked. Switch themes and the open tabs follow.
+<p align="center"><sub>Omarchy themes for the web</sub></p>
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | bash
-```
-
-Restart that browser. Chrome asks for sudo once.
+<p align="center">
+  <a href="https://github.com/badenpiland/omareader/releases"><img alt="Release" src="https://img.shields.io/github/v/release/badenpiland/omareader?style=flat-square&label=release&color=9ece6a&labelColor=1a1b26"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/badenpiland/omareader?style=flat-square&label=license&color=9ece6a&labelColor=1a1b26"></a>
+  <a href="https://omarchy.org"><img alt="Omarchy" src="https://img.shields.io/badge/Omarchy-omarchy.org-9ece6a?style=flat-square&labelColor=1a1b26&logo=omarchy&logoColor=9ece6a"></a>
+</p>
 
 ![The same page in Harbor, then Tokyo Night, without a reload](docs/switch.gif)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
 
 ## What it does
 
@@ -20,6 +35,11 @@ The toolbar shows the dark glasses while Omareader is on, and the light glasses 
 
 Link and syntax colors stay on Dark Reader’s usual path. They are not replaced with the terminal’s red, green, and blue. Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. On a dark theme the Amazon header wordmark stays the light sprite Amazon ships, and the orange smile stays orange.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
+
 ## Shortcuts
 
 Alt+Shift+O turns Omareader on or off. The toolbar badge shows ON or OFF for a moment.
@@ -30,25 +50,41 @@ Change either shortcut at `chrome://extensions/shortcuts`.
 
 Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy's Hyprland defaults bind letter keys with SUPER. That is `default/hypr/bindings.conf` and `default/hypr/bindings/*.conf` in [basecamp/omarchy](https://github.com/basecamp/omarchy), and the current `default/hypr/bindings/*.lua` in [omacom/omarchy](https://github.com/omacom/omarchy). Obsidian is SUPER+O and SUPER+SHIFT+O. Pseudo window is SUPER+P, and Google Photos is SUPER+SHIFT+P. The chords that leave SUPER out are Ctrl+Alt+Delete, Alt+Tab, Alt+Shift+Tab, Ctrl+Alt+Tab, Ctrl+Alt+Shift+Tab, Print, Alt+Print, the media keys, F9, and Right Alt held for dictation. The older tiling config also binds Alt+F11 and Shift+F11. A Japanese layout binds Ctrl+Shift+semicolon for zoom, and a terminal receives Ctrl+Space without consuming it. Chrome refuses a Ctrl+Alt suggested key, because that pair is AltGr. Chromium already uses Ctrl+P to print, Ctrl+Shift+O for the bookmark manager, and Alt+Shift+T to focus the toolbar. Alt+Shift+U is outside that set.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
+
 ## Install
 
-The command follows the Omarchy default browser and installs Omareader only there. Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome ignores that per-user install, so the command asks once for sudo and writes the extension where Chrome will load it. Firefox and Zen are not supported.
+Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are not supported yet.
+
+**Curl installer (current).** [v0.2.2](https://github.com/badenpiland/omareader/releases/tag/v0.2.2):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | bash
+```
+
+The command follows the Omarchy default browser and installs Omareader only there. Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome asks once for sudo and writes the extension where Chrome will load it. Restart that browser.
 
 If a browser already refused the extension, it will not accept the installer again until the extension is installed by hand once, removed, and the command is run again.
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 
-The command above fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release. It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
+The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.2.2](https://github.com/badenpiland/omareader/releases/tag/v0.2.2). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
 
-## Install on Arch/Omarchy
+**Omarchy package (coming soon).** Pending [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120). Once merged:
 
 ```bash
-yay -S omareader-bin
+sudo pacman -S omareader-bin
 ```
 
-This package registers the signed extension and the native host for Chromium, Google Chrome, Brave, Brave Origin, and Microsoft Edge. Restart the browser after installing. Firefox and Zen are not supported.
+If you used the curl installer before, run `omareader-cleanup-legacy` after installing the package, then restart your browser. It moves old files to `~/omareader-old`. It does not delete them.
 
-The extension id is `mhglniaepbokfgnpeennihlifandcgjh`. A fresh profile in each of those browsers loaded that id without an extra enable step. If a browser instead shows the extension as added externally and leaves it off, turn it on once from the extensions page.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
 
 ## Permissions & network
 
@@ -63,9 +99,19 @@ Two requests go out once a day. These fetches send no cookies and no page data.
 
 Uncheck "Fetch site fixes daily" in Details to stop the Dark Reader download. The release check runs once a day.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
+
 ## Limits
 
 `chrome://` pages and the Chrome Web Store cannot be themed.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
 
 ## Build from source
 
@@ -88,9 +134,32 @@ The public key in `src/manifest.json` pins the extension id. `key.pem` stays pri
 
 The build refreshes `LICENSES/darkreader-MIT.txt` from `node_modules/darkreader/LICENSE` and copies it into the extension.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
+
+## Roadmap
+
+Next release is v0.3.0: a cleaner Omarchy-style popup, an always-visible version line with update status, the Alt+Shift+U per-site hotkey, a fix for page CSP errors, and a Dark Reader prompt fix.
+
+A Firefox version is planned.
+
+The official Omarchy package is [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
+
 ## Omarchy
 
-This is a pre-release. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
+The latest release is [v0.2.2](https://github.com/badenpiland/omareader/releases/tag/v0.2.2). v0.2.1 does not start. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
+  <img alt="" src="docs/divider-light.png" width="72" height="8">
+</picture>
 
 ## License
 

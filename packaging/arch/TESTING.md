@@ -1,8 +1,8 @@
-# omareader-bin 0.2.0-1 on pitwr
+# omareader-bin 0.2.0-1 on a test machine
 
 Tested 2026-10-13. `npm test` in the repo passed. The package was installed with `pacman -U` from the local build.
 
-Per-user `install.sh` files were moved, not deleted, to `~/omareader-installsh-backup-2026-10-13/`. `com.omarchy.*` and Proton Pass host files were left in place.
+Per-user `install.sh` files were moved aside, not deleted. Other native messaging host files were left in place.
 
 Each browser below was a new throwaway profile, then that window was closed. Brave and Brave Origin were already open and were not restarted. Those two sessions were still running `~/.local/share/omareader/omareader-host` from before the move. They pick up `/usr/lib/omareader/omareader-host` on the next full restart.
 
