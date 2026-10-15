@@ -55,7 +55,7 @@ h1 {
 header {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: calc(var(--s) * 2);
 }
 

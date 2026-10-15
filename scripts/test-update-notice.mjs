@@ -147,6 +147,7 @@ assert.doesNotMatch(popupJs, /mhglniaepbokfgnpeennihlifandcgjh/);
 
 const popupCss = readFileSync(new URL("../src/popup.css", import.meta.url), "utf8");
 assert.match(popupCss, /\.pair\s*\{[^}]*justify-content:\s*space-between/);
+assert.match(popupCss, /header\s*\{[^}]*justify-content:\s*center/);
 assert.match(popupCss, /\.ctrl:hover \.keys/);
 assert.match(popupCss, /\.ctrl:focus-within \.keys/);
 assert.match(popupCss, /\.ctrl\.muted/);
