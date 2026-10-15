@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 — 2026-10-15
 
 ### Fixed
 
 - After an update, the popup no longer offers an older release. A release found while an earlier version was installed is dropped, and the release check runs again.
+
+### Security
+
+- The published `omareader.crx.sha256` names only `omareader.crx`. It no longer includes a local path from the machine that packed the release.
 
 ## 0.3.0 — 2026-10-15
 
