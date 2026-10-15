@@ -6,6 +6,7 @@ import { deflateSync } from "node:zlib";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import esbuild from "esbuild";
+import { overlayFill } from "./icon-mark.mjs";
 import { createDarkReaderPlugin } from "./proxy-source.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -57,11 +58,11 @@ function rgb(hex) {
 }
 
 const ICON_COLORS = {
-  dark: { plate: rgb("#12141C"), mark: rgb("#9ECE6A"), lens: rgb("#3A6E30") },
-  light: { plate: rgb("#F6F3EA"), mark: rgb("#4A7228"), lens: null },
+  dark: { plate: rgb("#12141C"), mark: rgb("#9ECE6A"), lens: rgb("#3A6E30"), symbol: rgb("#F2F2F2") },
+  light: { plate: rgb("#F6F3EA"), mark: rgb("#4A7228"), lens: null, symbol: rgb("#1C1C1C") },
 };
 
-function paintIcon(size, colors) {
+function paintIcon(size, colors, mark) {
   const raw = Buffer.alloc((size * 4 + 1) * size);
   for (let y = 0; y < size; y += 1) {
     const row = y * (size * 4 + 1);
@@ -83,11 +84,52 @@ function paintIcon(size, colors) {
       raw[offset + 3] = 255;
     }
   }
+  if (mark) {
+    stampIconMark(raw, size, colors, mark);
+  }
   return raw;
 }
 
-function png(size, colors) {
-  const raw = paintIcon(size, colors);
+// A plate-colored ring keeps the popup mark readable where it crosses the glasses.
+function stampIconMark(raw, size, colors, mark) {
+  const fill = overlayFill(size, mark);
+  const radius = Math.max(1, Math.round(size / 16));
+  const near = new Uint8Array(size * size);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      if (!fill[y * size + x]) {
+        continue;
+      }
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx >= 0 && ny >= 0 && nx < size && ny < size) {
+            near[ny * size + nx] = 1;
+          }
+        }
+      }
+    }
+  }
+  for (let y = 0; y < size; y += 1) {
+    const row = y * (size * 4 + 1);
+    for (let x = 0; x < size; x += 1) {
+      const index = y * size + x;
+      const color = fill[index] ? colors.symbol : near[index] ? colors.plate : null;
+      if (!color) {
+        continue;
+      }
+      const offset = row + 1 + x * 4;
+      raw[offset] = color[0];
+      raw[offset + 1] = color[1];
+      raw[offset + 2] = color[2];
+      raw[offset + 3] = 255;
+    }
+  }
+}
+
+function png(size, colors, mark) {
+  const raw = paintIcon(size, colors, mark);
   const crcTable = new Uint32Array(256);
   for (let n = 0; n < 256; n += 1) {
     let c = n;
@@ -233,6 +275,9 @@ copyFileSync(siteFixPath, join(dist, "dynamic-theme-fixes.config"));
 for (const mode of ["dark", "light"]) {
   for (const size of [16, 32, 48, 128]) {
     writeFileSync(join(dist, `icon-${mode}-${size}.png`), png(size, ICON_COLORS[mode]));
+    for (const mark of ["pause", "play"]) {
+      writeFileSync(join(dist, `icon-${mode}-${mark}-${size}.png`), png(size, ICON_COLORS[mode], mark));
+    }
   }
 }
 

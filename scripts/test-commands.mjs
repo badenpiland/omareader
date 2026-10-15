@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { overlayFill } from "./icon-mark.mjs";
 import {
   COMMAND_BADGE_MS,
   COMMAND_TOGGLE,
@@ -84,6 +85,8 @@ assert.match(background, /chrome\.commands\.onCommand\.addListener/);
 assert.match(background, /runReaderCommand\(command, tab/);
 assert.match(background, /setSitePaused\(effect\.host, effect\.paused\)/);
 assert.match(background, /showCommandBadge\(effect\.tabId, effect\.badge\)/);
+assert.match(background, /showCommandIcon\(effect\.tabId, effect\.icon\)/);
+assert.match(background, /icon-\$\{mode\}-\$\{mark\}-\$\{size\}\.png/);
 console.log("manifest keeps Alt+Shift+O and adds Alt+Shift+U");
 
 function deps(overrides = {}) {
@@ -118,7 +121,7 @@ assert.deepEqual(paused, {
   type: "setSitePaused",
   host: "example.com",
   paused: true,
-  badge: "P",
+  icon: "pause",
   tabId: 8,
 });
 
@@ -132,7 +135,7 @@ assert.deepEqual(themed, {
   type: "setSitePaused",
   host: "example.com",
   paused: false,
-  badge: "T",
+  icon: "play",
   tabId: 8,
 });
 
@@ -150,7 +153,7 @@ const fromFocus = await runReaderCommand(
 assert.equal(focusedCalls, 1);
 assert.equal(fromFocus.host, "news.ycombinator.com");
 assert.equal(fromFocus.paused, true);
-assert.equal(fromFocus.badge, "P");
+assert.equal(fromFocus.icon, "pause");
 assert.equal(fromFocus.tabId, 12);
 
 const missingUrl = await runReaderCommand(
@@ -184,4 +187,33 @@ assert.equal(hostFromUrl("https://example.com."), "example.com");
 assert.equal(normalizeHost("a".repeat(254)), "");
 assert.equal(normalizeHost("bad host"), "");
 assert.equal(await runReaderCommand(COMMAND_TOGGLE_SITE, { id: 7, url: `https://${"a".repeat(254)}/` }, deps()), null);
+
+function columnRuns(fill, size, y) {
+  const runs = [];
+  let start = -1;
+  for (let x = 0; x <= size; x += 1) {
+    const on = x < size && fill[y * size + x] === 1;
+    if (on && start < 0) {
+      start = x;
+    } else if (!on && start >= 0) {
+      runs.push([start, x - start]);
+      start = -1;
+    }
+  }
+  return runs;
+}
+
+const pause = overlayFill(16, "pause");
+const pauseRuns = columnRuns(pause, 16, 8);
+assert.equal(pauseRuns.length, 2);
+assert.equal(pauseRuns[0][1] >= 3 && pauseRuns[1][1] >= 3, true);
+assert.equal(pauseRuns[1][0] - (pauseRuns[0][0] + pauseRuns[0][1]) >= 2, true);
+
+const play = overlayFill(16, "play");
+const playTop = columnRuns(play, 16, 2);
+const playMid = columnRuns(play, 16, 8);
+assert.equal(playMid.length, 1);
+assert.equal(playTop.length, 1);
+assert.equal(playMid[0][1] > playTop[0][1], true);
+assert.equal(playMid[0][0] + playMid[0][1] > playTop[0][0] + playTop[0][1], true);
 console.log("site command pauses the current host and themes it again");

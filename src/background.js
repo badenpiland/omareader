@@ -323,16 +323,28 @@ function iconMode(host) {
   return "dark";
 }
 
-function iconPaths(mode) {
+function iconPaths(mode, mark) {
   const path = {};
   for (const size of [16, 32, 48, 128]) {
-    path[size] = `icon-${mode}-${size}.png`;
+    path[size] = mark ? `icon-${mode}-${mark}-${size}.png` : `icon-${mode}-${size}.png`;
   }
   return path;
 }
 
+function iconMarkFor(tabId) {
+  if (!commandIconMark || !commandIconTarget) {
+    return null;
+  }
+  if (typeof commandIconTarget.tabId === "number") {
+    return tabId === commandIconTarget.tabId ? commandIconMark : null;
+  }
+  return typeof tabId === "number" ? null : commandIconMark;
+}
+
 function applyIcon(tabId, url) {
-  const path = iconPaths(iconMode(typeof url === "string" ? hostFromUrl(url) : ""));
+  const mark = iconMarkFor(tabId);
+  const mode = mark === "pause" ? "light" : mark === "play" ? "dark" : iconMode(typeof url === "string" ? hostFromUrl(url) : "");
+  const path = iconPaths(mode, mark);
   if (typeof tabId === "number") {
     chrome.action.setIcon({ tabId, path });
     return;
@@ -582,6 +594,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 let commandBadgeTimer = null;
 let commandBadgeTarget = null;
+let commandIconTimer = null;
+let commandIconTarget = null;
+let commandIconMark = null;
 
 function paintBadgeText(details) {
   chrome.action.setBadgeText(details, () => {
@@ -611,12 +626,47 @@ function clearCommandBadge(target) {
   paintBadgeText({ text: "" });
 }
 
-function showCommandBadge(tabId, text) {
-  if (commandBadgeTimer) {
-    clearTimeout(commandBadgeTimer);
-    commandBadgeTimer = null;
-    clearCommandBadge(commandBadgeTarget);
+function endCommandBadge() {
+  if (!commandBadgeTimer) {
+    return;
   }
+  clearTimeout(commandBadgeTimer);
+  commandBadgeTimer = null;
+  clearCommandBadge(commandBadgeTarget);
+  commandBadgeTarget = null;
+}
+
+function restoreCommandIcon(target) {
+  if (!target) {
+    return;
+  }
+  if (typeof target.tabId === "number") {
+    chrome.tabs.get(target.tabId, (tab) => {
+      if (chrome.runtime.lastError || !tab) {
+        applyIcon(target.tabId);
+        return;
+      }
+      applyIcon(tab.id, tab.url);
+    });
+    return;
+  }
+  applyAllIcons();
+}
+
+function endCommandIcon() {
+  if (commandIconTimer) {
+    clearTimeout(commandIconTimer);
+    commandIconTimer = null;
+  }
+  const target = commandIconTarget;
+  commandIconMark = null;
+  commandIconTarget = null;
+  restoreCommandIcon(target);
+}
+
+function showCommandBadge(tabId, text) {
+  endCommandIcon();
+  endCommandBadge();
   const target = typeof tabId === "number" ? { tabId } : {};
   commandBadgeTarget = target;
   paintBadgeText({ ...target, text });
@@ -625,6 +675,43 @@ function showCommandBadge(tabId, text) {
     commandBadgeTimer = null;
     clearCommandBadge(target);
     commandBadgeTarget = null;
+  }, COMMAND_BADGE_MS);
+}
+
+function showCommandIcon(tabId, mark) {
+  endCommandBadge();
+  const previous = commandIconTarget;
+  if (commandIconTimer) {
+    clearTimeout(commandIconTimer);
+    commandIconTimer = null;
+  }
+  commandIconMark = null;
+  commandIconTarget = null;
+  if (previous && previous.tabId !== tabId) {
+    restoreCommandIcon(previous);
+  }
+  commandIconMark = mark;
+  commandIconTarget = typeof tabId === "number" ? { tabId } : {};
+  if (typeof tabId === "number") {
+    chrome.tabs.get(tabId, (tab) => {
+      if (!commandIconMark || commandIconTarget?.tabId !== tabId) {
+        return;
+      }
+      if (chrome.runtime.lastError || !tab) {
+        applyIcon(tabId);
+        return;
+      }
+      applyIcon(tab.id, tab.url);
+    });
+  } else {
+    applyIcon();
+  }
+  commandIconTimer = setTimeout(() => {
+    const target = commandIconTarget;
+    commandIconTimer = null;
+    commandIconMark = null;
+    commandIconTarget = null;
+    restoreCommandIcon(target);
   }, COMMAND_BADGE_MS);
 }
 
@@ -655,10 +742,13 @@ async function applyReaderCommand(command, tab) {
   }
   if (effect.type === "setEnabled") {
     setEnabled(effect.enabled);
-  } else if (effect.type === "setSitePaused") {
-    setSitePaused(effect.host, effect.paused);
+    showCommandBadge(effect.tabId, effect.badge);
+    return;
   }
-  showCommandBadge(effect.tabId, effect.badge);
+  if (effect.type === "setSitePaused") {
+    setSitePaused(effect.host, effect.paused);
+    showCommandIcon(effect.tabId, effect.icon);
+  }
 }
 
 chrome.commands.onCommand.addListener((command, tab) => {

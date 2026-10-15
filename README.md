@@ -24,7 +24,7 @@ Link and syntax colors stay on Dark Reader’s usual path. They are not replaced
 
 Alt+Shift+O turns Omareader on or off. The toolbar badge shows ON or OFF for a moment.
 
-Alt+Shift+U pauses the current site, or themes it again. That is the same switch as pause on this site in the popup. The badge shows P for a moment when the site is paused, and T when the theme comes back.
+Alt+Shift+U pauses the current site, or themes it again. That is the same switch as pause on this site in the popup. The toolbar icon shows a pause mark for a moment when the site is paused, and a play mark when the theme comes back.
 
 Change either shortcut at `chrome://extensions/shortcuts`.
 

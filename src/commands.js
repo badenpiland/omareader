@@ -48,5 +48,6 @@ export async function runReaderCommand(command, tab, deps) {
     return null;
   }
   const paused = !deps.isPaused(host);
-  return { type: "setSitePaused", host, paused, badge: paused ? "P" : "T", tabId: tabIdOf(current) };
+  // Pause and play are painted on the toolbar icon. Chromium's badge draws ⏸ as hairline bars.
+  return { type: "setSitePaused", host, paused, icon: paused ? "pause" : "play", tabId: tabIdOf(current) };
 }
