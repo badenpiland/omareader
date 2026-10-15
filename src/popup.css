@@ -10,9 +10,15 @@
 :root {
   --popup-bg: #1c1c1c;
   --popup-fg: #f2f2f2;
-  --gap: 12px;
+  --s: 8px;
   color-scheme: dark;
-  font: 13px/1.45 "JetBrains Mono", "CaskaydiaMono Nerd Font", ui-monospace, monospace;
+  font: 400 13px/1.4 "JetBrains Mono", "CaskaydiaMono Nerd Font", ui-monospace, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
@@ -22,57 +28,146 @@ body {
 }
 
 body {
-  margin: 0;
-  width: 272px;
-  padding: 14px 14px 12px;
-}
-
-body > * + * {
-  margin-top: var(--gap);
-}
-
-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 8px;
+  flex-direction: column;
+  gap: calc(var(--s) * 2);
+  width: 320px;
+  margin: 0;
+  padding: calc(var(--s) * 2);
+}
+
+h1,
+p {
+  margin: 0;
 }
 
 h1 {
-  margin: 0;
   color: var(--popup-fg);
   font-family: "Omarchy Font", ui-monospace, monospace;
   font-size: 20px;
   font-weight: 400;
   font-style: normal;
-  line-height: 1;
+  line-height: 1.2;
   letter-spacing: 0;
 }
 
-p {
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: calc(var(--s) * 2);
+  align-items: center;
+}
+
+.row > :first-child {
+  justify-self: start;
+  text-align: left;
+}
+
+.row > :last-child:not(:first-child) {
+  justify-self: end;
+  min-width: 0;
+  text-align: right;
+}
+
+footer.row {
+  align-items: baseline;
+}
+
+button,
+.fixes input,
+.switch input {
+  color: inherit;
+  font: inherit;
+  accent-color: currentColor;
+}
+
+button {
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+button:focus-visible,
+.fixes input:focus-visible,
+.switch input:focus-visible,
+#details summary:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+}
+
+#site,
+#dark-reader button {
+  padding: var(--s) 0;
+}
+
+#site:hover,
+#dark-reader button:hover,
+#legacy button:hover {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+#site[hidden],
+#status[hidden],
+#legacy[hidden],
+#dark-reader[hidden],
+#details[hidden],
+#site-line[hidden],
+.swatches[hidden],
+#update[hidden],
+#update [hidden] {
+  display: none;
+}
+
+#status,
+#dark-reader,
+#site,
+#details {
+  align-self: stretch;
+}
+
+#legacy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: calc(var(--s) * 2);
+  align-items: baseline;
+}
+
+#legacy button {
+  justify-self: end;
+  width: auto;
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+#dark-reader .choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s);
+  margin-top: var(--s);
 }
 
 .switch {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex: none;
+  gap: var(--s);
 }
 
 .switch input {
-  box-sizing: border-box;
-  color: inherit;
   appearance: none;
+  position: relative;
+  flex: none;
   width: 32px;
   height: 16px;
   margin: 0;
-  flex: none;
   border: 1px solid currentColor;
   border-radius: 0;
   background: transparent;
-  position: relative;
   cursor: pointer;
 }
 
@@ -95,111 +190,15 @@ p {
   background: var(--popup-bg);
 }
 
-.switch input:focus-visible,
-button:focus-visible,
-.fixes input:focus-visible,
-#details summary:focus-visible {
-  outline: 1px solid currentColor;
-  outline-offset: 2px;
-}
-
-button,
 .fixes input {
-  accent-color: currentColor;
-}
-
-#site,
-#dark-reader button {
-  font: inherit;
-  border: 1px solid currentColor;
-  border-radius: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-#site {
-  width: 100%;
-  padding: 7px 8px;
-}
-
-#site:hover,
-#dark-reader button:hover,
-#legacy button:hover {
-  background: color-mix(in srgb, currentColor 14%, transparent);
-}
-
-#site[hidden],
-#status[hidden],
-#legacy[hidden],
-#dark-reader[hidden],
-#details[hidden],
-#site-line[hidden],
-.swatches[hidden],
-#update[hidden],
-#update [hidden] {
-  display: none;
-}
-
-#status,
-#legacy {
-  margin-top: var(--gap);
-}
-
-#legacy {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-#legacy span {
-  flex: 1;
-}
-
-#legacy button {
-  flex: none;
-  width: auto;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-#dark-reader p {
-  margin: 0;
-}
-
-#dark-reader .choices {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-#dark-reader button {
-  flex: 1;
-  padding: 7px 8px;
-}
-
-.fixes {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.fixes input {
-  box-sizing: border-box;
-  color: inherit;
   appearance: none;
+  flex: none;
   width: 14px;
   height: 14px;
   margin: 0;
   border: 1px solid currentColor;
   background: transparent center / 8px 8px no-repeat;
+  cursor: pointer;
 }
 
 .fixes input:checked {
@@ -211,47 +210,52 @@ button,
 }
 
 #settings {
-  display: block;
-  width: max-content;
+  width: auto;
   margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
-  color: inherit;
-  font: 12px/1.4 inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
-  cursor: pointer;
 }
 
 #settings:hover {
   background: transparent;
 }
 
-#details {
-  font-size: 12px;
-}
-
 #details summary {
   width: max-content;
+  font: inherit;
+  list-style: none;
   cursor: pointer;
 }
 
-#site-line,
-.swatches div {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-top: 8px;
+#details summary::-webkit-details-marker {
+  display: none;
 }
 
-.k {
-  flex: none;
-  width: 7.2em;
+#details .rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s);
+  margin-top: var(--s);
+}
+
+.swatches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s);
+}
+
+.v {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s);
 }
 
 #site-host,
-.swatches span:last-child {
+.v span {
   overflow-wrap: anywhere;
 }
 
@@ -259,6 +263,5 @@ button,
   flex: none;
   width: 10px;
   height: 10px;
-  align-self: center;
   border: 1px solid currentColor;
 }

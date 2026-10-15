@@ -7,14 +7,17 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header>
+    <header class="row">
       <h1>omareader</h1>
       <label class="switch">
-        <input id="enabled" type="checkbox" />
         <span id="enabled-label">On</span>
+        <input id="enabled" type="checkbox" />
       </label>
     </header>
-    <p id="theme">Waiting for Omarchy</p>
+    <p class="row">
+      <span class="k">Theme</span>
+      <span id="theme">Waiting for Omarchy</span>
+    </p>
     <button id="site" type="button" hidden>Pause on this site</button>
     <p id="status" hidden></p>
     <section id="dark-reader" hidden>
@@ -24,24 +27,26 @@
         <button id="dark-reader-keep" type="button">Leave it on</button>
       </div>
     </section>
-    <p id="update"><span id="update-installed"></span><a id="update-available" hidden target="_blank" rel="noreferrer"></a></p>
     <details id="details" hidden>
       <summary>Details</summary>
-      <p id="site-line" hidden><span class="k">Site</span> <span id="site-host"></span></p>
-      <div class="swatches" hidden>
-        <div>
-          <span class="k">Background</span>
-          <i id="bg"></i>
-          <span id="bg-label"></span>
-        </div>
-        <div>
-          <span class="k">Foreground</span>
-          <i id="fg"></i>
-          <span id="fg-label"></span>
+      <div class="rows">
+        <p id="site-line" class="row" hidden><span class="k">Site</span> <span id="site-host"></span></p>
+        <div class="swatches" hidden>
+          <div class="row">
+            <span class="k">Background</span>
+            <span class="v"><i id="bg"></i><span id="bg-label"></span></span>
+          </div>
+          <div class="row">
+            <span class="k">Foreground</span>
+            <span class="v"><i id="fg"></i><span id="fg-label"></span></span>
+          </div>
         </div>
       </div>
     </details>
-    <button id="settings" type="button">Settings</button>
+    <footer class="row">
+      <p id="update"><span id="update-installed"></span><a id="update-available" hidden target="_blank" rel="noreferrer"></a></p>
+      <button id="settings" type="button">Settings</button>
+    </footer>
     <script type="module" src="popup.js"></script>
   </body>
 </html>
