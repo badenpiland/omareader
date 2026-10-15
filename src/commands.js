@@ -29,8 +29,8 @@ function tabIdOf(tab) {
   return typeof tab?.id === "number" ? tab.id : undefined;
 }
 
-// Suggested keys are Alt+Shift+O and Alt+Shift+P in the manifest. Omarchy binds
-// those letters with SUPER, and Chromium already uses Ctrl+P, Ctrl+Shift+O, and Alt+Shift+T.
+// Suggested keys are Alt+Shift+O and Alt+Shift+U in the manifest. Omarchy binds
+// O with SUPER, and Chromium already uses Ctrl+U, Ctrl+Shift+O, and Alt+Shift+T.
 export async function runReaderCommand(command, tab, deps) {
   if (command === COMMAND_TOGGLE) {
     const enabled = !deps.isEnabled();

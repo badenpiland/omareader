@@ -20,7 +20,7 @@ const toggleSite = manifest.commands[COMMAND_TOGGLE_SITE];
 assert.ok(toggle, "global toggle command stays declared");
 assert.ok(toggleSite, "site toggle command is declared");
 assert.equal(toggle.suggested_key.default, "Alt+Shift+O");
-assert.equal(toggleSite.suggested_key.default, "Alt+Shift+P");
+assert.equal(toggleSite.suggested_key.default, "Alt+Shift+U");
 assert.equal(toggle.description, "Turn Omareader on or off");
 assert.equal(toggleSite.description, "Pause or theme the current site");
 assert.notEqual(toggle.suggested_key.default, toggleSite.suggested_key.default);
@@ -84,7 +84,7 @@ assert.match(background, /chrome\.commands\.onCommand\.addListener/);
 assert.match(background, /runReaderCommand\(command, tab/);
 assert.match(background, /setSitePaused\(effect\.host, effect\.paused\)/);
 assert.match(background, /showCommandBadge\(effect\.tabId, effect\.badge\)/);
-console.log("manifest keeps Alt+Shift+O and adds Alt+Shift+P");
+console.log("manifest keeps Alt+Shift+O and adds Alt+Shift+U");
 
 function deps(overrides = {}) {
   return {

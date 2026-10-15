@@ -31,7 +31,7 @@
     },
     "toggle-site": {
       "suggested_key": {
-        "default": "Alt+Shift+P"
+        "default": "Alt+Shift+U"
       },
       "description": "Pause or theme the current site"
     }

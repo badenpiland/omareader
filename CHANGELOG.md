@@ -4,7 +4,7 @@
 
 ### Added
 
-- Alt+Shift+P pauses the current site, or themes it again. Alt+Shift+O still turns Omareader on or off. The toolbar badge flashes P, T, ON, or OFF.
+- Alt+Shift+U pauses the current site, or themes it again. Alt+Shift+O still turns Omareader on or off. The toolbar badge flashes P, T, ON, or OFF.
 
 ## 0.2.2 — 2026-10-13
 
