@@ -323,28 +323,16 @@ function iconMode(host) {
   return "dark";
 }
 
-function iconPaths(mode, mark) {
+function iconPaths(mode) {
   const path = {};
   for (const size of [16, 32, 48, 128]) {
-    path[size] = mark ? `icon-${mode}-${mark}-${size}.png` : `icon-${mode}-${size}.png`;
+    path[size] = `icon-${mode}-${size}.png`;
   }
   return path;
 }
 
-function iconMarkFor(tabId) {
-  if (!commandIconMark || !commandIconTarget) {
-    return null;
-  }
-  if (typeof commandIconTarget.tabId === "number") {
-    return tabId === commandIconTarget.tabId ? commandIconMark : null;
-  }
-  return typeof tabId === "number" ? null : commandIconMark;
-}
-
-function applyIcon(tabId, url) {
-  const mark = iconMarkFor(tabId);
-  const mode = mark === "pause" ? "light" : mark === "play" ? "dark" : iconMode(typeof url === "string" ? hostFromUrl(url) : "");
-  const path = iconPaths(mode, mark);
+function applyTabIcon(tabId, host) {
+  const path = iconPaths(iconMode(host));
   if (typeof tabId === "number") {
     chrome.action.setIcon({ tabId, path });
     return;
@@ -352,16 +340,35 @@ function applyIcon(tabId, url) {
   chrome.action.setIcon({ path });
 }
 
+function applyIcon(tabId, url) {
+  applyTabIcon(tabId, typeof url === "string" ? hostFromUrl(url) : "");
+}
+
+function tabHost(tab) {
+  return hostFromUrl(tab?.url) || hostFromUrl(tab?.pendingUrl);
+}
+
+// A tab with no url yet keeps its current icon while Omareader is on.
+// Guessing from an empty host would paint the dark glasses over a paused site.
+function applyOpenTab(tab) {
+  if (!tab || typeof tab.id !== "number") {
+    return;
+  }
+  const host = tabHost(tab);
+  if (!host && enabled) {
+    return;
+  }
+  applyTabIcon(tab.id, host);
+}
+
 function applyAllIcons() {
-  applyIcon();
+  applyTabIcon(undefined, "");
   chrome.tabs.query({}, (tabs) => {
     if (chrome.runtime.lastError || !Array.isArray(tabs)) {
       return;
     }
     for (const tab of tabs) {
-      if (typeof tab.id === "number") {
-        applyIcon(tab.id, tab.url);
-      }
+      applyOpenTab(tab);
     }
   });
 }
@@ -594,9 +601,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 let commandBadgeTimer = null;
 let commandBadgeTarget = null;
-let commandIconTimer = null;
-let commandIconTarget = null;
-let commandIconMark = null;
 
 function paintBadgeText(details) {
   chrome.action.setBadgeText(details, () => {
@@ -626,47 +630,12 @@ function clearCommandBadge(target) {
   paintBadgeText({ text: "" });
 }
 
-function endCommandBadge() {
-  if (!commandBadgeTimer) {
-    return;
-  }
-  clearTimeout(commandBadgeTimer);
-  commandBadgeTimer = null;
-  clearCommandBadge(commandBadgeTarget);
-  commandBadgeTarget = null;
-}
-
-function restoreCommandIcon(target) {
-  if (!target) {
-    return;
-  }
-  if (typeof target.tabId === "number") {
-    chrome.tabs.get(target.tabId, (tab) => {
-      if (chrome.runtime.lastError || !tab) {
-        applyIcon(target.tabId);
-        return;
-      }
-      applyIcon(tab.id, tab.url);
-    });
-    return;
-  }
-  applyAllIcons();
-}
-
-function endCommandIcon() {
-  if (commandIconTimer) {
-    clearTimeout(commandIconTimer);
-    commandIconTimer = null;
-  }
-  const target = commandIconTarget;
-  commandIconMark = null;
-  commandIconTarget = null;
-  restoreCommandIcon(target);
-}
-
 function showCommandBadge(tabId, text) {
-  endCommandIcon();
-  endCommandBadge();
+  if (commandBadgeTimer) {
+    clearTimeout(commandBadgeTimer);
+    commandBadgeTimer = null;
+    clearCommandBadge(commandBadgeTarget);
+  }
   const target = typeof tabId === "number" ? { tabId } : {};
   commandBadgeTarget = target;
   paintBadgeText({ ...target, text });
@@ -675,43 +644,6 @@ function showCommandBadge(tabId, text) {
     commandBadgeTimer = null;
     clearCommandBadge(target);
     commandBadgeTarget = null;
-  }, COMMAND_BADGE_MS);
-}
-
-function showCommandIcon(tabId, mark) {
-  endCommandBadge();
-  const previous = commandIconTarget;
-  if (commandIconTimer) {
-    clearTimeout(commandIconTimer);
-    commandIconTimer = null;
-  }
-  commandIconMark = null;
-  commandIconTarget = null;
-  if (previous && previous.tabId !== tabId) {
-    restoreCommandIcon(previous);
-  }
-  commandIconMark = mark;
-  commandIconTarget = typeof tabId === "number" ? { tabId } : {};
-  if (typeof tabId === "number") {
-    chrome.tabs.get(tabId, (tab) => {
-      if (!commandIconMark || commandIconTarget?.tabId !== tabId) {
-        return;
-      }
-      if (chrome.runtime.lastError || !tab) {
-        applyIcon(tabId);
-        return;
-      }
-      applyIcon(tab.id, tab.url);
-    });
-  } else {
-    applyIcon();
-  }
-  commandIconTimer = setTimeout(() => {
-    const target = commandIconTarget;
-    commandIconTimer = null;
-    commandIconMark = null;
-    commandIconTarget = null;
-    restoreCommandIcon(target);
   }, COMMAND_BADGE_MS);
 }
 
@@ -747,7 +679,11 @@ async function applyReaderCommand(command, tab) {
   }
   if (effect.type === "setSitePaused") {
     setSitePaused(effect.host, effect.paused);
-    showCommandIcon(effect.tabId, effect.icon);
+    // The query inside setSitePaused also paints every open tab. Set this tab
+    // from the host the command just toggled, including when that tab has no url yet.
+    if (typeof effect.tabId === "number") {
+      applyTabIcon(effect.tabId, effect.host);
+    }
   }
 }
 
@@ -760,13 +696,17 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
     if (chrome.runtime.lastError || !tab) {
       return;
     }
-    applyIcon(tab.id, tab.url);
+    applyOpenTab(tab);
   });
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url || changeInfo.status === "loading") {
-    applyIcon(tabId, tab.url);
+    applyOpenTab({
+      id: tabId,
+      url: typeof changeInfo.url === "string" ? changeInfo.url : tab.url,
+      pendingUrl: tab.pendingUrl,
+    });
   }
 });
 

@@ -4,7 +4,7 @@
 
 ### Added
 
-- Alt+Shift+U pauses the current site, or themes it again. Alt+Shift+O still turns Omareader on or off. The toolbar badge flashes ON or OFF. Pausing a site flashes a pause mark on its toolbar icon, and theming it again flashes a play mark.
+- Alt+Shift+U pauses the current site, or themes it again. Alt+Shift+O still turns Omareader on or off. The toolbar badge flashes ON or OFF. Pausing a site switches that tab's toolbar icon to the light glasses, and theming it again switches the icon back. The site toggle does not flash a badge.
 
 ### Fixed
 
