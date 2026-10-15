@@ -59,7 +59,7 @@ Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy
 
 Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are not supported yet.
 
-**Curl installer (current).** [v0.2.2](https://github.com/badenpiland/omareader/releases/tag/v0.2.2):
+**Curl installer (current).** [v0.3.0](https://github.com/badenpiland/omareader/releases/tag/v0.3.0):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | bash
@@ -71,7 +71,7 @@ If a browser already refused the extension, it will not accept the installer aga
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 
-The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.2.2](https://github.com/badenpiland/omareader/releases/tag/v0.2.2). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
+The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.3.0](https://github.com/badenpiland/omareader/releases/tag/v0.3.0). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
 
 **Omarchy package (coming soon).** Pending [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120). Once merged:
 
@@ -141,8 +141,6 @@ The build refreshes `LICENSES/darkreader-MIT.txt` from `node_modules/darkreader/
 
 ## Roadmap
 
-Next release is v0.3.0: a cleaner Omarchy-style popup, an always-visible version line with update status, the Alt+Shift+U per-site hotkey, a fix for page CSP errors, and a Dark Reader prompt fix.
-
 A Firefox version is planned.
 
 The official Omarchy package is [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120).
@@ -154,7 +152,7 @@ The official Omarchy package is [omarchy-pkgs#1120](https://github.com/omacom/om
 
 ## Omarchy
 
-The latest release is [v0.2.2](https://github.com/badenpiland/omareader/releases/tag/v0.2.2). v0.2.1 does not start. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
+The latest release is [v0.3.0](https://github.com/badenpiland/omareader/releases/tag/v0.3.0). v0.2.1 does not start. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
