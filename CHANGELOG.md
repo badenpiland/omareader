@@ -1,13 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-10-15
 
 ### Added
 
 - Alt+Shift+U pauses the current site, or themes it again. Alt+Shift+O still turns Omareader on or off. The toolbar badge flashes ON or OFF. Pausing a site switches that tab's toolbar icon to the light glasses, and theming it again switches the icon back. The site toggle does not flash a badge.
+- The popup shows the installed version on one line. After a finished release check that found nothing newer, it adds “Up to date”. When a release is newer, it links “Update to” that version.
+- The README has the Omareader wordmark and glasses mark, in dark and light versions, release and license badges, an Omarchy link to omarchy.org, and a Shortcuts section.
+
+### Changed
+
+- The popup is redesigned. The `omareader` title is centered, with no logo. Two full-width outline buttons turn Omareader off or on everywhere, and pause or theme this site. Each shows its shortcut keys on hover or keyboard focus. Each button greys out when its own setting is off, and stays clickable. The site button has a pause icon.
+- The popup's Details section lists the site, background, and foreground, with the labels on the left ending in colons and the values on the right. The daily site-fix setting moved into Details as “Fetch site fixes daily”.
 
 ### Fixed
 
+- The popup asks about turning Dark Reader off only when the Dark Reader extension is installed and enabled. Before, it also asked when Omareader could not see other extensions, including in Brave with no Dark Reader installed.
 - Theming a page no longer inserts an inline script. A page whose CSP is `script-src 'self'` no longer reports that error. The Dark Reader stylesheet proxy runs from the extension instead.
 
 ## 0.2.2 — 2026-10-13
