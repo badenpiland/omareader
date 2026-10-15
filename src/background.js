@@ -9,7 +9,7 @@ import { COMMAND_BADGE_MS, hostFromUrl, normalizeHost, runReaderCommand } from "
 import {
   MAX_RELEASES_BYTES,
   newerRelease,
-  parseVersion,
+  restoreUpdate,
   RELEASES_URL,
   trustedReleasesUrl,
 } from "./update-notice.js";
@@ -235,13 +235,23 @@ function updatesDue(stored, now) {
 async function loadUpdate() {
   const stored = await chrome.storage.local.get({
     updateVersion: "",
+    updateCheckedFor: "",
     updateCheckedAt: 0,
     updateAttemptAt: 0,
   });
-  updateVersion = typeof stored.updateVersion === "string" && parseVersion(stored.updateVersion)
-    ? stored.updateVersion
-    : "";
-  updateChecked = Number(stored.updateCheckedAt) > 0;
+  const restored = restoreUpdate(stored, chrome.runtime.getManifest().version);
+  updateVersion = restored.updateVersion;
+  updateChecked = restored.updateChecked;
+  if (restored.stale) {
+    // Saved by another version. Forget it and check now.
+    stored.updateCheckedAt = 0;
+    stored.updateAttemptAt = 0;
+    try {
+      await chrome.storage.local.set({ updateVersion: "", updateCheckedAt: 0, updateAttemptAt: 0 });
+    } catch {
+      // Memory is already cleared. The check below still runs.
+    }
+  }
   if (updatesDue(stored, Date.now())) {
     void refreshUpdate();
   }
@@ -271,7 +281,8 @@ async function refreshUpdate() {
       if (!Array.isArray(data)) {
         throw new Error("Release list was rejected");
       }
-      const next = newerRelease(data, chrome.runtime.getManifest().version);
+      const installed = chrome.runtime.getManifest().version;
+      const next = newerRelease(data, installed);
       const previous = updateVersion;
       const wasChecked = updateChecked;
       updateVersion = next;
@@ -279,6 +290,7 @@ async function refreshUpdate() {
       try {
         await chrome.storage.local.set({
           updateVersion: next,
+          updateCheckedFor: installed,
           updateCheckedAt: Date.now(),
           updateAttemptAt: attemptAt,
         });

@@ -6,6 +6,7 @@ import {
   parseVersion,
   RELEASES_URL,
   REPO_URL,
+  restoreUpdate,
   trustedReleasesUrl,
   updateLine,
 } from "../src/update-notice.js";
@@ -103,7 +104,43 @@ assert.doesNotMatch(popupHtml, /<p id="update"[^>]*\shidden/);
 const snapshot = background.match(/function snapshot\(\) \{([\s\S]*?)\n\}/);
 assert.ok(snapshot, "snapshot is present");
 assert.match(snapshot[1], /updateChecked/);
-assert.match(background, /updateChecked = Number\(stored\.updateCheckedAt\) > 0/);
+assert.match(background, /restoreUpdate\(stored, chrome\.runtime\.getManifest\(\)\.version\)/);
+assert.match(background, /updateCheckedFor: installed/);
+
+// A release saved while 0.2.1 was installed must not be offered to 0.3.0.
+assert.deepEqual(
+  restoreUpdate({ updateVersion: "0.2.2", updateCheckedAt: 5 }, "0.3.0"),
+  { updateVersion: "", updateChecked: false, stale: true },
+);
+assert.deepEqual(
+  restoreUpdate({ updateVersion: "0.2.2", updateCheckedFor: "0.2.1", updateCheckedAt: 5 }, "0.3.0"),
+  { updateVersion: "", updateChecked: false, stale: true },
+);
+// A check run by this version keeps its result while that release is newer.
+assert.deepEqual(
+  restoreUpdate({ updateVersion: "0.3.1", updateCheckedFor: "0.3.0", updateCheckedAt: 5 }, "0.3.0"),
+  { updateVersion: "0.3.1", updateChecked: true, stale: false },
+);
+assert.deepEqual(
+  restoreUpdate({ updateVersion: "", updateCheckedFor: "0.3.0", updateCheckedAt: 5 }, "0.3.0"),
+  { updateVersion: "", updateChecked: true, stale: false },
+);
+assert.equal(
+  restoreUpdate({ updateVersion: "0.2.2", updateCheckedFor: "0.3.0", updateCheckedAt: 5 }, "0.3.0").updateVersion,
+  "",
+);
+assert.equal(restoreUpdate({ updateVersion: "nope", updateCheckedFor: "0.3.0" }, "0.3.0").updateVersion, "");
+assert.equal(restoreUpdate({ updateCheckedFor: "0.3.0" }, "").stale, true);
+assert.equal(restoreUpdate(undefined, "0.3.0").stale, true);
+
+// The popup never offers a release that is not newer than the install.
+assert.deepEqual(updateLine("0.3.0", "0.2.2", true), {
+  installed: "v0.3.0 · Up to date",
+  available: "",
+  href: "",
+});
+assert.equal(updateLine("0.3.0", "0.3.0", false).available, "");
+assert.equal(updateLine("0.3.0", "0.3.1", true).available, "Update to v0.3.1");
 
 const details = popupHtml.match(/<details id="details"[\s\S]*<\/details>/);
 assert.ok(details, "troubleshooting details are present");

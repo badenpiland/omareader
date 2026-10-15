@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- After an update, the popup no longer offers an older release. A release found while an earlier version was installed is dropped, and the release check runs again.
+
 ## 0.3.0 — 2026-10-15
 
 ### Added
