@@ -57,7 +57,7 @@ Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy
 
 ## Install
 
-Chromium, Chrome, Brave, Brave Origin, and Edge.
+Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are not supported yet.
 
 **Curl installer (current).** [v0.2.2](https://github.com/badenpiland/omareader/releases/tag/v0.2.2):
 
@@ -141,7 +141,7 @@ The build refreshes `LICENSES/darkreader-MIT.txt` from `node_modules/darkreader/
 
 ## Roadmap
 
-Next release is v0.3.0: a cleaner Omarchy-style popup, an always-visible version line with update status, a per-site toggle hotkey, a legacy-installer warning, and a Dark Reader prompt fix.
+Next release is v0.3.0: a cleaner Omarchy-style popup, an always-visible version line with update status, the Alt+Shift+U per-site hotkey, a fix for page CSP errors, and a Dark Reader prompt fix.
 
 A Firefox version is planned.
 
