@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
+import { decideDarkReaderPrompt } from "./dark-reader.js";
 import { fromExtensionPage } from "./extension-page.js";
 import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
 import { hostFailureText, paletteFromHost } from "./host-message.js";
@@ -539,6 +540,11 @@ chrome.runtime.onConnect.addListener((port) => {
       postTo(port);
       return;
     }
+    // Pages report the extension proxy. That message must not change other settings.
+    if (message.type === "darkReaderExtension" && port.sender?.tab) {
+      void noteDarkReaderExtension();
+      return;
+    }
     // Content scripts share the "client" port name. Only extension pages may change settings.
     if (!fromExtensionPage(port.sender, EXTENSION_ORIGIN)) {
       return;
@@ -683,7 +689,7 @@ function showDarkReaderPrompt(known) {
 
 async function managementGranted() {
   try {
-    return await chrome.permissions.contains({ permissions: ["management"] });
+    return (await chrome.permissions.contains({ permissions: ["management"] })) === true;
   } catch {
     return false;
   }
@@ -704,26 +710,55 @@ async function resolveDarkReader(disable) {
   broadcast();
 }
 
+async function lookupDarkReaderEnabled() {
+  try {
+    const info = await chrome.management.get(DARK_READER_ID);
+    return info?.enabled === true;
+  } catch {
+    return false;
+  }
+}
+
 async function considerDarkReader(stored) {
   // darkReaderOffered is the previous release, which turned Dark Reader off
   // without asking. Don't ask those installs again.
-  if (stored.darkReaderChoice || stored.darkReaderOffered) {
+  const granted = await managementGranted();
+  const extensionEnabled = granted ? await lookupDarkReaderEnabled() : null;
+  const decision = decideDarkReaderPrompt({
+    stored,
+    managementGranted: granted,
+    extensionEnabled,
+    proxyInjected: false,
+  });
+  if (decision.prompt) {
+    showDarkReaderPrompt(decision.known);
+  }
+}
+
+async function noteDarkReaderExtension() {
+  if (darkReaderPrompt) {
     return;
   }
-  if (!(await managementGranted())) {
-    showDarkReaderPrompt(false);
+  const stored = await chrome.storage.local.get({
+    darkReaderChoice: "",
+    darkReaderOffered: false,
+  });
+  if (darkReaderPrompt) {
     return;
   }
-  let info;
-  try {
-    info = await chrome.management.get(DARK_READER_ID);
-  } catch {
+  const granted = await managementGranted();
+  const extensionEnabled = granted ? await lookupDarkReaderEnabled() : null;
+  const decision = decideDarkReaderPrompt({
+    stored,
+    managementGranted: granted,
+    extensionEnabled,
+    proxyInjected: true,
+  });
+  if (!decision.prompt) {
     return;
   }
-  if (!info?.enabled) {
-    return;
-  }
-  showDarkReaderPrompt(true);
+  showDarkReaderPrompt(decision.known);
+  broadcast();
 }
 
 async function start() {

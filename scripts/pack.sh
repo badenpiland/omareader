@@ -35,6 +35,7 @@ for required in \
   "$ROOT/dist/content.js" \
   "$ROOT/dist/early.css" \
   "$ROOT/dist/background.js" \
+  "$ROOT/dist/dark-reader.js" \
   "$ROOT/dist/extension-page.js" \
   "$ROOT/dist/site-fixes.js" \
   "$ROOT/dist/dynamic-theme-fixes.config"
