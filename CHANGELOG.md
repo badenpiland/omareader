@@ -6,6 +6,10 @@
 
 - Alt+Shift+U pauses the current site, or themes it again. Alt+Shift+O still turns Omareader on or off. The toolbar badge flashes P, T, ON, or OFF.
 
+### Fixed
+
+- Theming a page no longer inserts an inline script. A page whose CSP is `script-src 'self'` no longer reports that error. The Dark Reader stylesheet proxy runs from the extension instead.
+
 ## 0.2.2 — 2026-10-13
 
 ### Fixed
