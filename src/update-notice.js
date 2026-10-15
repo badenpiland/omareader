@@ -80,26 +80,27 @@ export function newerRelease(releases, currentVersion) {
   return best;
 }
 
-// Popup copy for this install. A newer release keeps the sentence the popup
-// already used. "Up to date" is only for a check that finished and found
-// nothing newer. Otherwise the line is the installed version on its own.
+function versionLabel(version) {
+  const text = typeof version === "string" ? version.trim() : "";
+  const bare = text.replace(/^v/i, "");
+  return bare ? `v${bare}` : "";
+}
+
+// One popup line. Versions always wear a v. "Up to date" waits for a check
+// that finished and found nothing newer. A newer release is a link to that release.
 export function updateLine(installed, available, checked) {
-  const version = typeof installed === "string" ? installed.trim() : "";
-  const newer = typeof available === "string" ? available : "";
+  const label = versionLabel(installed);
+  const newer = versionLabel(available);
   if (newer) {
     return {
-      installed: `${version} is installed. `,
-      available: newer,
-      tail: " is available.",
+      installed: label ? `${label} · ` : "",
+      available: `Update to ${newer}`,
+      href: `${REPO_URL}/releases/tag/${newer}`,
     };
-  }
-  let label = "";
-  if (version) {
-    label = version.startsWith("v") || version.startsWith("V") ? version : `v${version}`;
   }
   return {
     installed: checked === true && label ? `${label} · Up to date` : label,
     available: "",
-    tail: "",
+    href: "",
   };
 }

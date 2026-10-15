@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { REPO_URL, updateLine } from "./update-notice.js";
+import { updateLine } from "./update-notice.js";
 
 const enabledInput = document.querySelector("#enabled");
 const enabledLabel = document.querySelector("#enabled-label");
@@ -16,7 +16,6 @@ const darkReader = document.querySelector("#dark-reader");
 const siteFixesInput = document.querySelector("#site-fixes");
 const updateInstalled = document.querySelector("#update-installed");
 const updateAvailable = document.querySelector("#update-available");
-const updateTail = document.querySelector("#update-tail");
 const darkReaderText = document.querySelector("#dark-reader-text");
 const DARK_READER_KNOWN = "Dark Reader is also on. Both extensions restyle the page. Turn Dark Reader off?";
 const DARK_READER_UNKNOWN = "If Dark Reader is also on, both restyle pages. Turn it off?";
@@ -74,10 +73,8 @@ function applyUpdate(available, checked) {
   updateInstalled.textContent = line.installed;
   updateAvailable.hidden = line.available === "";
   updateAvailable.textContent = line.available;
-  updateTail.hidden = line.tail === "";
-  updateTail.textContent = line.tail;
-  if (line.available) {
-    updateAvailable.href = REPO_URL;
+  if (line.href) {
+    updateAvailable.href = line.href;
   } else {
     updateAvailable.removeAttribute("href");
   }

@@ -64,29 +64,33 @@ assert.equal(REPO_URL, "https://github.com/badenpiland/omareader");
 assert.deepEqual(updateLine("0.2.2", "", false), {
   installed: "v0.2.2",
   available: "",
-  tail: "",
+  href: "",
 });
 assert.deepEqual(updateLine("0.2.2", "", true), {
   installed: "v0.2.2 · Up to date",
   available: "",
-  tail: "",
+  href: "",
 });
-assert.deepEqual(updateLine("v0.2.2", "", true), {
+assert.deepEqual(updateLine("V0.2.2", "", true), {
   installed: "v0.2.2 · Up to date",
   available: "",
-  tail: "",
+  href: "",
 });
 assert.equal(updateLine("0.2.2", "", false).installed.includes("Up to date"), false);
-assert.equal(updateLine("0.2.2", "", undefined).installed.includes("Up to date"), false);
-assert.deepEqual(updateLine("0.2.2", "0.2.3", true), {
-  installed: "0.2.2 is installed. ",
-  available: "0.2.3",
-  tail: " is available.",
+assert.equal(updateLine("0.2.2", "", undefined).installed, "v0.2.2");
+const offered = updateLine("0.2.2", "0.2.3", true);
+assert.deepEqual(offered, {
+  installed: "v0.2.2 · ",
+  available: "Update to v0.2.3",
+  href: "https://github.com/badenpiland/omareader/releases/tag/v0.2.3",
 });
-assert.deepEqual(updateLine("0.2.2", "0.2.3", false), updateLine("0.2.2", "0.2.3", true));
+assert.equal(`${offered.installed}${offered.available}`, "v0.2.2 · Update to v0.2.3");
+assert.deepEqual(updateLine("0.2.2", "v0.2.3", false), offered);
 assert.equal(updateLine(" 0.2.2 ", "", false).installed, "v0.2.2");
-assert.deepEqual(updateLine("", "", true), { installed: "", available: "", tail: "" });
+assert.deepEqual(updateLine("", "", true), { installed: "", available: "", href: "" });
 assert.equal(updateLine("0.2.2", 12, true).installed, "v0.2.2 · Up to date");
+assert.equal(JSON.stringify(updateLine("0.2.2", "0.2.3", true)).includes("is installed"), false);
+assert.equal(JSON.stringify(updateLine("0.2.2", "0.2.3", true)).includes("is available"), false);
 
 const popupJs = readFileSync(new URL("../src/popup.js", import.meta.url), "utf8");
 const popupHtml = readFileSync(new URL("../src/popup.html", import.meta.url), "utf8");
