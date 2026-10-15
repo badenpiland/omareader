@@ -234,6 +234,25 @@ button:focus-visible,
   margin-top: var(--s);
 }
 
+.pair {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s);
+  width: 100%;
+}
+
+.pair .v {
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+#site-host {
+  margin-left: auto;
+  text-align: right;
+}
+
 #site-host,
 .v,
 .v span {
