@@ -7,14 +7,14 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header class="row">
+    <header>
       <h1>omareader</h1>
       <label class="switch">
         <span id="enabled-label">On</span>
         <input id="enabled" type="checkbox" />
       </label>
     </header>
-    <p class="row">
+    <p class="line">
       <span class="k">Theme</span>
       <span id="theme">Waiting for Omarchy</span>
     </p>
@@ -27,26 +27,27 @@
         <button id="dark-reader-keep" type="button">Leave it on</button>
       </div>
     </section>
-    <details id="details" hidden>
+    <details id="details">
       <summary>Details</summary>
       <div class="rows">
-        <p id="site-line" class="row" hidden><span class="k">Site</span> <span id="site-host"></span></p>
+        <p id="site-line" class="line" hidden><span class="k">Site</span> <span id="site-host"></span></p>
         <div class="swatches" hidden>
-          <div class="row">
+          <div class="line">
             <span class="k">Background</span>
             <span class="v"><i id="bg"></i><span id="bg-label"></span></span>
           </div>
-          <div class="row">
+          <div class="line">
             <span class="k">Foreground</span>
             <span class="v"><i id="fg"></i><span id="fg-label"></span></span>
           </div>
         </div>
+        <label class="fixes">
+          <input id="site-fixes" type="checkbox" checked />
+          <span>Update site fixes daily</span>
+        </label>
       </div>
     </details>
-    <footer class="row">
-      <p id="update"><span id="update-installed"></span><a id="update-available" hidden target="_blank" rel="noreferrer"></a></p>
-      <button id="settings" type="button">Settings</button>
-    </footer>
+    <p id="update"><span id="update-installed"></span><a id="update-available" hidden target="_blank" rel="noreferrer"></a></p>
     <script type="module" src="popup.js"></script>
   </body>
 </html>

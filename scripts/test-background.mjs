@@ -30,7 +30,6 @@ console.log(`reconnect delays ${seen.join(", ")}`);
 
 const origin = "chrome-extension://mhglniaepbokfgnpeennihlifandcgjh/";
 assert.equal(fromExtensionPage({ url: `${origin}popup.html` }, origin), true);
-assert.equal(fromExtensionPage({ url: `${origin}options.html` }, origin), true);
 assert.equal(fromExtensionPage({ tab: { id: 1 }, url: "https://example.org/" }, origin), false);
 assert.equal(
   fromExtensionPage({ url: "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/popup.html" }, origin),
@@ -46,7 +45,7 @@ const manifest = JSON.parse(
 assert.deepEqual(manifest.permissions, ["nativeMessaging", "storage", "alarms", "scripting"]);
 assert.deepEqual(manifest.optional_permissions, ["management"]);
 assert.equal(manifest.permissions.includes("management"), false);
-assert.deepEqual(manifest.options_ui, { page: "options.html", open_in_tab: false });
+assert.equal(manifest.options_ui, undefined);
 console.log("management is an optional permission");
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -54,7 +53,7 @@ const build = readFileSync(join(repoRoot, "scripts/build.mjs"), "utf8");
 const copyList = build.match(/for \(const file of \[([\s\S]*?)\]\)/);
 assert.ok(copyList, "build copy list is present");
 const copied = [...copyList[1].matchAll(/"([^"]+)"/g)].map((match) => match[1]);
-for (const name of ["background.js", "popup.js", "options.js"]) {
+for (const name of ["background.js", "popup.js"]) {
   const source = readFileSync(join(repoRoot, "src", name), "utf8");
   for (const match of source.matchAll(/from "\.\/([^"]+)"/g)) {
     assert.equal(copied.includes(match[1]), true, `${name} imports ${match[1]}, which the build does not copy`);
