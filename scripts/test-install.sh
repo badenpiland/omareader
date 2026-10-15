@@ -335,4 +335,11 @@ while IFS= read -r tmpdir; do
   test ! -e "$tmpdir"
 done < "$WORK/mktemp.log"
 
+# The published checksum names the file only, so it carries no local path.
+grep -qF '(cd "$ROOT/release" && sha256sum omareader.crx)' "$ROOT/scripts/pack.sh"
+if grep -qF 'sha256sum "$ROOT/release/omareader.crx"' "$ROOT/scripts/pack.sh"; then
+  echo "pack.sh hashes an absolute path into the published .sha256" >&2
+  exit 1
+fi
+
 echo "remote release install checked"
