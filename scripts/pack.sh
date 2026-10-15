@@ -72,5 +72,6 @@ rm -f "$ROOT/dist.pem"
 
 mkdir -p "$ROOT/release"
 mv "$ROOT/dist.crx" "$ROOT/release/omareader.crx"
-sha256sum "$ROOT/release/omareader.crx" | tee "$ROOT/release/omareader.crx.sha256"
+# Hash from inside release/ so the published .sha256 names omareader.crx, not a local path.
+(cd "$ROOT/release" && sha256sum omareader.crx) | tee "$ROOT/release/omareader.crx.sha256"
 echo "Packed $ROOT/release/omareader.crx ($EXT_ID)"
