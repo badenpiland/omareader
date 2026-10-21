@@ -18,6 +18,12 @@
   <a href="https://omarchy.org"><img alt="Omarchy" src="https://img.shields.io/badge/Omarchy-omarchy.org-9ece6a?style=flat-square&labelColor=1a1b26&logo=omarchy&logoColor=9ece6a"></a>
 </p>
 
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | bash
+```
+
 ![The same page in Harbor, then Tokyo Night, without a reload](docs/switch.gif)
 
 <picture>
@@ -55,15 +61,11 @@ Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy
   <img alt="" src="docs/divider-light.png" width="72" height="8">
 </picture>
 
-## Install
+## Install details
 
 Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are not supported yet.
 
-**Curl installer (current).** [v0.3.1](https://github.com/badenpiland/omareader/releases/tag/v0.3.1):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | bash
-```
+**Curl installer (current).** [v0.3.1](https://github.com/badenpiland/omareader/releases/tag/v0.3.1). The one-line command is in [Install](#install) above.
 
 The command follows the Omarchy default browser and installs Omareader only there. Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome asks once for sudo and writes the extension where Chrome will load it. Restart that browser.
 
