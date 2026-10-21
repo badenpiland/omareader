@@ -24,7 +24,7 @@
 curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | bash
 ```
 
-![The same page in Harbor, then Tokyo Night, without a reload](docs/switch.gif)
+![Switching Omarchy themes from the Omarchy menu; omareader recolors the page live](docs/switch.gif)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
