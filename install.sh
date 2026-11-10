@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Install the prebuilt Omareader extension and its native host.
 # Does not compile, and does not create a signing key.
+# Firefox and Zen get the native host only. The add-on is loaded by hand.
 set -euo pipefail
 
 tmp=""
@@ -13,6 +14,7 @@ trap cleanup EXIT
 
 HOST_NAME="com.bhp.omareader"
 EXT_ID="mhglniaepbokfgnpeennihlifandcgjh"
+GECKO_ID="omareader@badenpiland"
 REPO="badenpiland/omareader"
 REF="${OMAREADER_REF:-}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -46,17 +48,19 @@ default_browser() {
   esac
 }
 
-BROWSER_ID="$(default_browser)"
+if [[ -n "${OMAREADER_BROWSER:-}" ]]; then
+  BROWSER_ID="$(printf '%s' "$OMAREADER_BROWSER" | tr -d '[:space:]')"
+else
+  BROWSER_ID="$(default_browser)"
+fi
 case "$BROWSER_ID" in
   chromium) BROWSER_BASE="$CONFIG_HOME/chromium"; PRETTY="Chromium" ;;
   brave) BROWSER_BASE="$CONFIG_HOME/BraveSoftware/Brave-Browser"; PRETTY="Brave" ;;
   brave-origin) BROWSER_BASE="$CONFIG_HOME/BraveSoftware/Brave-Origin"; PRETTY="Brave Origin" ;;
   edge) BROWSER_BASE="$CONFIG_HOME/microsoft-edge"; PRETTY="Edge" ;;
   chrome) BROWSER_BASE="$CONFIG_HOME/google-chrome"; PRETTY="Chrome" ;;
-  firefox | zen)
-    echo "Omareader is for Chromium-based browsers. The default browser is ${BROWSER_ID}." >&2
-    exit 1
-    ;;
+  firefox) PRETTY="Firefox" ;;
+  zen) PRETTY="Zen" ;;
   *)
     echo "Omareader does not recognize the default browser: ${BROWSER_ID}" >&2
     exit 1
@@ -93,6 +97,36 @@ with open(dest, "w", encoding="utf-8") as handle:
             "path": path,
             "type": "stdio",
             "allowed_origins": [f"chrome-extension://{ext_id}/"],
+        },
+        handle,
+        indent=2,
+    )
+    handle.write("\n")
+PY
+}
+
+write_firefox_host_json() {
+  local dest="$1"
+  mkdir -p "$(dirname -- "$dest")"
+  python3 - "$dest" "$HOST_NAME" "$HOST_DEST" "$GECKO_ID" <<'PY'
+import json
+import sys
+
+dest, name, path, extension_id = sys.argv[1:5]
+if not path.startswith("/"):
+    sys.stderr.write("Firefox host path must be absolute\n")
+    raise SystemExit(1)
+if "@" not in extension_id or "://" in extension_id:
+    sys.stderr.write("Firefox host manifest needs a gecko id\n")
+    raise SystemExit(1)
+with open(dest, "w", encoding="utf-8") as handle:
+    json.dump(
+        {
+            "name": name,
+            "description": "Omareader Omarchy theme host",
+            "path": path,
+            "type": "stdio",
+            "allowed_extensions": [extension_id],
         },
         handle,
         indent=2,
@@ -155,6 +189,24 @@ else
   fi
   install -m 755 "$tmp/omareader-host" "$HOST_DEST"
   ROOT=""
+fi
+
+if [[ "$BROWSER_ID" == "firefox" || "$BROWSER_ID" == "zen" ]]; then
+  # Firefox looks in ~/.mozilla, not the XDG config directory. Zen reads that
+  # same directory. The Chromium id must not be listed here.
+  FIREFOX_HOST="$HOME/.mozilla/native-messaging-hosts/${HOST_NAME}.json"
+  write_firefox_host_json "$FIREFOX_HOST"
+  echo "Omareader native host ${VERSION} is registered for Firefox and Zen (${GECKO_ID})."
+  echo "Manifest: ${FIREFOX_HOST}"
+  echo "Firefox and Zen do not load the Chromium package. There is no signed add-on."
+  if [[ -n "$ROOT" && -f "$ROOT/dist-firefox/manifest.json" ]]; then
+    echo "Load a temporary add-on: about:debugging#/runtime/this-firefox → Load Temporary Add-on → ${ROOT}/dist-firefox/manifest.json"
+  else
+    echo "Load a temporary add-on: about:debugging#/runtime/this-firefox → Load Temporary Add-on → dist-firefox/manifest.json"
+  fi
+  echo "A temporary add-on is removed when the browser quits."
+  echo "Zen reads the same native-messaging host directory as Firefox."
+  exit 0
 fi
 
 download_crx() {

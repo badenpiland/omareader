@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
-import { decideDarkReaderPrompt } from "./dark-reader.js";
+import { darkReaderExtensionId, decideDarkReaderPrompt } from "./dark-reader.js";
 import { fromExtensionPage } from "./extension-page.js";
 import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
 import { hostFailureText, paletteFromHost } from "./host-message.js";
@@ -16,7 +16,7 @@ import {
 
 const HOST = "com.bhp.omareader";
 const EXTENSION_ORIGIN = chrome.runtime.getURL("");
-const DARK_READER_ID = "eimadpbcbfnmbkopoojfekhnkhdbieeh";
+const DARK_READER_ID = darkReaderExtensionId(EXTENSION_ORIGIN);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RETRY_MS = 6 * 60 * 60 * 1000;
 

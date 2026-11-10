@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import esbuild from "esbuild";
 import { createDarkReaderPlugin } from "./proxy-source.mjs";
+import { firefoxManifest, GECKO_ID } from "./firefox-manifest.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -252,4 +253,56 @@ if (!manifest.key) {
 const id = idFromDer(Buffer.from(manifest.key, "base64"));
 writeFileSync(join(root, "extension-id"), `${id}\n`);
 writeFileSync(join(dist, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+stageFirefox(manifest);
 process.stdout.write(`${id}\n`);
+
+function stageFirefox(source) {
+  const target = join(root, "dist-firefox");
+  rmSync(target, { recursive: true, force: true });
+  mkdirSync(target, { recursive: true });
+  const files = [
+    "content.js",
+    "page-proxy.js",
+    "background.js",
+    "commands.js",
+    "dark-reader.js",
+    "reconnect-delay.js",
+    "extension-page.js",
+    "host-message.js",
+    "site-fixes.js",
+    "theme-fetch.js",
+    "update-notice.js",
+    "popup.js",
+    "popup.html",
+    "popup.css",
+    "omarchy-font.ttf",
+    "early.css",
+    "dynamic-theme-fixes.config",
+    "LICENSE",
+  ];
+  for (const name of files) {
+    copyFileSync(join(dist, name), join(target, name));
+  }
+  for (const mode of ["dark", "light"]) {
+    for (const size of [16, 32, 48, 128]) {
+      const icon = `icon-${mode}-${size}.png`;
+      copyFileSync(join(dist, icon), join(target, icon));
+    }
+  }
+  cpSync(join(dist, "LICENSES"), join(target, "LICENSES"), { recursive: true });
+  const firefox = firefoxManifest(source);
+  if (firefox.key || firefox.minimum_chrome_version || firefox.background.service_worker) {
+    process.stderr.write("Firefox manifest still carries Chromium-only background keys\n");
+    process.exit(1);
+  }
+  if (firefox.browser_specific_settings?.gecko?.id !== GECKO_ID) {
+    process.stderr.write("Firefox manifest is missing the gecko id\n");
+    process.exit(1);
+  }
+  const proxy = firefox.content_scripts?.find((script) => script.js?.includes("page-proxy.js"));
+  if (!proxy || proxy.world !== "MAIN") {
+    process.stderr.write("Firefox page proxy has to stay in the MAIN world\n");
+    process.exit(1);
+  }
+  writeFileSync(join(target, "manifest.json"), `${JSON.stringify(firefox, null, 2)}\n`);
+}

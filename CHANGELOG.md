@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Firefox and Zen can load `dist-firefox/` as a temporary add-on. The native host for them is `~/.mozilla/native-messaging-hosts/com.bhp.omareader.json`, and `allowed_extensions` is `omareader@badenpiland`. `OMAREADER_BROWSER=firefox ./install.sh` (or `zen`) registers that host and does not install the Chromium package. Shortcuts stay Alt+Shift+O and Alt+Shift+U.
+- On Firefox, the first paint reads the palette from local storage when session storage is closed to content scripts.
+
 ## 0.3.1 — 2026-10-15
 
 ### Fixed
