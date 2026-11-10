@@ -12,9 +12,20 @@ export function extensionProxyInjected(root) {
   return root.getAttribute(DARK_READER_PROXY_ATTRIBUTE) === "true";
 }
 
-// Prompt only for positive evidence that extension eimadpbcbfnmbkopoojfekhnkhdbieeh
-// is installed and enabled. A missing or denied management permission is the
-// normal install state, including an external package install, and is not evidence.
+// Chromium Dark Reader id. Firefox's listing is addon@darkreader.org.
+export const DARK_READER_CHROMIUM_ID = "eimadpbcbfnmbkopoojfekhnkhdbieeh";
+export const DARK_READER_GECKO_ID = "addon@darkreader.org";
+
+export function darkReaderExtensionId(extensionUrl) {
+  if (String(extensionUrl || "").startsWith("moz-extension:")) {
+    return DARK_READER_GECKO_ID;
+  }
+  return DARK_READER_CHROMIUM_ID;
+}
+
+// Prompt only for positive evidence that Dark Reader is installed and enabled.
+// A missing or denied management permission is the normal install state,
+// including an external package install, and is not evidence.
 export function decideDarkReaderPrompt({
   stored,
   managementGranted,

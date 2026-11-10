@@ -31,6 +31,7 @@ function tabIdOf(tab) {
 
 // Suggested keys are Alt+Shift+O and Alt+Shift+U in the manifest. Omarchy binds
 // O with SUPER, and Chromium already uses Ctrl+U, Ctrl+Shift+O, and Alt+Shift+T.
+// Firefox accepts the same Alt+Shift chords.
 export async function runReaderCommand(command, tab, deps) {
   if (command === COMMAND_TOGGLE) {
     const enabled = !deps.isEnabled();

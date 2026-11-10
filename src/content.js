@@ -2,6 +2,7 @@
 import { disable, enable, setFetchMethod } from "darkreader";
 import { readableInvert, readablePoles, repairFixColors } from "./contrast.js";
 import { DARK_READER_PROXY_ATTRIBUTE, extensionProxyInjected } from "./dark-reader.js";
+import { earlyPalette } from "./early-palette.js";
 import { THEME_RESOURCE } from "./theme-fetch.js";
 
 // Dark Reader replaces sendMessage and drops its return value, so the
@@ -141,10 +142,20 @@ function cssHex(value) {
   return /^#[0-9a-fA-F]{6}$/.test(String(value || "")) ? value : "";
 }
 
+async function readPalette(area) {
+  try {
+    return await area.get("palette");
+  } catch {
+    return null;
+  }
+}
+
 async function paintEarly() {
   try {
-    const stored = await chrome.storage.session.get("palette");
-    const palette = stored?.palette;
+    const palette = earlyPalette(
+      await readPalette(chrome.storage.session),
+      await readPalette(chrome.storage.local),
+    );
     const background = cssHex(palette?.background);
     const foreground = cssHex(palette?.foreground);
     if (earlySealed || !background || !foreground || !document.documentElement) {
@@ -155,7 +166,7 @@ async function paintEarly() {
     root.style.setProperty("--omareader-fg", foreground);
     root.setAttribute("data-omareader-early", "");
   } catch {
-    // Session storage can be closed off. The port still applies the theme.
+    // Storage can be closed off. The port still applies the theme.
   }
 }
 

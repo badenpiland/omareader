@@ -1,0 +1,119 @@
+Notes for reviewers
+
+What it does
+
+Omareader restyles web pages with the colors of the local Omarchy theme. A small Python native-messaging host watches the theme files on the machine and sends the palette to the extension. The extension applies that palette with the Dark Reader dynamic-theme engine.
+
+This is not a Dark Reader fork and not a rebrand of the Dark Reader extension. It does not use the Dark Reader name or logo. The engine is the MIT npm package darkreader 4.9.133, called as a library.
+
+License
+
+The project is MIT. See LICENSE.
+
+Dark Reader stays under its own MIT license. The copyright line is kept in LICENSES/darkreader-MIT.txt, and the built content.js and page-proxy.js start with a banner that names Dark Reader Ltd. and points at that file. README says Omareader is not affiliated with or endorsed by Dark Reader Ltd. No Dark Reader trademarks are used.
+
+Third-party library
+
+Package: darkreader@4.9.133, from package.json and package-lock.json.
+npm tarball: https://registry.npmjs.org/darkreader/-/darkreader-4.9.133.tgz
+GitHub tag: https://github.com/darkreader/darkreader/releases/tag/v4.9.133
+
+The build reads node_modules/darkreader/darkreader.mjs from that npm package. It does not unpack Dark Reader's own darkreader-firefox.xpi or darkreader-chrome zip from the GitHub release. The npm package is the published 4.9.133 library that corresponds to that tag.
+
+scripts/proxy-source.mjs patches darkreader.mjs at build time. The published file installs its stylesheet proxy by creating a script element and appending it to the page (the block that starts with createOrUpdateScript("darkreader--proxy") and ends with proxyScript.remove()). Pages whose Content-Security-Policy is script-src 'self', or anything else that blocks inline scripts, refuse that element.
+
+The patch replaces only that injection. Instead of inserting a script, the patched engine sets a data-omareader-proxy attribute on the document element and dispatches a CustomEvent named __omareader__installProxy. page-proxy.js is a separate content script with "world": "MAIN". It hears that event and calls Dark Reader's own injectProxy function, which the build extracts from the same published file. The rest of the engine is unchanged. The build fails if the inline-script injection is still present.
+
+MIT allows this modification. addons.mozilla.org prefers third-party libraries to be shipped unmodified. This one is not unmodified. The change is limited to how the proxy is installed, it exists so strict page CSP does not break theming, and the input is the official 4.9.133 package above. Please judge that exception against the diff in scripts/proxy-source.mjs and src/page-proxy.js.
+
+web-ext lint also reports that the bundled engine mentions dom.openOrClosedShadowRoot, which Firefox has not implemented. That reference ships inside darkreader 4.9.133. Omareader does not call it, and theming does not depend on it.
+
+Remote fetches
+
+Two requests, each at most once a day. Neither sends cookies, browsing history, or page content.
+
+1. Optional site-fix list, pinned to Dark Reader commit 92637d8c3fbb210853c005e3f25dbbec46dd21fc:
+   https://raw.githubusercontent.com/darkreader/darkreader/92637d8c3fbb210853c005e3f25dbbec46dd21fc/src/config/dynamic-theme-fixes.config
+   The file is configuration text. It is parsed locally. A command this version does not know is rejected, and the list already in use is kept. The same list is bundled at vendor/darkreader/dynamic-theme-fixes.config and is the fallback. The user can turn the download off with "Fetch site fixes daily" in the popup Details section.
+
+2. Update check for this project:
+   https://api.github.com/repos/badenpiland/omareader/releases?per_page=20
+   The popup links a newer release when one exists. The request does not include browsing data.
+
+Native messaging
+
+Host name: com.bhp.omareader
+Program: host/omareader-host (Python 3, standard library only)
+
+The host watches ~/.local/state/omarchy/current. It reads theme/colors.toml and theme.name and pushes JSON to the extension:
+
+  {"type":"palette","theme":"...","mode":"dark","background":"#112233","foreground":"#ddeeff","selection":"#334455"}
+
+Fields are background, foreground, selection, mode, and theme. The extension's only message to the host is {"type":"hello"}. The host does not receive page URLs, page content, or browsing history.
+
+The host uses Linux inotify. Omarchy is Linux-only, so this program is not a macOS or Windows host. On Linux, a reviewer can exercise it without an Omarchy desktop. Run these from the unpacked source zip:
+
+mkdir -p "$HOME/.local/state/omarchy/current/theme"
+mkdir -p "$HOME/.local/share/omareader"
+mkdir -p "$HOME/.mozilla/native-messaging-hosts"
+printf '%s\n' 'background = "#112233"' 'foreground = "#ddeeff"' 'selection = "#334455"' 'mode = "dark"' > "$HOME/.local/state/omarchy/current/theme/colors.toml"
+printf '%s\n' probe > "$HOME/.local/state/omarchy/current/theme.name"
+install -m 755 host/omareader-host "$HOME/.local/share/omareader/omareader-host"
+python3 - "$HOME/.mozilla/native-messaging-hosts/com.bhp.omareader.json" "$HOME/.local/share/omareader/omareader-host" << 'PY'
+import json, sys
+dest, path = sys.argv[1:3]
+with open(dest, "w", encoding="utf-8") as handle:
+    json.dump({
+        "name": "com.bhp.omareader",
+        "description": "Omareader Omarchy theme host",
+        "path": path,
+        "type": "stdio",
+        "allowed_extensions": ["addon@omareader"],
+    }, handle, indent=2)
+    handle.write("\n")
+PY
+
+npm ci
+npm run build
+
+Load dist-firefox/manifest.json as a temporary add-on (about:debugging, This Firefox, Load Temporary Add-on), or install the submitted zip. Open an http page such as https://example.com/. The page background should become rgb(17, 34, 51) (#112233) and the text rgb(221, 238, 255) (#ddeeff).
+
+Then change the sample file:
+
+printf '%s\n' 'background = "#221133"' 'foreground = "#eeddff"' 'selection = "#334455"' 'mode = "dark"' > "$HOME/.local/state/omarchy/current/theme/colors.toml"
+
+The open page should update without a reload: background rgb(34, 17, 51), text rgb(238, 221, 255). Shortcuts are Alt+Shift+O (on or off everywhere) and Alt+Shift+U (pause or theme the current site).
+
+Build
+
+From the source zip:
+
+npm ci
+npm run build
+
+That writes dist-firefox/. manifest.json in that directory is the Firefox manifest. strict_min_version is 140.0 because data_collection_permissions landed in Firefox 140. Firefox for Android is set to 142.0 for the same key. The native host is Linux desktop, so Android is not a target. The Chromium package, if produced alongside it, is dist/ and is not the file to review for this submission.
+
+npm run pack:firefox rebuilds and writes:
+
+release/omareader-firefox.zip
+release/omareader-firefox-source.zip
+
+The extension zip has manifest.json at the archive root.
+
+Permissions
+
+host_permissions "<all_urls>": the theme has to reach every page, including frames, and the extension fetches a stylesheet the page linked from another host. Only text/css is accepted, and private or local names are refused.
+
+nativeMessaging: connect to the host com.bhp.omareader for the palette.
+
+storage: remember on/off, paused sites, the last palette, the site-fix list, and the update check.
+
+alarms: run the daily site-fix fetch, the daily update check, and a reconnect while the host is down.
+
+scripting: register the early stylesheet that paints the theme color before the engine starts.
+
+optional permission management: not required for theming. It is requested only if the user chooses to turn the separate Dark Reader extension off. On Firefox that extension's id is addon@darkreader.org. Without the permission, Omareader still themes pages and does not change other extensions.
+
+Data collection
+
+browser_specific_settings.gecko.data_collection_permissions.required is ["none"]. The add-on does not collect or transmit personal data or browsing data. The two daily requests above download public files and send no page data.

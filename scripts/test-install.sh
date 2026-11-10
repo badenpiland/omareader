@@ -55,12 +55,14 @@ run_install() {
   local home="$1"
   local url="$2"
   local browser="${3:-chromium}"
+  local forced="${4:-}"
   mkdir -p "$home"
   HOME="$home" \
     XDG_CONFIG_HOME="$home/.config" \
     OMAREADER_SYSTEM=no \
     OMAREADER_SUDO_LOG="$WORK/sudo-called" \
     OMAREADER_CRX_URL="$url" \
+    OMAREADER_BROWSER="$forced" \
     OMAREADER_TEST_BROWSER="$browser" \
     PATH="$BIN:$PATH" \
     "$ROOT/install.sh"
@@ -76,6 +78,7 @@ good_home="$WORK/home-good"
 install_into "$good_home" "http://127.0.0.1:${PORT}/good/omareader.crx" >/tmp/omareader-install-good.out
 cmp "$WORK/good/omareader.crx" "$good_home/.local/share/omareader/omareader.crx"
 test -f "$good_home/.config/chromium/External Extensions/mhglniaepbokfgnpeennihlifandcgjh.json"
+test ! -e "$good_home/.mozilla/native-messaging-hosts"
 
 bare_home="$WORK/home-bare"
 set +e
@@ -131,6 +134,7 @@ assert_only() {
       test ! -e "$home/$rel/External Extensions"
     fi
   done
+  test ! -e "$home/.mozilla/native-messaging-hosts"
   test ! -e "$WORK/sudo-called"
 }
 
@@ -175,14 +179,78 @@ HOME="$origin_home" \
 assert_only "$origin_home" ".config/BraveSoftware/Brave-Origin"
 test -f "$origin_home/.config/BraveSoftware/Brave-Origin/External Extensions/$EXT_JSON"
 
+assert_firefox_host() {
+  local home="$1"
+  local out="$2"
+  local manifest="$home/.mozilla/native-messaging-hosts/com.bhp.omareader.json"
+  test -f "$manifest"
+  test -x "$home/.local/share/omareader/omareader-host"
+  test ! -e "$home/.local/share/omareader/omareader.crx"
+  test ! -e "$home/.config/chromium/NativeMessagingHosts"
+  test ! -e "$home/.config/chromium/External Extensions"
+  grep -q "registered for Firefox and Zen" "$out"
+  grep -q "addon@omareader" "$out"
+  grep -q "no signed add-on" "$out"
+  grep -q "dist-firefox/manifest.json" "$out"
+  grep -q "temporary add-on is removed" "$out"
+  grep -q "about:debugging#/runtime/this-firefox" "$out"
+  python3 - "$manifest" "$home" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+manifest, home = sys.argv[1:3]
+host = json.loads(Path(manifest).read_text())
+share = Path(home) / ".local/share/omareader"
+assert host["name"] == "com.bhp.omareader"
+assert host["description"] == "Omareader Omarchy theme host"
+assert host["path"] == str(share / "omareader-host")
+assert host["path"].startswith("/")
+assert host["type"] == "stdio"
+assert host["allowed_extensions"] == ["addon@omareader"]
+assert "allowed_origins" not in host
+PY
+}
+
+firefox_home="$WORK/home-firefox"
+run_install "$firefox_home" "$GOOD_URL" firefox >/tmp/omareader-install-firefox.out
+assert_firefox_host "$firefox_home" /tmp/omareader-install-firefox.out
+
 zen_home="$WORK/home-zen"
-set +e
-run_install "$zen_home" "$GOOD_URL" zen >/tmp/omareader-install-zen.out 2>/tmp/omareader-install-zen.err
-status=$?
-set -e
-test "$status" -ne 0
-grep -q "Chromium-based" /tmp/omareader-install-zen.err
-test ! -e "$zen_home/.local/share/omareader"
+run_install "$zen_home" "$GOOD_URL" zen >/tmp/omareader-install-zen.out
+assert_firefox_host "$zen_home" /tmp/omareader-install-zen.out
+
+override_home="$WORK/home-firefox-override"
+run_install "$override_home" "$GOOD_URL" chromium firefox >/tmp/omareader-install-firefox-override.out
+assert_firefox_host "$override_home" /tmp/omareader-install-firefox-override.out
+
+firefox_desktop_home="$WORK/home-firefox-desktop"
+HOME="$firefox_desktop_home" \
+  XDG_CONFIG_HOME="$firefox_desktop_home/.config" \
+  OMAREADER_SYSTEM=no \
+  OMAREADER_SUDO_LOG="$WORK/sudo-called" \
+  OMAREADER_CRX_URL="$GOOD_URL" \
+  OMAREADER_BROWSER= \
+  OMAREADER_TEST_DESKTOP="firefox.desktop" \
+  PATH="$FALLBACK" \
+  "$ROOT/install.sh" >/tmp/omareader-install-firefox-desktop.out
+assert_firefox_host "$firefox_desktop_home" /tmp/omareader-install-firefox-desktop.out
+
+zen_desktop_home="$WORK/home-zen-desktop"
+HOME="$zen_desktop_home" \
+  XDG_CONFIG_HOME="$zen_desktop_home/.config" \
+  OMAREADER_SYSTEM=no \
+  OMAREADER_SUDO_LOG="$WORK/sudo-called" \
+  OMAREADER_CRX_URL="$GOOD_URL" \
+  OMAREADER_BROWSER= \
+  OMAREADER_TEST_DESKTOP="zen.desktop" \
+  PATH="$FALLBACK" \
+  "$ROOT/install.sh" >/tmp/omareader-install-zen-desktop.out
+assert_firefox_host "$zen_desktop_home" /tmp/omareader-install-zen-desktop.out
+
+firefox_quote="$WORK/ff\"home"
+run_install "$firefox_quote" "$GOOD_URL" firefox >/tmp/omareader-install-firefox-quote.out
+assert_firefox_host "$firefox_quote" /tmp/omareader-install-firefox-quote.out
 
 echo "default browser install checked"
 
@@ -202,6 +270,7 @@ assert host["path"] == str(share / "omareader-host")
 assert host["allowed_origins"] == ["chrome-extension://mhglniaepbokfgnpeennihlifandcgjh/"]
 assert ext["external_crx"] == str(share / "omareader.crx")
 assert ext["external_version"]
+assert not (home / ".mozilla/native-messaging-hosts").exists()
 PY
 echo "quoted home json checked"
 
@@ -284,6 +353,7 @@ run_remote() {
     XDG_CONFIG_HOME="$home/.config" \
     OMAREADER_SYSTEM=no \
     OMAREADER_SUDO_LOG="$WORK/sudo-called" \
+    OMAREADER_BROWSER= \
     OMAREADER_TEST_BROWSER=chromium \
     OMAREADER_CURL_LOG="$WORK/curl.log" \
     OMAREADER_MKTEMP_LOG="$WORK/mktemp.log" \
@@ -299,6 +369,7 @@ grep -q "api.github.com/repos/badenpiland/omareader/releases/latest" "$WORK/curl
 grep -q "/v9.9.9/host/omareader-host" "$WORK/curl.log"
 grep -q "/releases/download/v9.9.9/omareader.crx" "$WORK/curl.log"
 cmp "$WORK/remote-crx-body" "$remote_home/.local/share/omareader/omareader.crx"
+test ! -e "$remote_home/.mozilla/native-messaging-hosts"
 test -s "$WORK/mktemp.log"
 while IFS= read -r tmpdir; do
   test ! -e "$tmpdir"
@@ -334,6 +405,16 @@ test -s "$WORK/mktemp.log"
 while IFS= read -r tmpdir; do
   test ! -e "$tmpdir"
 done < "$WORK/mktemp.log"
+
+firefox_remote="$WORK/home-firefox-remote"
+run_remote "$firefox_remote" env OMAREADER_TEST_BROWSER=firefox >/tmp/omareader-install-firefox-remote.out
+grep -q "api.github.com/repos/badenpiland/omareader/releases/latest" "$WORK/curl.log"
+grep -q "/v9.9.9/host/omareader-host" "$WORK/curl.log"
+if grep -q "omareader.crx" "$WORK/curl.log"; then
+  echo "firefox install downloaded a crx" >&2
+  exit 1
+fi
+assert_firefox_host "$firefox_remote" /tmp/omareader-install-firefox-remote.out
 
 # The published checksum names the file only, so it carries no local path.
 grep -qF '(cd "$ROOT/release" && sha256sum omareader.crx)' "$ROOT/scripts/pack.sh"

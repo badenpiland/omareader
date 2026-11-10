@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-firefox/
 dist.crx
 dist.pem
 release/
