@@ -4,9 +4,21 @@
 // manifest can name it in allowed_extensions. This is not the Chromium id.
 export const GECKO_ID = "omareader@badenpiland";
 
-// MAIN-world content scripts and match_origin_as_fallback arrived in Firefox 128.
-// The page proxy has to run in the page, or a strict script-src blocks it.
-export const FIREFOX_MIN_VERSION = "128.0";
+// MAIN-world content scripts arrived in Firefox 128. data_collection_permissions
+// arrived in Firefox 140, which is what addons.mozilla.org checks. 140 still
+// has the page-proxy world, so the minimum follows the data-collection key.
+export const FIREFOX_MIN_VERSION = "140.0";
+
+// Firefox for Android learned data_collection_permissions in 142. The native
+// host is Linux desktop, so Android is not a target; this floor only keeps
+// the manifest key inside a Firefox that understands it.
+export const FIREFOX_ANDROID_MIN_VERSION = "142.0";
+
+// New addons.mozilla.org extensions since 2025-11-03 must declare this.
+// "none" is the only value: Omareader does not collect or transmit personal
+// or browsing data. The daily fetches are a public site-fix list and this
+// repo's release list.
+export const FIREFOX_DATA_COLLECTION = { required: ["none"] };
 
 export const FIREFOX_HOST_DESCRIPTION = "Omareader Omarchy theme host";
 
@@ -33,6 +45,11 @@ export function firefoxManifest(source) {
     gecko: {
       id: GECKO_ID,
       strict_min_version: FIREFOX_MIN_VERSION,
+      data_collection_permissions: structuredClone(FIREFOX_DATA_COLLECTION),
+    },
+    gecko_android: {
+      strict_min_version: FIREFOX_ANDROID_MIN_VERSION,
+      data_collection_permissions: structuredClone(FIREFOX_DATA_COLLECTION),
     },
   };
   manifest.background = {

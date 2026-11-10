@@ -160,7 +160,15 @@ npm run build
 
 The Chromium extension id stays `mhglniaepbokfgnpeennihlifandcgjh`, so that native host still works. `scripts/pack.sh` writes `release/omareader.crx` and `release/omareader.crx.sha256` from `dist/` only. Upload both files to the GitHub release. `install.sh` checks that checksum and refuses to install when the `.sha256` file is missing. After the release is published, update the Omarchy suggestion at https://github.com/omacom/omarchy/discussions/14632: comment with the version, the install command, and any behavior change that matters for inclusion, and correct the original post if a claim there is no longer true.
 
-`dist-firefox/` is the same extension with a Firefox manifest. It drops the Chromium `key` and `minimum_chrome_version`, sets `browser_specific_settings.gecko.id` to `omareader@badenpiland`, and requires Firefox 128 or newer. Firefox does not start a Manifest V3 service worker, so `background.js` runs as an event page. The public key in `src/manifest.json` is unchanged.
+`dist-firefox/` is the same extension with a Firefox manifest. It drops the Chromium `key` and `minimum_chrome_version`, sets `browser_specific_settings.gecko.id` to `omareader@badenpiland`, requires Firefox 140 or newer, and sets `data_collection_permissions.required` to `["none"]`. Firefox 140 is the minimum because that is when Firefox learned the data-collection key. Firefox for Android's minimum in the same manifest is 142, which is when that platform learned the key. The native host is Linux desktop, so Android is not a target. The page proxy's main world has been available since Firefox 128, so these minimums still have it. Firefox does not start a Manifest V3 service worker, so `background.js` runs as an event page. The public key in `src/manifest.json` is unchanged.
+
+The addons.mozilla.org upload is not done from this repo. To rebuild the files for that upload:
+
+```bash
+npm run pack:firefox
+```
+
+That writes `release/omareader-firefox.zip` (manifest.json at the archive root) and `release/omareader-firefox-source.zip` (the pre-build source, without `node_modules`, `dist`, `dist-firefox`, `key.pem`, or `.git`). Paste `docs/amo-reviewer-notes.txt` into Notes for Reviewers. The command does not read `key.pem` and does not change `dist/`.
 
 ```bash
 npm run lint
@@ -180,7 +188,7 @@ The build refreshes `LICENSES/darkreader-MIT.txt` from `node_modules/darkreader/
 
 ## Roadmap
 
-Firefox and Zen can load the temporary add-on in `dist-firefox/`. Still open: a signed XPI, an addons.mozilla.org listing, shipping that add-on from the curl installer, Flatpak host paths, and checking a live theme switch on a machine that has Omarchy and Firefox.
+Firefox and Zen can load the temporary add-on in `dist-firefox/`. `npm run pack:firefox` writes the addons.mozilla.org zip and the reviewer source zip. Still open: uploading those files, shipping a signed add-on from the curl installer, Flatpak host paths, and checking a live theme switch on a machine that has Omarchy and Firefox.
 
 The official Omarchy package is [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120).
 

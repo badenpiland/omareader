@@ -9,6 +9,8 @@ import {
   darkReaderExtensionId,
 } from "../src/dark-reader.js";
 import {
+  FIREFOX_ANDROID_MIN_VERSION,
+  FIREFOX_DATA_COLLECTION,
   FIREFOX_HOST_DESCRIPTION,
   FIREFOX_MIN_VERSION,
   GECKO_ID,
@@ -36,7 +38,22 @@ assert.equal(firefox.background.service_worker, undefined);
 assert.deepEqual(firefox.background, { scripts: ["background.js"], type: "module" });
 assert.equal(firefox.browser_specific_settings.gecko.id, GECKO_ID);
 assert.equal(firefox.browser_specific_settings.gecko.strict_min_version, FIREFOX_MIN_VERSION);
-assert.equal(FIREFOX_MIN_VERSION, "128.0");
+assert.deepEqual(
+  firefox.browser_specific_settings.gecko.data_collection_permissions,
+  FIREFOX_DATA_COLLECTION,
+);
+assert.deepEqual(FIREFOX_DATA_COLLECTION, { required: ["none"] });
+assert.equal(Object.hasOwn(firefox.browser_specific_settings.gecko.data_collection_permissions, "required"), true);
+assert.equal(FIREFOX_MIN_VERSION, "140.0");
+assert.equal(FIREFOX_ANDROID_MIN_VERSION, "142.0");
+assert.equal(
+  firefox.browser_specific_settings.gecko_android.strict_min_version,
+  FIREFOX_ANDROID_MIN_VERSION,
+);
+assert.deepEqual(
+  firefox.browser_specific_settings.gecko_android.data_collection_permissions,
+  FIREFOX_DATA_COLLECTION,
+);
 assert.match(GECKO_ID, /^[a-zA-Z0-9-._]*@[a-zA-Z0-9-._]+$/);
 assert.notEqual(GECKO_ID, "mhglniaepbokfgnpeennihlifandcgjh");
 assert.deepEqual(firefox.commands, source.commands);

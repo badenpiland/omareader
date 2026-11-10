@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import esbuild from "esbuild";
 import { createDarkReaderPlugin } from "./proxy-source.mjs";
-import { firefoxManifest, GECKO_ID } from "./firefox-manifest.mjs";
+import { firefoxManifest, GECKO_ID, FIREFOX_ANDROID_MIN_VERSION, FIREFOX_DATA_COLLECTION, FIREFOX_MIN_VERSION } from "./firefox-manifest.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
@@ -295,8 +295,19 @@ function stageFirefox(source) {
     process.stderr.write("Firefox manifest still carries Chromium-only background keys\n");
     process.exit(1);
   }
-  if (firefox.browser_specific_settings?.gecko?.id !== GECKO_ID) {
-    process.stderr.write("Firefox manifest is missing the gecko id\n");
+  const gecko = firefox.browser_specific_settings?.gecko;
+  const collection = gecko?.data_collection_permissions?.required;
+  const android = firefox.browser_specific_settings?.gecko_android;
+  if (gecko?.id !== GECKO_ID || gecko?.strict_min_version !== FIREFOX_MIN_VERSION) {
+    process.stderr.write("Firefox manifest is missing the gecko id or strict_min_version\n");
+    process.exit(1);
+  }
+  if (android?.strict_min_version !== FIREFOX_ANDROID_MIN_VERSION || JSON.stringify(android?.data_collection_permissions) !== JSON.stringify(FIREFOX_DATA_COLLECTION)) {
+    process.stderr.write("Firefox manifest is missing the Android data-collection minimum\n");
+    process.exit(1);
+  }
+  if (!Array.isArray(collection) || collection.length !== 1 || collection[0] !== "none" || JSON.stringify(gecko.data_collection_permissions) !== JSON.stringify(FIREFOX_DATA_COLLECTION)) {
+    process.stderr.write("Firefox manifest must set data_collection_permissions.required to [\"none\"]\n");
     process.exit(1);
   }
   const proxy = firefox.content_scripts?.find((script) => script.js?.includes("page-proxy.js"));
