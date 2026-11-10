@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Hovering a popup button shows its shortcut without moving the button. The shortcut row keeps its place in the layout, so the click target stays under the pointer.
+
 ## 0.3.1 — 2026-10-15
 
 ### Fixed

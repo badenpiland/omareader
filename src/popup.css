@@ -137,8 +137,10 @@ button:focus-visible,
   background: color-mix(in srgb, currentColor 14%, transparent);
 }
 
+/* Stay in flow so revealing the shortcut does not move the button. */
 .keys {
-  display: none;
+  display: flex;
+  visibility: hidden;
   align-items: center;
   gap: 4px;
   margin: 0;
@@ -149,7 +151,7 @@ button:focus-visible,
 
 .ctrl:hover .keys,
 .ctrl:focus-within .keys {
-  display: flex;
+  visibility: visible;
 }
 
 kbd {
