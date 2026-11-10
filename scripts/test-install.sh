@@ -189,7 +189,7 @@ assert_firefox_host() {
   test ! -e "$home/.config/chromium/NativeMessagingHosts"
   test ! -e "$home/.config/chromium/External Extensions"
   grep -q "registered for Firefox and Zen" "$out"
-  grep -q "omareader@badenpiland" "$out"
+  grep -q "addon@omareader" "$out"
   grep -q "no signed add-on" "$out"
   grep -q "dist-firefox/manifest.json" "$out"
   grep -q "temporary add-on is removed" "$out"
@@ -207,7 +207,7 @@ assert host["description"] == "Omareader Omarchy theme host"
 assert host["path"] == str(share / "omareader-host")
 assert host["path"].startswith("/")
 assert host["type"] == "stdio"
-assert host["allowed_extensions"] == ["omareader@badenpiland"]
+assert host["allowed_extensions"] == ["addon@omareader"]
 assert "allowed_origins" not in host
 PY
 }

@@ -68,7 +68,7 @@ with open(dest, "w", encoding="utf-8") as handle:
         "description": "Omareader Omarchy theme host",
         "path": path,
         "type": "stdio",
-        "allowed_extensions": ["omareader@badenpiland"],
+        "allowed_extensions": ["addon@omareader"],
     }, handle, indent=2)
     handle.write("\n")
 PY

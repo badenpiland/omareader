@@ -71,7 +71,7 @@ The command follows the Omarchy default browser and installs Omareader only ther
 
 If a browser already refused the extension, it will not accept the installer again until the extension is installed by hand once, removed, and the command is run again.
 
-The palette has to come from your machine, so the extension and the native host are installed together. The Chromium extension id is `mhglniaepbokfgnpeennihlifandcgjh`. The Firefox and Zen id is `omareader@badenpiland`.
+The palette has to come from your machine, so the extension and the native host are installed together. The Chromium extension id is `mhglniaepbokfgnpeennihlifandcgjh`. The Firefox and Zen id is `addon@omareader`.
 
 ### Firefox and Zen
 
@@ -85,7 +85,7 @@ npm run build
 OMAREADER_BROWSER=firefox ./install.sh
 ```
 
-`OMAREADER_BROWSER=zen` writes the same host manifest. `./install.sh` does that on its own when Firefox or Zen is already the default browser. The host program is `~/.local/share/omareader/omareader-host`. The manifest is `~/.mozilla/native-messaging-hosts/com.bhp.omareader.json`. Firefox looks in `~/.mozilla`, not under `$XDG_CONFIG_HOME`. `allowed_extensions` is `omareader@badenpiland`. The Chromium id is not listed.
+`OMAREADER_BROWSER=zen` writes the same host manifest. `./install.sh` does that on its own when Firefox or Zen is already the default browser. The host program is `~/.local/share/omareader/omareader-host`. The manifest is `~/.mozilla/native-messaging-hosts/com.bhp.omareader.json`. Firefox looks in `~/.mozilla`, not under `$XDG_CONFIG_HOME`. `allowed_extensions` is `addon@omareader`. The Chromium id is not listed.
 
 ```json
 {
@@ -93,7 +93,7 @@ OMAREADER_BROWSER=firefox ./install.sh
   "description": "Omareader Omarchy theme host",
   "path": "/home/you/.local/share/omareader/omareader-host",
   "type": "stdio",
-  "allowed_extensions": ["omareader@badenpiland"]
+  "allowed_extensions": ["addon@omareader"]
 }
 ```
 
@@ -160,7 +160,7 @@ npm run build
 
 The Chromium extension id stays `mhglniaepbokfgnpeennihlifandcgjh`, so that native host still works. `scripts/pack.sh` writes `release/omareader.crx` and `release/omareader.crx.sha256` from `dist/` only. Upload both files to the GitHub release. `install.sh` checks that checksum and refuses to install when the `.sha256` file is missing. After the release is published, update the Omarchy suggestion at https://github.com/omacom/omarchy/discussions/14632: comment with the version, the install command, and any behavior change that matters for inclusion, and correct the original post if a claim there is no longer true.
 
-`dist-firefox/` is the same extension with a Firefox manifest. It drops the Chromium `key` and `minimum_chrome_version`, sets `browser_specific_settings.gecko.id` to `omareader@badenpiland`, requires Firefox 140 or newer, and sets `data_collection_permissions.required` to `["none"]`. Firefox 140 is the minimum because that is when Firefox learned the data-collection key. Firefox for Android's minimum in the same manifest is 142, which is when that platform learned the key. The native host is Linux desktop, so Android is not a target. The page proxy's main world has been available since Firefox 128, so these minimums still have it. Firefox does not start a Manifest V3 service worker, so `background.js` runs as an event page. The public key in `src/manifest.json` is unchanged.
+`dist-firefox/` is the same extension with a Firefox manifest. It drops the Chromium `key` and `minimum_chrome_version`, sets `browser_specific_settings.gecko.id` to `addon@omareader`, requires Firefox 140 or newer, and sets `data_collection_permissions.required` to `["none"]`. Firefox 140 is the minimum because that is when Firefox learned the data-collection key. Firefox for Android's minimum in the same manifest is 142, which is when that platform learned the key. The native host is Linux desktop, so Android is not a target. The page proxy's main world has been available since Firefox 128, so these minimums still have it. Firefox does not start a Manifest V3 service worker, so `background.js` runs as an event page. The public key in `src/manifest.json` is unchanged.
 
 The addons.mozilla.org upload is not done from this repo. To rebuild the files for that upload:
 

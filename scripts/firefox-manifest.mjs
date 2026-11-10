@@ -2,7 +2,7 @@
 
 // Firefox and Zen id. Temporary add-ons keep this id, so the native host
 // manifest can name it in allowed_extensions. This is not the Chromium id.
-export const GECKO_ID = "omareader@badenpiland";
+export const GECKO_ID = "addon@omareader";
 
 // MAIN-world content scripts arrived in Firefox 128. data_collection_permissions
 // arrived in Firefox 140, which is what addons.mozilla.org checks. 140 still

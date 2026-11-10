@@ -14,7 +14,7 @@ trap cleanup EXIT
 
 HOST_NAME="com.bhp.omareader"
 EXT_ID="mhglniaepbokfgnpeennihlifandcgjh"
-GECKO_ID="omareader@badenpiland"
+GECKO_ID="addon@omareader"
 REPO="badenpiland/omareader"
 REF="${OMAREADER_REF:-}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
