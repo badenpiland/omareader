@@ -86,6 +86,28 @@ function paintIcon(size, colors) {
   return raw;
 }
 
+// The same grid as vector cells, for the popup logo. Pixel cells drawn from a
+// PNG at a size that is not a multiple of 15 come out uneven.
+function svg(colors) {
+  const hex = (color) => `#${color.map((part) => part.toString(16).padStart(2, "0")).join("")}`;
+  const cells = [];
+  for (let y = 0; y < 15; y += 1) {
+    for (let x = 0; x < 15; x += 1) {
+      const key = `${x},${y}`;
+      let color = null;
+      if (MARK[y][x] === "#" || FRAME.has(key)) {
+        color = colors.mark;
+      } else if (colors.lens && LENS.has(key)) {
+        color = colors.lens;
+      }
+      if (color) {
+        cells.push(`<rect x="${x}" y="${y}" width="1" height="1" fill="${hex(color)}"/>`);
+      }
+    }
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15 15" shape-rendering="crispEdges"><rect width="15" height="15" fill="${hex(colors.plate)}"/>${cells.join("")}</svg>\n`;
+}
+
 function png(size, colors) {
   const raw = paintIcon(size, colors);
   const crcTable = new Uint32Array(256);
@@ -234,6 +256,7 @@ for (const mode of ["dark", "light"]) {
   for (const size of [16, 32, 48, 128]) {
     writeFileSync(join(dist, `icon-${mode}-${size}.png`), png(size, ICON_COLORS[mode]));
   }
+  writeFileSync(join(dist, `icon-${mode}.svg`), svg(ICON_COLORS[mode]));
 }
 
 const manifest = JSON.parse(readFileSync(join(root, "src/manifest.json"), "utf8"));

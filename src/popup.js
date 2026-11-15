@@ -39,7 +39,7 @@ function paintPopup(palette) {
     document.documentElement.style.colorScheme = palette.mode === "light" ? "light" : "dark";
   }
   // The logo matches the theme: light glasses on a light theme, dark glasses otherwise.
-  $("logo").src = palette?.mode === "light" ? "icon-light-32.png" : "icon-dark-32.png";
+  $("logo").src = palette?.mode === "light" ? "icon-light.svg" : "icon-dark.svg";
 }
 
 function paintSwatches(mode, palette) {
