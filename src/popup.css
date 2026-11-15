@@ -60,7 +60,7 @@ header img {
 h1 {
   margin: 0;
   color: var(--fg);
-  font: 400 20px/1.2 "Omarchy Font", monospace;
+  font: 400 24px/1 "Omarchy Font", monospace;
   letter-spacing: 0;
 }
 

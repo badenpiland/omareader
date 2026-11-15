@@ -81,13 +81,18 @@ function statusText(mode, state) {
   return name ? `Live sync · ${name}` : "Live sync";
 }
 
+// The version line sits beside the wordmark, so it is short: "v0.3.1 ✓" once a
+// check finds nothing newer, and "v0.3.1 → v0.4.0" linking a newer release.
+// The full wording from updateLine is the tooltip.
 function applyUpdate(available, checked) {
   const line = updateLine(chrome.runtime.getManifest().version, available, checked);
+  const installed = $("update-installed");
   const link = $("update-available");
-  $("update-installed").textContent = line.installed;
+  const upToDate = / · Up to date$/.test(line.installed);
+  installed.textContent = line.installed.replace(/ · Up to date$/, " ✓").replace(/ · $/, " → ");
+  installed.title = upToDate ? line.installed : "";
   link.hidden = line.available === "";
-  // "Update to v0.4.0" does not fit beside the wordmark. The link names the release.
-  link.textContent = line.available.replace(/^Update to /, "get ");
+  link.textContent = line.available.replace(/^Update to /, "");
   if (line.href) {
     link.href = line.href;
     link.title = line.available;
