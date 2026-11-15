@@ -2,9 +2,16 @@
 
 ## Unreleased
 
+### Changed
+
+- The popup is rebuilt around three modes: Normal, Dark, and Follow Omarchy. One row sets the mode for all sites, and a second row sets the current site's own mode or Default. The layout comes from the Omarchy Omareader extension (omacom/omarchy#18736), with this extension's wordmark, icon, and version line.
+- The popup uses the font Omarchy set as the system monospace font, and follows `omarchy-font-set` without a browser restart. The wordmark stays in Omarchy Font.
+- The popup shows the current theme's colors as a strip, and the native host now also sends the theme's accent and hue colors.
+- Settings from earlier versions carry over. Turned off becomes Normal for all sites, and a paused site becomes Normal on that site.
+
 ### Fixed
 
-- Hovering a popup button shows its shortcut without moving the button. The shortcut row keeps its place in the layout, so the click target stays under the pointer.
+- The popup shows each shortcut beside its row all the time, so hovering a control no longer moves it out from under the pointer.
 
 ## 0.3.1 — 2026-10-15
 

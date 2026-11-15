@@ -351,6 +351,77 @@ def test_deep_json_still_answers_hello():
     print("deep json skipped")
 
 
+def test_accent_swatches_and_font():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        state = root / "state"
+        current = state / "current"
+        current.mkdir(parents=True)
+        theme = current / "theme"
+        theme.mkdir()
+        (theme / "colors.toml").write_text(
+            "\n".join(
+                [
+                    'background = "#1a1b26"',
+                    'foreground = "#a9b1d6"',
+                    'accent = "#7AA2F7"',
+                    'color1 = "#f7768e"',
+                    'green = "#9ece6a"',
+                    'blue = "not a color"',
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        fonts = root / "config" / "fontconfig"
+        fonts.mkdir(parents=True)
+        family = root / "family"
+        family.write_text("Fira Code,Fira Code Retina\n", encoding="utf-8")
+        fake = root / "fc-match"
+        fake.write_text(f'#!/bin/sh\ncat "{family}"\n', encoding="utf-8")
+        fake.chmod(0o755)
+        env = os.environ.copy()
+        env["OMAREADER_STATE_DIR"] = str(state)
+        env["OMAREADER_FONTCONFIG_DIR"] = str(fonts)
+        env["OMAREADER_FC_MATCH"] = str(fake)
+        proc = subprocess.Popen(
+            [str(HOST)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            bufsize=0,
+        )
+        try:
+            first = read_message(proc.stdout)
+            assert first["accent"] == "#7aa2f7", first
+            assert first["swatches"] == [
+                "#1a1b26",
+                "#a9b1d6",
+                "#f7768e",
+                "#9ece6a",
+            ], first
+            assert first["font"] == "Fira Code", first
+
+            # omarchy-font-set rewrites fonts.conf. The host reports the new family.
+            family.write_text("JetBrainsMono Nerd Font\n", encoding="utf-8")
+            (fonts / "fonts.conf").write_text("<fontconfig/>\n", encoding="utf-8")
+            deadline = time.monotonic() + 3
+            seen = first
+            while time.monotonic() < deadline:
+                if select_ready(proc.stdout):
+                    seen = read_message(proc.stdout)
+                    if seen.get("font") == "JetBrainsMono Nerd Font":
+                        break
+                else:
+                    time.sleep(0.05)
+            assert seen.get("font") == "JetBrainsMono Nerd Font", seen
+        finally:
+            proc.kill()
+            proc.wait(timeout=2)
+    print("accent, swatches and font published")
+
+
 def main():
     test_dump_matches_live_theme()
     test_swap_pushes_a_new_palette()
@@ -360,6 +431,7 @@ def main():
     test_oversized_theme_file_is_rejected()
     test_theme_name_is_truncated()
     test_deep_json_still_answers_hello()
+    test_accent_swatches_and_font()
 
 
 if __name__ == "__main__":

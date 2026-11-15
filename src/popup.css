@@ -7,252 +7,196 @@
   font-display: block;
 }
 
+/* The popup wears the current Omarchy theme. popup.js sets these from the host. */
 :root {
-  --popup-bg: #1c1c1c;
-  --popup-fg: #f2f2f2;
-  --s: 8px;
+  --bg: #1a1b26;
+  --fg: #c0caf5;
+  --accent: #7aa2f7;
+  --muted: color-mix(in srgb, var(--fg) 55%, var(--bg));
+  --line: color-mix(in srgb, var(--fg) 16%, var(--bg));
+  /* The user's Omarchy monospace font, then the browser's monospace. */
+  --font: monospace;
   color-scheme: dark;
-  font: 400 13px/1.4 "JetBrains Mono", "CaskaydiaMono Nerd Font", ui-monospace, monospace;
 }
 
-*,
-*::before,
-*::after {
+* {
   box-sizing: border-box;
 }
 
 html,
 body {
-  background: var(--popup-bg);
-  color: var(--popup-fg);
+  background: var(--bg);
+  color: var(--fg);
 }
 
 body {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: calc(var(--s) * 2);
   width: 320px;
   margin: 0;
-  padding: calc(var(--s) * 2);
+  font: 13px/1.4 var(--font);
 }
 
-h1,
 p {
   margin: 0;
 }
 
-h1 {
-  color: var(--popup-fg);
-  font-family: "Omarchy Font", ui-monospace, monospace;
-  font-size: 20px;
-  font-weight: 400;
-  font-style: normal;
-  line-height: 1.2;
-  letter-spacing: 0;
+header,
+footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
 }
 
 header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: calc(var(--s) * 2);
+  border-bottom: 1px solid var(--line);
 }
 
-.line,
-.fixes,
-.v,
-#legacy {
-  display: flex;
-  align-items: baseline;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: var(--s);
-  max-width: 100%;
-}
-
-.fixes {
-  align-items: center;
-}
-
-.k {
+header img {
   flex: none;
+  image-rendering: pixelated;
 }
 
-button,
-.fixes input {
-  color: inherit;
+/* The wordmark stays in the pixel font. It is part of the logo. */
+h1 {
+  margin: 0;
+  color: var(--fg);
+  font: 400 20px/1.2 "Omarchy Font", monospace;
+  letter-spacing: 0;
+}
+
+#update {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#update a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+#update a:hover,
+#update a:focus-visible {
+  text-decoration: underline;
+}
+
+section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 12px 10px;
+}
+
+footer {
+  padding-block: 7px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: -4px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.label > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keys {
+  flex: none;
+  opacity: 0.75;
+}
+
+.modes {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.modes button {
+  flex: 1;
+  padding: 5px 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
   font: inherit;
-  accent-color: currentColor;
-}
-
-button {
-  border: 1px solid currentColor;
-  border-radius: 0;
-  background: transparent;
-  text-align: center;
+  font-size: 12px;
   cursor: pointer;
 }
 
-button:focus-visible,
-.fixes input:focus-visible,
-#details summary:focus-visible {
-  outline: 1px solid currentColor;
-  outline-offset: 2px;
+#modes button[data-mode="omarchy"] {
+  flex: 1.8;
 }
 
-#dark-reader button {
-  padding: var(--s) calc(var(--s) * 2);
+.modes button + button {
+  border-left: 1px solid var(--line);
 }
 
-.ctrl {
+.modes button:hover:not(:disabled, [aria-checked="true"]) {
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.modes button[aria-checked="true"] {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.modes button:focus-visible,
+#dark-reader button:focus-visible,
+.fixes input:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.modes button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.swatches {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
+  height: 10px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-.ctrl .outline {
+.swatches i {
+  flex: 1;
+}
+
+.fixes {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: var(--s) calc(var(--s) * 2);
-}
-
-.lead {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--s) * 2);
-}
-
-.ctrl.muted {
-  color: color-mix(in srgb, var(--popup-fg) 42%, var(--popup-bg));
-}
-
-.ctrl .outline:hover,
-#dark-reader button:hover,
-#legacy button:hover {
-  background: color-mix(in srgb, currentColor 14%, transparent);
-}
-
-/* Stay in flow so revealing the shortcut does not move the button. */
-.keys {
-  display: flex;
-  visibility: hidden;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  color: color-mix(in srgb, currentColor 68%, var(--popup-bg));
-  font-size: 11px;
-  line-height: 1.3;
-}
-
-.ctrl:hover .keys,
-.ctrl:focus-within .keys {
-  visibility: visible;
-}
-
-kbd {
-  display: inline-block;
-  min-width: 1.4em;
-  padding: 1px 5px 2px;
-  border: 1px solid currentColor;
-  color: inherit;
-  font: inherit;
-  font-size: 11px;
-  line-height: 1.3;
-  text-align: center;
-}
-
-.ico {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-}
-
-.ico.pause {
-  gap: 3px;
-}
-
-.ico.pause::before,
-.ico.pause::after {
-  content: "";
-  width: 3px;
-  height: 12px;
-  background: currentColor;
-}
-
-.ico.play {
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 6px 0 6px 10px;
-  border-color: transparent transparent transparent currentColor;
-}
-
-.ico.power {
-  position: relative;
-  width: 13px;
-  height: 13px;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  border-top-color: transparent;
-}
-
-.ico.power::before {
-  content: "";
-  position: absolute;
-  top: -3px;
-  left: 4px;
-  width: 2px;
-  height: 7px;
-  background: currentColor;
-}
-
-#site-ctrl[hidden],
-#status[hidden],
-#legacy[hidden],
-#dark-reader[hidden],
-#details[hidden],
-#site-line[hidden],
-.swatches[hidden],
-#update[hidden],
-#update [hidden] {
-  display: none;
-}
-
-#legacy button {
-  flex: none;
-  width: auto;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-#dark-reader .choices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--s);
-  margin-top: var(--s);
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11.5px;
+  cursor: pointer;
 }
 
 .fixes input {
   appearance: none;
   flex: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   margin: 0;
   border: 1px solid currentColor;
-  background: transparent center / 8px 8px no-repeat;
+  background: transparent center / 6px 6px no-repeat;
   cursor: pointer;
 }
 
@@ -260,64 +204,31 @@ kbd {
   background-image: linear-gradient(currentColor, currentColor);
 }
 
-#update a {
-  color: inherit;
+#dark-reader {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
 }
 
-#details summary {
-  width: max-content;
+#dark-reader .choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#dark-reader button {
+  padding: 5px 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: none;
+  color: var(--fg);
   font: inherit;
-  list-style: none;
   cursor: pointer;
 }
 
-#details summary::-webkit-details-marker {
-  display: none;
+#dark-reader button:hover {
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
 }
 
-#details .rows,
-.swatches {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--s);
-  width: 100%;
-}
-
-#details .rows {
-  margin-top: var(--s);
-}
-
-.pair {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s);
-  width: 100%;
-}
-
-.pair .v {
-  align-items: center;
-  justify-content: flex-end;
-  margin-left: auto;
-}
-
-#site-host {
-  margin-left: auto;
-  text-align: right;
-}
-
-#site-host,
-.v,
-.v span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.swatches i {
-  flex: none;
-  width: 10px;
-  height: 10px;
-  align-self: center;
-  border: 1px solid currentColor;
+[hidden] {
+  display: none !important;
 }

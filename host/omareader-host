@@ -7,6 +7,7 @@ import json
 import os
 import select
 import struct
+import subprocess
 import sys
 import threading
 import time
@@ -38,6 +39,22 @@ STATE = Path(
     os.environ.get("OMAREADER_STATE_DIR", Path.home() / ".local/state/omarchy")
 )
 CURRENT = STATE / "current"
+# OMAREADER_FONTCONFIG_DIR overrides this. omarchy-font-set writes fonts.conf here.
+FONTCONFIG = Path(
+    os.environ.get(
+        "OMAREADER_FONTCONFIG_DIR", Path.home() / ".config/fontconfig"
+    )
+)
+FONT_NAME_LIMIT = 100
+SWATCH_KEYS = (
+    ("red", "color1"),
+    ("orange", None),
+    ("yellow", "color3"),
+    ("green", "color2"),
+    ("cyan", "color6"),
+    ("blue", "color4"),
+    ("magenta", "color5"),
+)
 
 _libc = ctypes.CDLL("libc.so.6", use_errno=True)
 _libc.inotify_init1.argtypes = [ctypes.c_int]
@@ -139,6 +156,19 @@ def read_palette():
     mode = colors.get("mode")
     if mode not in ("light", "dark"):
         mode = "light" if luminance(background) > 0.5 else "dark"
+    accent = (
+        normalize_hex(colors.get("accent"))
+        or normalize_hex(colors.get("blue"))
+        or normalize_hex(colors.get("color4"))
+        or ""
+    )
+    swatches = [background, foreground]
+    for named, slot in SWATCH_KEYS:
+        value = normalize_hex(colors.get(named))
+        if not value and slot:
+            value = normalize_hex(colors.get(slot))
+        if value:
+            swatches.append(value)
     theme = ""
     if name_path.is_file():
         theme = read_capped(name_path).decode().strip()[:100]
@@ -149,7 +179,33 @@ def read_palette():
         "background": background,
         "foreground": foreground,
         "selection": selection or "",
+        "accent": accent,
+        "swatches": swatches,
+        "font": read_font(),
     }
+
+
+def read_font():
+    """Family Omarchy set for monospace, as `omarchy-font-current` reads it."""
+    command = os.environ.get("OMAREADER_FC_MATCH", "fc-match")
+    try:
+        result = subprocess.run(
+            [command, "monospace", "-f", "%{family}"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if result.returncode != 0:
+        return ""
+    family = result.stdout.splitlines()[0] if result.stdout else ""
+    family = family.split(",")[0].strip()
+    if not family or len(family) > FONT_NAME_LIMIT:
+        return ""
+    return family
+
 
 
 def publish(force=False):
@@ -192,7 +248,9 @@ class Watcher:
         for watch in self._watches:
             _libc.inotify_rm_watch(self.fd, watch)
         self._watches.clear()
-        for path in (CURRENT, CURRENT / "theme"):
+        # ~/.config is watched only until fontconfig/ exists, to see it appear.
+        font_dir = FONTCONFIG if FONTCONFIG.is_dir() else FONTCONFIG.parent
+        for path in (CURRENT, CURRENT / "theme", font_dir):
             if not path.is_dir():
                 continue
             watch = _libc.inotify_add_watch(self.fd, os.fsencode(path), WATCH_MASK)

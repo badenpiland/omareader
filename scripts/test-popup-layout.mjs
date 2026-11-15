@@ -16,26 +16,24 @@ function ruleBody(css, selector) {
   return match[1];
 }
 
-const keysRule = ruleBody(popupCss, String.raw`\.keys`);
-assert.match(keysRule, /display:\s*flex/, "shortcut row stays in the layout");
-assert.match(keysRule, /visibility:\s*hidden/, "shortcut row is hidden without leaving the layout");
-assert.doesNotMatch(keysRule, /display:\s*none/);
+// The mode rows never wrap, and the version line sits beside the wordmark.
+const buttonRule = ruleBody(popupCss, String.raw`\.modes button`);
+assert.match(buttonRule, /flex:\s*1/);
+const updateRule = ruleBody(popupCss, String.raw`#update`);
+assert.match(updateRule, /white-space:\s*nowrap/);
+assert.match(updateRule, /margin-left:\s*auto/);
+assert.match(popupHtml, /<header>[\s\S]*<h1>omareader<\/h1>[\s\S]*<p id="update">/);
 
-const revealRule = ruleBody(popupCss, String.raw`\.ctrl:hover \.keys,\s*\.ctrl:focus-within \.keys`);
-assert.match(revealRule, /visibility:\s*visible/);
-assert.doesNotMatch(revealRule, /display\s*:/);
-assert.doesNotMatch(revealRule, /height\s*:/);
-assert.doesNotMatch(revealRule, /margin\s*:/);
-assert.doesNotMatch(revealRule, /padding\s*:/);
-assert.doesNotMatch(revealRule, /position\s*:/);
-assert.match(popupHtml, /<kbd>alt<\/kbd><span>\+<\/span><kbd>shift<\/kbd><span>\+<\/span><kbd>o<\/kbd>/);
-assert.match(popupHtml, /<kbd>alt<\/kbd><span>\+<\/span><kbd>shift<\/kbd><span>\+<\/span><kbd>u<\/kbd>/);
-
+// The page is measured without popup.js. The longest version line the popup
+// can show is filled in by hand, along with a long site name.
 const popupPage = popupHtml
   .replace('<script type="module" src="popup.js"></script>', "")
-  .replace('id="site-ctrl" class="ctrl" hidden', 'id="site-ctrl" class="ctrl"');
+  .replace('<span id="update-installed"></span>', '<span id="update-installed">v0.9.1 · </span>')
+  .replace('<a id="update-available" hidden', '<a id="update-available"')
+  .replace('rel="noreferrer"></a>', 'rel="noreferrer">get v0.10.0</a>')
+  .replace(">Not available on this page<", ">a-very-long-subdomain.of-a-long-site.example.com<");
 assert.equal(popupPage.includes("popup.js"), false);
-assert.equal(popupPage.includes('id="site-ctrl" class="ctrl" hidden'), false);
+assert.equal(popupPage.includes("get v0.10.0"), true);
 
 function findChrome() {
   const candidates = [
@@ -60,16 +58,6 @@ function findChrome() {
   return "";
 }
 
-function assertSameBox(before, after, label) {
-  for (const edge of ["x", "y", "width", "height"]) {
-    const delta = Math.abs(before[edge] - after[edge]);
-    assert.ok(
-      delta < 0.5,
-      `${label} ${edge} moved by ${delta} (${before[edge]} -> ${after[edge]})`,
-    );
-  }
-}
-
 function listen(server) {
   return new Promise((resolve, reject) => {
     server.once("error", reject);
@@ -80,28 +68,28 @@ function listen(server) {
 const nextFrame = "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))";
 
 const measureExpression = `(() => {
-  const box = (selector) => {
-    const rect = document.querySelector(selector).getBoundingClientRect();
-    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-  };
-  const keys = (selector) => {
-    const node = document.querySelector(selector);
+  const box = (node) => {
     const rect = node.getBoundingClientRect();
-    const style = getComputedStyle(node);
-    return {
-      visibility: style.visibility,
-      display: style.display,
-      text: node.textContent.replace(/\\s/g, ""),
-      width: rect.width,
-      height: rect.height,
-    };
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, height: rect.height };
   };
+  const lineHeight = (node) => parseFloat(getComputedStyle(node).lineHeight) || 0;
+  const header = document.querySelector("header");
   return {
-    enabled: box("#enabled"),
-    site: box("#site"),
-    enabledKeys: keys("#enabled-ctrl .keys"),
-    siteKeys: keys("#site-ctrl .keys"),
-    pageHeight: document.documentElement.scrollHeight,
+    width: Math.max(...[...document.body.querySelectorAll("*")].map((node) => node.getBoundingClientRect().right)),
+    bodyWidth: document.body.getBoundingClientRect().width,
+    header: box(header),
+    title: box(document.querySelector("h1")),
+    update: box(document.querySelector("#update")),
+    updateClipped: document.querySelector("#update").scrollWidth > document.querySelector("#update").clientWidth,
+    updateLine: lineHeight(document.querySelector("#update")),
+    buttons: [...document.querySelectorAll(".modes button")].map((node) => ({
+      text: node.textContent,
+      height: node.getBoundingClientRect().height,
+      scroll: node.scrollWidth,
+      client: node.clientWidth,
+    })),
+    site: box(document.querySelector("#site")),
+    siteLabel: box(document.querySelector("#site").parentElement),
   };
 })()`;
 
@@ -291,65 +279,20 @@ async function measurePopup(chromeBin) {
     await evaluate(send, "document.fonts.ready");
     await evaluate(send, nextFrame);
 
-    const before = await evaluate(send, measureExpression);
-    assert.ok(before.enabled.width > 200 && before.enabled.height > 20, "enabled button has a box");
-    assert.ok(before.site.width > 200 && before.site.height > 20, "site button has a box");
-    assert.equal(before.enabledKeys.display, "flex");
-    assert.equal(before.siteKeys.display, "flex");
-    assert.equal(before.enabledKeys.visibility, "hidden");
-    assert.equal(before.siteKeys.visibility, "hidden");
-    assert.equal(before.enabledKeys.text, "alt+shift+o");
-    assert.equal(before.siteKeys.text, "alt+shift+u");
-    assert.ok(before.enabledKeys.height > 8, "enabled shortcut reserves height");
-    assert.ok(before.siteKeys.height > 8, "site shortcut reserves height");
-    assert.ok(before.enabledKeys.width > 40, "enabled shortcut reserves width");
-
-    const point = {
-      x: before.enabled.x + before.enabled.width / 2,
-      y: before.enabled.y + before.enabled.height - 1,
-    };
-    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: point.x, y: point.y });
-    await evaluate(send, nextFrame);
-    const hovered = await evaluate(send, measureExpression);
-    assert.equal(hovered.enabledKeys.visibility, "visible");
-    assert.equal(hovered.siteKeys.visibility, "hidden");
-    assert.ok(hovered.enabledKeys.width > 40, "shortcut is readable on hover");
-    assert.equal(hovered.pageHeight, before.pageHeight, "hover resized the popup");
-    assertSameBox(before.enabled, hovered.enabled, "enabled button");
-    assertSameBox(before.site, hovered.site, "site button");
-    const hit = await evaluate(
-      send,
-      `document.elementFromPoint(${point.x}, ${point.y})?.closest("button")?.id || ""`,
-    );
-    assert.equal(hit, "enabled", "hover moved the enabled button off the pointer");
-
-    const sitePoint = {
-      x: before.site.x + before.site.width / 2,
-      y: before.site.y + before.site.height - 1,
-    };
-    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: sitePoint.x, y: sitePoint.y });
-    await evaluate(send, nextFrame);
-    const siteHovered = await evaluate(send, measureExpression);
-    assert.equal(siteHovered.siteKeys.visibility, "visible");
-    assert.equal(siteHovered.enabledKeys.visibility, "hidden");
-    assert.equal(siteHovered.pageHeight, before.pageHeight, "hover resized the popup");
-    assertSameBox(before.enabled, siteHovered.enabled, "enabled button");
-    assertSameBox(before.site, siteHovered.site, "site button");
-    const siteHit = await evaluate(
-      send,
-      `document.elementFromPoint(${sitePoint.x}, ${sitePoint.y})?.closest("button")?.id || ""`,
-    );
-    assert.equal(siteHit, "site", "hover moved the site button off the pointer");
-
-    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1, y: 1 });
-    await evaluate(send, 'document.querySelector("#enabled").focus()');
-    await evaluate(send, nextFrame);
-    const focused = await evaluate(send, measureExpression);
-    assert.equal(focused.enabledKeys.visibility, "visible");
-    assert.equal(focused.siteKeys.visibility, "hidden");
-    assert.equal(focused.pageHeight, before.pageHeight, "focus resized the popup");
-    assertSameBox(before.enabled, focused.enabled, "enabled button");
-    assertSameBox(before.site, focused.site, "site button");
+    const layout = await evaluate(send, measureExpression);
+    assert.equal(layout.bodyWidth, 320, "popup is 320px wide");
+    assert.ok(layout.width <= 320, `popup scrolls sideways (${layout.width}px)`);
+    assert.ok(layout.update.left >= layout.title.right, "version line overlaps the wordmark");
+    assert.ok(layout.update.right <= layout.header.right, "version line runs past the header");
+    assert.ok(layout.update.height <= layout.updateLine * 1.5, "version line wraps");
+    assert.equal(layout.updateClipped, false, "version line is cut off");
+    assert.equal(layout.buttons.length, 7, "three modes for all sites, four for this site");
+    const rowHeight = layout.buttons[0].height;
+    for (const button of layout.buttons) {
+      assert.ok(Math.abs(button.height - rowHeight) < 0.5, `${button.text} wraps onto a second line`);
+      assert.ok(button.scroll <= button.client, `${button.text} is clipped`);
+    }
+    assert.ok(layout.site.right <= layout.siteLabel.right, "a long site name runs past its row");
     cdp.close();
   } finally {
     server.close();
