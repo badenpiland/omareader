@@ -33,11 +33,13 @@ curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.
 
 ## What it does
 
-Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, and selection color whenever `omarchy theme set` swaps that directory.
+Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, selection, and accent colors whenever `omarchy theme set` swaps that directory. It also sends the font Omarchy set as the system monospace font (what `omarchy-font-current` prints), and sends it again when `omarchy-font-set` rewrites `~/.config/fontconfig/fonts.conf`.
 
-The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once, and only when the Dark Reader extension is installed and enabled. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “Fetch site fixes daily” in Details to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. The popup shows the installed version. When a release is newer, it links “Update to” that version. When the check finds nothing newer, it says this version is up to date. Before that check finishes, and when the check fails, it shows the installed version and does not say up to date. That check sends no browsing data.
+The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once, and only when the Dark Reader extension is installed and enabled. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “Fetch site fixes daily” in the popup to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. The popup shows the installed version beside the wordmark. When a release is newer, it shows an arrow and links that version, as in “v0.3.1 → v0.4.0”. When the check finds nothing newer, it adds a check mark, and hovering it says up to date. Before that check finishes, and when the check fails, it shows the installed version and does not say up to date. That check sends no browsing data.
 
-The toolbar shows the dark glasses while Omareader is on, and the light glasses while it is off. Pause on this site leaves that host alone and shows the light glasses on its tabs.
+The popup has three modes. Normal leaves pages as they are. Dark paints them pitch black and keeps each page's own hues. Follow Omarchy paints them in the current Omarchy theme, and is the default. The first row sets the mode for all sites. The second row sets this site's own mode, or Default to follow the first row. The popup wears the current Omarchy theme and font. The wordmark stays in Omarchy Font.
+
+The toolbar shows the dark glasses while a tab is themed, and the light glasses while it is Normal.
 
 Link and syntax colors stay on Dark Reader’s usual path. They are not replaced with the terminal’s red, green, and blue. Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. On a dark theme the Amazon header wordmark stays the light sprite Amazon ships, and the orange smile stays orange.
 
@@ -48,9 +50,9 @@ Link and syntax colors stay on Dark Reader’s usual path. They are not replaced
 
 ## Shortcuts
 
-Alt+Shift+O turns Omareader on or off. The toolbar badge shows ON or OFF for a moment.
+Alt+Shift+O turns every site Normal, or back to the last mode you used for all sites. The toolbar badge shows ON or OFF for a moment.
 
-Alt+Shift+U pauses the current site, or themes it again. That is the same switch as pause on this site in the popup. That tab's toolbar icon switches to the light glasses while the site is paused, and back to the dark glasses when the theme returns. This shortcut does not flash a badge.
+Alt+Shift+U turns the current site Normal, or themes it again. That is the same as picking Normal, then Default, in the popup's second row. That tab's toolbar icon switches to the light glasses while the site is Normal, and back to the dark glasses when the theme returns. This shortcut does not flash a badge.
 
 Change either shortcut at `chrome://extensions/shortcuts`.
 

@@ -6,6 +6,18 @@ import { fromExtensionPage } from "./extension-page.js";
 import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
 import { hostFailureText, paletteFromHost } from "./host-message.js";
 import { COMMAND_BADGE_MS, hostFromUrl, normalizeHost, runReaderCommand } from "./commands.js";
+import { fontFromHost } from "./font.js";
+import {
+  isPausedSite,
+  MODES,
+  normalizeSettings,
+  paletteForMode,
+  setEnabledMode,
+  setMode,
+  setSitePausedMode,
+  siteModeOf,
+  withSiteMode,
+} from "./modes.js";
 import {
   MAX_RELEASES_BYTES,
   newerRelease,
@@ -24,8 +36,8 @@ const clients = new Set();
 const pageUrls = new WeakMap();
 let nativePort = null;
 let palette = null;
-let enabled = true;
-let pausedSites = [];
+let settings = normalizeSettings();
+let font = "";
 let hostError = "";
 let reconnectTimer = null;
 let reconnectDelay = RECONNECT_MIN_MS;
@@ -42,9 +54,11 @@ let updateTask = null;
 function snapshot() {
   return {
     type: "state",
-    enabled,
-    pausedSites,
+    mode: settings.mode,
+    lastMode: settings.lastMode,
+    sites: settings.sites,
     palette,
+    font,
     hostError,
     darkReaderPrompt,
     darkReaderKnown,
@@ -65,6 +79,9 @@ function messageFor(port) {
   const url = pageUrl(port);
   if (port.sender?.tab && sites && url) {
     message.siteFix = fixesFor(url, sites);
+  }
+  if (port.sender?.tab) {
+    message.themePalette = paletteForMode(siteModeOf(settings, hostFromUrl(url)), palette);
   }
   return message;
 }
@@ -326,13 +343,9 @@ async function refreshUpdate() {
   return updateTask;
 }
 
-// Dark glasses while this tab is themed. Light glasses when Omareader is off,
-// or when this site is paused.
+// Dark glasses while this tab is themed. Light glasses while it is Normal.
 function iconMode(host) {
-  if (!enabled || (host && pausedSites.includes(host))) {
-    return "light";
-  }
-  return "dark";
+  return siteModeOf(settings, host) === "normal" ? "light" : "dark";
 }
 
 function iconPaths(mode) {
@@ -367,7 +380,7 @@ function applyOpenTab(tab) {
     return;
   }
   const host = tabHost(tab);
-  if (!host && enabled) {
+  if (!host && settings.mode !== "normal") {
     return;
   }
   applyTabIcon(tab.id, host);
@@ -399,6 +412,15 @@ function rememberPalette(next) {
   broadcast();
 }
 
+// The popup's font: what Omarchy set as the system monospace font.
+function rememberFont(family) {
+  const next = fontFromHost({ family });
+  if (next !== font) {
+    font = next;
+    chrome.storage.local.set({ font });
+  }
+}
+
 const EARLY_ID = "omareader-early";
 
 async function syncEarlyCss() {
@@ -407,19 +429,22 @@ async function syncEarlyCss() {
   } catch {
     // The early sheet is not registered yet.
   }
-  if (!enabled) {
+  const entries = Object.entries(settings.sites);
+  const themedHosts = entries.filter(([, mode]) => mode !== "normal").map(([host]) => `*://${host}/*`);
+  const normalHosts = entries.filter(([, mode]) => mode === "normal").map(([host]) => `*://${host}/*`);
+  const allThemed = settings.mode !== "normal";
+  if (!allThemed && !themedHosts.length) {
     return;
   }
   const script = {
     id: EARLY_ID,
-    matches: ["<all_urls>"],
+    matches: allThemed ? ["<all_urls>"] : themedHosts,
     css: ["early.css"],
     runAt: "document_start",
     allFrames: true,
   };
-  const excludeMatches = pausedSites.map((host) => `*://${host}/*`);
-  if (excludeMatches.length) {
-    script.excludeMatches = excludeMatches;
+  if (allThemed && normalHosts.length) {
+    script.excludeMatches = normalHosts;
   }
   try {
     await chrome.scripting.registerContentScripts([script]);
@@ -456,6 +481,7 @@ function connectHost() {
     if (message.type === "palette" && paletteFromHost(message)) {
       hostError = "";
       reconnectDelay = RECONNECT_MIN_MS;
+      rememberFont(message.font);
       rememberPalette(message);
       return;
     }
@@ -513,12 +539,17 @@ function setSiteFixesAutoUpdate(enabled) {
   }
 }
 
-function setEnabled(value) {
-  enabled = Boolean(value);
-  chrome.storage.local.set({ enabled });
+function saveSettings(next) {
+  settings = next;
+  chrome.storage.local.set({ settings });
+  chrome.storage.session.set({ settings });
   applyAllIcons();
   broadcast();
   void syncEarlyCss();
+}
+
+function setEnabled(value) {
+  saveSettings(setEnabledMode(settings, Boolean(value)));
 }
 
 function setSitePaused(host, paused) {
@@ -526,17 +557,20 @@ function setSitePaused(host, paused) {
   if (!host) {
     return;
   }
-  const next = new Set(pausedSites);
-  if (paused) {
-    next.add(host);
-  } else {
-    next.delete(host);
+  saveSettings(setSitePausedMode(settings, host, paused));
+}
+
+function setAllSitesMode(mode) {
+  if (MODES.includes(mode)) {
+    saveSettings(setMode(settings, mode));
   }
-  pausedSites = [...next].sort();
-  chrome.storage.local.set({ pausedSites });
-  applyAllIcons();
-  broadcast();
-  void syncEarlyCss();
+}
+
+function setSiteMode(host, mode) {
+  host = normalizeHost(host);
+  if (host && (mode === "default" || MODES.includes(mode))) {
+    saveSettings(withSiteMode(settings, host, mode));
+  }
 }
 
 chrome.runtime.onConnect.addListener((port) => {
@@ -584,6 +618,10 @@ chrome.runtime.onConnect.addListener((port) => {
       setEnabled(message.enabled);
     } else if (message.type === "setSitePaused") {
       setSitePaused(message.host, Boolean(message.paused));
+    } else if (message.type === "setMode") {
+      setAllSitesMode(message.mode);
+    } else if (message.type === "setSiteMode") {
+      setSiteMode(message.host, message.mode);
     } else if (message.type === "darkReaderChoice") {
       void resolveDarkReader(Boolean(message.disable));
     } else if (message.type === "setSiteFixesAutoUpdate") {
@@ -677,8 +715,8 @@ function focusedReaderTab() {
 
 async function applyReaderCommand(command, tab) {
   const effect = await runReaderCommand(command, tab, {
-    isEnabled: () => enabled,
-    isPaused: (host) => pausedSites.includes(host),
+    isEnabled: () => settings.mode !== "normal",
+    isPaused: (host) => isPausedSite(settings, host),
     focusedTab: focusedReaderTab,
   });
   if (!effect) {
@@ -810,16 +848,22 @@ async function start() {
     // Content scripts then wait for the port.
   }
   const stored = await chrome.storage.local.get({
+    settings: null,
     enabled: true,
     pausedSites: [],
     palette: null,
+    font: "",
     darkReaderChoice: "",
     darkReaderOffered: false,
   });
-  enabled = stored.enabled !== false;
-  pausedSites = Array.isArray(stored.pausedSites)
-    ? stored.pausedSites.map(normalizeHost).filter(Boolean)
-    : [];
+  // Releases before 0.4.0 saved enabled and pausedSites. normalizeSettings carries them over.
+  settings = normalizeSettings(stored.settings || stored);
+  if (!stored.settings) {
+    chrome.storage.local.set({ settings });
+    chrome.storage.local.remove(["enabled", "pausedSites"]);
+  }
+  chrome.storage.session.set({ settings });
+  font = fontFromHost({ family: stored.font });
   palette = paletteFromHost(stored.palette);
   if (palette?.background && palette?.foreground) {
     chrome.storage.session.set({ palette });
