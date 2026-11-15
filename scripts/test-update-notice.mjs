@@ -146,7 +146,8 @@ assert.equal(updateLine("0.3.0", "0.3.1", true).available, "Update to v0.3.1");
 // version line beside it, and the site-fix and Dark Reader controls.
 const header = popupHtml.match(/<header>[\s\S]*?<\/header>/);
 assert.ok(header, "popup header is present");
-assert.match(header[0], /<img src="icon-dark-32\.png"/);
+assert.match(header[0], /<img id="logo" src="icon-dark-32\.png"/);
+assert.match(popupJs, /palette\?\.mode === "light" \? "icon-light-32\.png" : "icon-dark-32\.png"/);
 assert.match(header[0], /<h1>omareader<\/h1>/);
 assert.match(header[0], /<p id="update">/);
 assert.match(popupHtml, /id="modes" role="radiogroup"[^>]*aria-keyshortcuts="Alt\+Shift\+O"/);
