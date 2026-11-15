@@ -28,12 +28,15 @@ assert.match(popupHtml, /<header>[\s\S]*<h1>omareader<\/h1>[\s\S]*<p id="update"
 // can show is filled in by hand, along with a long site name.
 const popupPage = popupHtml
   .replace('<script type="module" src="popup.js"></script>', "")
-  .replace('<span id="update-installed"></span>', '<span id="update-installed">v0.9.1 · </span>')
+  .replace('<span id="update-installed"></span>', '<span id="update-installed">v0.9.12 → </span>')
   .replace('<a id="update-available" hidden', '<a id="update-available"')
-  .replace('rel="noreferrer"></a>', 'rel="noreferrer">get v0.10.0</a>')
+  .replace('rel="noreferrer"></a>', 'rel="noreferrer">v0.10.0</a>')
   .replace(">Not available on this page<", ">a-very-long-subdomain.of-a-long-site.example.com<");
 assert.equal(popupPage.includes("popup.js"), false);
-assert.equal(popupPage.includes("get v0.10.0"), true);
+assert.equal(popupPage.includes("v0.10.0"), true);
+
+// A cold Chrome on a busy CI runner can take more than 10s to open DevTools.
+const CHROME_START_MS = 30000;
 
 function findChrome() {
   const candidates = [
@@ -245,7 +248,7 @@ async function measurePopup(chromeBin) {
 
   try {
     const debugPort = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`chrome did not start\n${chromeLog}`)), 10000);
+      const timer = setTimeout(() => reject(new Error(`chrome did not start\n${chromeLog}`)), CHROME_START_MS);
       const watch = () => {
         const match = chromeLog.match(/DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)\//);
         if (!match) {
