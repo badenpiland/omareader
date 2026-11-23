@@ -2,7 +2,6 @@
 
 export const THEME_NAME_LIMIT = 100;
 export const HOST_ERROR_LIMIT = 300;
-export const SWATCH_LIMIT = 16;
 export const HOST_MISSING = "Theme host not installed — run ./install.sh";
 
 export function clipText(value, limit) {
@@ -44,10 +43,6 @@ export function paletteFromHost(message) {
     background,
     foreground,
     selection: normalizeHex(message.selection),
-    accent: normalizeHex(message.accent),
-    swatches: Array.isArray(message.swatches)
-      ? message.swatches.slice(0, SWATCH_LIMIT).map(normalizeHex).filter(Boolean)
-      : [],
   };
 }
 

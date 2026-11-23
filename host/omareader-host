@@ -46,15 +46,6 @@ FONTCONFIG = Path(
     )
 )
 FONT_NAME_LIMIT = 100
-SWATCH_KEYS = (
-    ("red", "color1"),
-    ("orange", None),
-    ("yellow", "color3"),
-    ("green", "color2"),
-    ("cyan", "color6"),
-    ("blue", "color4"),
-    ("magenta", "color5"),
-)
 
 _libc = ctypes.CDLL("libc.so.6", use_errno=True)
 _libc.inotify_init1.argtypes = [ctypes.c_int]
@@ -156,19 +147,6 @@ def read_palette():
     mode = colors.get("mode")
     if mode not in ("light", "dark"):
         mode = "light" if luminance(background) > 0.5 else "dark"
-    accent = (
-        normalize_hex(colors.get("accent"))
-        or normalize_hex(colors.get("blue"))
-        or normalize_hex(colors.get("color4"))
-        or ""
-    )
-    swatches = [background, foreground]
-    for named, slot in SWATCH_KEYS:
-        value = normalize_hex(colors.get(named))
-        if not value and slot:
-            value = normalize_hex(colors.get(slot))
-        if value:
-            swatches.append(value)
     theme = ""
     if name_path.is_file():
         theme = read_capped(name_path).decode().strip()[:100]
@@ -179,8 +157,6 @@ def read_palette():
         "background": background,
         "foreground": foreground,
         "selection": selection or "",
-        "accent": accent,
-        "swatches": swatches,
         "font": read_font(),
     }
 
@@ -205,7 +181,6 @@ def read_font():
     if not family or len(family) > FONT_NAME_LIMIT:
         return ""
     return family
-
 
 
 def publish(force=False):

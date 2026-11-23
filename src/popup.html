@@ -10,28 +10,24 @@
     <header>
       <img id="logo" src="icon-dark.svg" width="30" height="30" alt="" />
       <h1>omareader</h1>
-      <p id="update"><span id="update-installed"></span><a id="update-available" hidden target="_blank" rel="noreferrer"></a></p>
     </header>
-    <section>
-      <p class="label"><span>All sites</span><span class="keys" title="Alt+Shift+O turns every site Normal and back">alt+shift+o</span></p>
-      <div class="modes" id="modes" role="radiogroup" aria-label="Mode for all sites" aria-keyshortcuts="Alt+Shift+O">
-        <button type="button" role="radio" data-mode="normal" title="Pages as they are">Normal</button>
-        <button type="button" role="radio" data-mode="dark" title="Pitch black, page colors keep their hue">Dark</button>
-        <button type="button" role="radio" data-mode="omarchy" title="Follow your current Omarchy theme">Follow Omarchy</button>
-      </div>
-      <p class="label"><span id="site">Not available on this page</span><span class="keys" id="site-keys" title="Alt+Shift+U turns this site Normal and back">alt+shift+u</span></p>
-      <div class="modes" id="site-modes" role="radiogroup" aria-label="Mode on this site" aria-keyshortcuts="Alt+Shift+U">
-        <button type="button" role="radio" data-mode="default">Default</button>
-        <button type="button" role="radio" data-mode="normal" title="Always as it is">Normal</button>
-        <button type="button" role="radio" data-mode="dark" title="Always pitch black">Dark</button>
-        <button type="button" role="radio" data-mode="omarchy" title="Always follow your Omarchy theme">Omarchy</button>
-      </div>
-      <div id="swatches" class="swatches" aria-hidden="true"></div>
-      <label class="fixes">
-        <input id="site-fixes" type="checkbox" checked />
-        <span>Fetch site fixes daily</span>
-      </label>
-    </section>
+    <p class="line">
+      <span class="k">Theme</span>
+      <span id="theme">Waiting for Omarchy</span>
+    </p>
+    <div id="enabled-ctrl" class="ctrl">
+      <button id="enabled" type="button" class="outline" aria-keyshortcuts="Alt+Shift+O">
+        <span class="lead"><span class="ico power" aria-hidden="true"></span><span id="enabled-label">turn off everywhere</span></span>
+      </button>
+      <p class="keys"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>o</kbd></p>
+    </div>
+    <div id="site-ctrl" class="ctrl" hidden>
+      <button id="site" type="button" class="outline" aria-keyshortcuts="Alt+Shift+U">
+        <span class="lead"><span id="site-icon" class="ico pause" aria-hidden="true"></span><span id="site-label">pause on this site</span></span>
+      </button>
+      <p class="keys"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>u</kbd></p>
+    </div>
+    <p id="status" hidden></p>
     <section id="dark-reader" hidden>
       <p id="dark-reader-text">Dark Reader is also on. Both extensions restyle the page. Turn Dark Reader off?</p>
       <div class="choices">
@@ -39,7 +35,27 @@
         <button id="dark-reader-keep" type="button">Leave it on</button>
       </div>
     </section>
-    <footer id="status">Waiting for Omarchy</footer>
+    <details id="details">
+      <summary>Details</summary>
+      <div class="rows">
+        <p id="site-line" class="pair" hidden><span class="k">site:</span> <span id="site-host"></span></p>
+        <div class="swatches" hidden>
+          <div class="pair">
+            <span class="k">background:</span>
+            <span class="v"><i id="bg"></i><span id="bg-label"></span></span>
+          </div>
+          <div class="pair">
+            <span class="k">foreground:</span>
+            <span class="v"><i id="fg"></i><span id="fg-label"></span></span>
+          </div>
+        </div>
+        <label class="fixes">
+          <input id="site-fixes" type="checkbox" checked />
+          <span>Fetch site fixes daily</span>
+        </label>
+      </div>
+    </details>
+    <p id="update"><span id="update-installed"></span><a id="update-available" hidden target="_blank" rel="noreferrer"></a></p>
     <script type="module" src="popup.js"></script>
   </body>
 </html>
