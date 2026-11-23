@@ -92,9 +92,12 @@ footer {
   overflow-wrap: anywhere;
 }
 
+/* The switches fit their words, both as wide as the longer one, centered. */
 main {
   display: grid;
-  gap: var(--s);
+  grid-template-columns: max-content;
+  justify-content: center;
+  gap: 6px;
 }
 
 button,
@@ -124,9 +127,9 @@ button:focus-visible,
 .switch {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  padding: var(--s) 14px;
+  padding: 5px 10px;
   text-align: left;
 }
 
@@ -136,6 +139,7 @@ button:focus-visible,
 
 .keys {
   margin-left: auto;
+  padding-left: 6px;
   color: var(--muted);
   font-size: 11px;
   white-space: nowrap;
