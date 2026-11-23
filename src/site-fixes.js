@@ -258,26 +258,42 @@ function matchPrepared(url, pattern) {
   return true;
 }
 
-function isURLMatched(url, pattern) {
-  if (pattern.startsWith("/") && pattern.endsWith("/") && pattern.length > 2) {
-    try {
-      return new RegExp(pattern.slice(1, -1)).test(url);
-    } catch {
-      return false;
-    }
+const isRegExpPattern = (pattern) => pattern.startsWith("/") && pattern.endsWith("/") && pattern.length > 2;
+
+// Each site's patterns, prepared once per parsed list. Preparing them on every
+// lookup parsed all ~3,400 patterns, and the page URL once per pattern, for
+// every frame.
+const preparedSites = new WeakMap();
+
+function preparedPatterns(site) {
+  let prepared = preparedSites.get(site);
+  if (!prepared) {
+    prepared = (site.url || []).map((pattern) => {
+      if (!isRegExpPattern(pattern)) {
+        return preparePattern(pattern);
+      }
+      try {
+        return new RegExp(pattern.slice(1, -1));
+      } catch {
+        return null;
+      }
+    });
+    preparedSites.set(site, prepared);
   }
-  return matchPrepared(prepareURL(url), preparePattern(pattern));
+  return prepared;
 }
 
 export function fixesFor(url, sites) {
   if (!Array.isArray(sites) || sites.length === 0 || sites[0].url?.[0] !== "*") {
     return null;
   }
+  const preparedURL = prepareURL(url);
+  const matches = (pattern) => (pattern instanceof RegExp ? pattern.test(url) : matchPrepared(preparedURL, pattern));
   let best = null;
   let bestLength = -1;
   for (let i = 1; i < sites.length; i++) {
     const patterns = sites[i].url || [];
-    if (!patterns.some((pattern) => isURLMatched(url, pattern))) {
+    if (!preparedPatterns(sites[i]).some(matches)) {
       continue;
     }
     const specificity = patterns[0]?.length || 0;

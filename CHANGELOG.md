@@ -9,6 +9,10 @@
 - The popup uses the font Omarchy set as the system monospace font, and follows `omarchy-font-set` without a browser restart. The wordmark stays in Omarchy Font.
 - The popup shows the glasses logo beside the wordmark, light glasses on a light theme. The version line is shorter: "v0.3.1 ✓" when up to date, "v0.3.1 → v0.4.0" when a newer release is out.
 
+### Performance
+
+- Finding a page's site fix is about 8 times faster (3.6 ms to 0.4 ms a lookup over 20,000 test URLs, with identical answers). Each site's URL patterns are prepared once instead of on every lookup.
+
 ### Fixed
 
 - Hovering a popup button no longer moves it. The shortcut used to appear on hover and push the controls down. It is now always shown inside the button.

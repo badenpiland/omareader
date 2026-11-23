@@ -33,13 +33,15 @@ curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.
 
 ## What it does
 
-Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, and selection color whenever `omarchy theme set` swaps that directory. It also sends the font Omarchy set as the system monospace font (what `omarchy-font-current` prints), and sends it again when `omarchy-font-set` rewrites `~/.config/fontconfig/fonts.conf`. The popup uses that font. It also sends the theme’s named colors (red, orange, yellow, green, cyan, blue and magenta), and every color the page draws as a color is moved to the nearest of them, keeping the lightness Dark Reader chose so text stays readable. Grays stay on the theme background and foreground.
+Omareader is a Chromium extension that repaints web pages in your current Omarchy theme, and follows along when you switch themes.
 
-The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once, and only when the Dark Reader extension is installed and enabled. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “fetch site fixes daily” at the bottom of the popup to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. The popup shows the installed version in its bottom corner. When a release is newer, it shows an arrow and links that version, as in “v0.4.0 → v0.5.0”. When the check finds nothing newer, it adds a check mark, and hovering it says up to date. Before that check finishes, and when the check fails, it shows the installed version and does not say up to date. That check sends no browsing data.
+- **Theme sync.** A small Python program watches `~/.local/state/omarchy/current` and sends the theme's background, foreground, selection and named colors whenever `omarchy theme set` swaps it.
+- **Theme colors.** Pages are themed by [Dark Reader](https://darkreader.org/)'s dynamic engine (`darkreader` 4.9.133, MIT, bundled, so you don't need the Dark Reader extension). Omareader then moves every color the page draws as a color to the closest of the theme's own red, orange, yellow, green, cyan, blue and magenta. It keeps the lightness Dark Reader chose, so text stays readable. Grays stay on the theme background and foreground.
+- **Readable text.** Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. Dark Reader's site fixes are included, Amazon among them.
+- **Popup.** Two matching switches, each named for what a click does: "disable everywhere" and "disable this site", which turn to "enable" when off. The popup wears the current theme and the monospace font Omarchy set (`omarchy-font-set` updates it without a browser restart). The bottom row has the site-fix toggle and the version, which shows "v0.4.0 ✓" when up to date and "v0.4.0 → v0.5.0" with a link when a newer release is out.
+- **Toolbar.** The dark glasses show while a tab is themed, and the light glasses while it is disabled.
 
-The popup has two matching switches, each named for what a click does: “disable everywhere” (or “enable everywhere”) and “disable this site” (or “enable this site”). The toolbar shows the dark glasses while Omareader is enabled, and the light glasses while it is disabled. Disable this site leaves that host alone and shows the light glasses on its tabs.
-
-Link and syntax colors stay on Dark Reader’s usual path. They are not replaced with the terminal’s red, green, and blue. Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. On a dark theme the Amazon header wordmark stays the light sprite Amazon ships, and the orange smile stays orange.
+If the Dark Reader extension is also installed and enabled, the popup asks once whether to turn it off, since both would restyle the page. Turning it off asks for permission to manage extensions.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
@@ -63,7 +65,7 @@ Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy
 
 ## Install details
 
-Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are not supported yet.
+Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are planned for 0.5.0.
 
 **Curl installer (current).** [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). The one-line command is in [Install](#install) above.
 
@@ -143,18 +145,10 @@ The build refreshes `LICENSES/darkreader-MIT.txt` from `node_modules/darkreader/
 
 ## Roadmap
 
-A Firefox version is planned.
+- **0.5.0:** Firefox support.
+- **0.6.0:** an official Omarchy plugin tied to Omareader.
 
-The official Omarchy package is [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120).
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
-  <img alt="" src="docs/divider-light.png" width="72" height="8">
-</picture>
-
-## Omarchy
-
-The latest release is [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). v0.2.1 does not start. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
+The Omarchy package is pending in [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120), and inclusion in Omarchy is suggested in [omarchy discussion 14632](https://github.com/omacom/omarchy/discussions/14632). v0.2.1 does not start, so update past it.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
