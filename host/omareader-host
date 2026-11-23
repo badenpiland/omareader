@@ -46,6 +46,17 @@ FONTCONFIG = Path(
     )
 )
 FONT_NAME_LIMIT = 100
+# The theme's named colors, for page hues. Older themes only have the
+# terminal palette, so each name falls back to its ANSI slot.
+HUE_KEYS = (
+    ("red", "color1"),
+    ("orange", None),
+    ("yellow", "color3"),
+    ("green", "color2"),
+    ("cyan", "color6"),
+    ("blue", "color4"),
+    ("magenta", "color5"),
+)
 
 _libc = ctypes.CDLL("libc.so.6", use_errno=True)
 _libc.inotify_init1.argtypes = [ctypes.c_int]
@@ -147,6 +158,13 @@ def read_palette():
     mode = colors.get("mode")
     if mode not in ("light", "dark"):
         mode = "light" if luminance(background) > 0.5 else "dark"
+    hues = []
+    for name, slot in HUE_KEYS:
+        value = normalize_hex(colors.get(name))
+        if not value and slot:
+            value = normalize_hex(colors.get(slot))
+        if value and value not in hues:
+            hues.append(value)
     theme = ""
     if name_path.is_file():
         theme = read_capped(name_path).decode().strip()[:100]
@@ -157,6 +175,7 @@ def read_palette():
         "background": background,
         "foreground": foreground,
         "selection": selection or "",
+        "hues": hues,
         "font": read_font(),
     }
 

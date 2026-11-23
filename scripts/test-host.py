@@ -411,6 +411,46 @@ def test_font():
     print("font published")
 
 
+def test_hues():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = Path(tmp) / "state"
+        theme = state / "current" / "theme"
+        theme.mkdir(parents=True)
+        (theme / "colors.toml").write_text(
+            "\n".join(
+                [
+                    'background = "#1a1b26"',
+                    'foreground = "#a9b1d6"',
+                    'red = "#F7768E"',
+                    'color2 = "#9ece6a"',
+                    'blue = "not a color"',
+                    'color4 = "#7aa2f7"',
+                    'magenta = "#f7768e"',
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        env = os.environ.copy()
+        env["OMAREADER_STATE_DIR"] = str(state)
+        proc = subprocess.Popen(
+            [str(HOST)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            bufsize=0,
+        )
+        try:
+            first = read_message(proc.stdout)
+            # Named colors first, ANSI slots as the fallback, no repeats.
+            assert first["hues"] == ["#f7768e", "#9ece6a", "#7aa2f7"], first
+        finally:
+            proc.kill()
+            proc.wait(timeout=2)
+    print("theme hues published")
+
+
 def main():
     test_dump_matches_live_theme()
     test_swap_pushes_a_new_palette()
@@ -421,6 +461,7 @@ def main():
     test_theme_name_is_truncated()
     test_deep_json_still_answers_hello()
     test_font()
+    test_hues()
 
 
 if __name__ == "__main__":
