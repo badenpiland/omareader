@@ -4,14 +4,13 @@
 
 ### Changed
 
-- The popup is rebuilt around three modes: Normal, Dark, and Follow Omarchy. One row sets the mode for all sites, and a second row sets the current site's own mode or Default. The layout comes from the Omarchy Omareader extension (omacom/omarchy#18736), with this extension's wordmark, icon, and version line.
+- The popup is cleaner. Its two switches match: the same power icon and the same words, "disable everywhere" and "disable this site", each turning to "enable" when off. Shortcuts sit inside the buttons. The theme name sits under the wordmark, and the site-fix toggle and version line share the bottom row. The Details panel with the theme's hex colors is gone.
 - The popup uses the font Omarchy set as the system monospace font, and follows `omarchy-font-set` without a browser restart. The wordmark stays in Omarchy Font.
-- The popup shows the current theme's colors as a strip, and the native host now also sends the theme's accent and hue colors.
-- Settings from earlier versions carry over. Turned off becomes Normal for all sites, and a paused site becomes Normal on that site.
+- The popup shows the glasses logo beside the wordmark, light glasses on a light theme. The version line is shorter: "v0.3.1 ✓" when up to date, "v0.3.1 → v0.4.0" when a newer release is out.
 
 ### Fixed
 
-- The popup shows each shortcut beside its row all the time, so hovering a control no longer moves it out from under the pointer.
+- Hovering a popup button no longer moves it. The shortcut used to appear on hover and push the controls down. It is now always shown inside the button.
 
 ## 0.3.1 — 2026-10-15
 

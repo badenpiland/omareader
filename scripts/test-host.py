@@ -351,7 +351,7 @@ def test_deep_json_still_answers_hello():
     print("deep json skipped")
 
 
-def test_accent_swatches_and_font():
+def test_font():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         state = root / "state"
@@ -364,10 +364,6 @@ def test_accent_swatches_and_font():
                 [
                     'background = "#1a1b26"',
                     'foreground = "#a9b1d6"',
-                    'accent = "#7AA2F7"',
-                    'color1 = "#f7768e"',
-                    'green = "#9ece6a"',
-                    'blue = "not a color"',
                     "",
                 ]
             ),
@@ -394,13 +390,6 @@ def test_accent_swatches_and_font():
         )
         try:
             first = read_message(proc.stdout)
-            assert first["accent"] == "#7aa2f7", first
-            assert first["swatches"] == [
-                "#1a1b26",
-                "#a9b1d6",
-                "#f7768e",
-                "#9ece6a",
-            ], first
             assert first["font"] == "Fira Code", first
 
             # omarchy-font-set rewrites fonts.conf. The host reports the new family.
@@ -419,7 +408,7 @@ def test_accent_swatches_and_font():
         finally:
             proc.kill()
             proc.wait(timeout=2)
-    print("accent, swatches and font published")
+    print("font published")
 
 
 def main():
@@ -431,7 +420,7 @@ def main():
     test_oversized_theme_file_is_rejected()
     test_theme_name_is_truncated()
     test_deep_json_still_answers_hello()
-    test_accent_swatches_and_font()
+    test_font()
 
 
 if __name__ == "__main__":

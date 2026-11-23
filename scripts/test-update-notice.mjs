@@ -142,45 +142,56 @@ assert.deepEqual(updateLine("0.3.0", "0.2.2", true), {
 assert.equal(updateLine("0.3.0", "0.3.0", false).available, "");
 assert.equal(updateLine("0.3.0", "0.3.1", true).available, "Update to v0.3.1");
 
-// The popup: mode rows for all sites and this site, the wordmark with the
-// version line beside it, and the site-fix and Dark Reader controls.
+// The popup: logo and wordmark, the theme name, two matching switches, and a
+// footer with the site-fix toggle and the version line.
 const header = popupHtml.match(/<header>[\s\S]*?<\/header>/);
 assert.ok(header, "popup header is present");
 assert.match(header[0], /<img id="logo" src="icon-dark\.svg" width="30" height="30"/);
+assert.match(header[0], /<h1>omareader<\/h1>/);
+assert.match(header[0], /id="theme"/);
 assert.match(popupJs, /palette\?\.mode === "light" \? "icon-light\.svg" : "icon-dark\.svg"/);
 const built = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
 assert.match(built, /icon-\$\{mode\}\.svg/);
-assert.match(header[0], /<h1>omareader<\/h1>/);
-assert.match(header[0], /<p id="update">/);
-assert.match(popupHtml, /id="modes" role="radiogroup"[^>]*aria-keyshortcuts="Alt\+Shift\+O"/);
-assert.match(popupHtml, /id="site-modes" role="radiogroup"[^>]*aria-keyshortcuts="Alt\+Shift\+U"/);
-for (const mode of ["normal", "dark", "omarchy"]) {
-  assert.match(popupHtml, new RegExp(`id="modes"[\\s\\S]*data-mode="${mode}"`));
+for (const [id, key] of [["enabled", "O"], ["site", "U"]]) {
+  const button = popupHtml.match(new RegExp(`<button id="${id}"[\\s\\S]*?</button>`));
+  assert.ok(button, `${id} switch is present`);
+  assert.match(button[0], /class="switch"/);
+  assert.match(button[0], new RegExp(`aria-keyshortcuts="Alt\\+Shift\\+${key}"`));
+  assert.match(button[0], /class="ico power"/);
+  assert.match(button[0], new RegExp(`class="keys"[^>]*>alt\\+shift\\+${key.toLowerCase()}<`));
 }
-assert.match(popupHtml, /data-mode="default">Default</);
-assert.match(popupHtml, />Follow Omarchy</);
-assert.match(popupHtml, /alt\+shift\+o/);
-assert.match(popupHtml, /alt\+shift\+u/);
-assert.match(popupHtml, /id="site-fixes"[^>]*\schecked/);
-assert.match(popupHtml, /Fetch site fixes daily/);
-assert.match(popupHtml, /<section id="dark-reader" hidden>/);
-assert.doesNotMatch(popupHtml, /id="settings"/);
+assert.match(popupHtml, /disable everywhere/);
+assert.match(popupHtml, /disable this site/);
 assert.doesNotMatch(popupHtml, /<details/);
+assert.doesNotMatch(popupHtml, /turn off|pause/i);
+assert.doesNotMatch(popupHtml, /id="settings"/);
 assert.doesNotMatch(popupJs, /openOptionsPage/);
+const footer = popupHtml.match(/<footer>[\s\S]*?<\/footer>/);
+assert.ok(footer, "popup footer is present");
+assert.match(footer[0], /id="site-fixes"[^>]*\schecked/);
+assert.match(footer[0], /fetch site fixes daily/);
+assert.match(footer[0], /<p id="update">/);
 assert.match(popupJs, /siteFixesAutoUpdate !== false/);
 assert.match(popupJs, /type: "setSiteFixesAutoUpdate"/);
-assert.match(popupJs, /type: "setMode", mode/);
-assert.match(popupJs, /type: "setSiteMode", host, mode/);
-assert.match(popupJs, /fontStack\(state\?\.font\)/);
-assert.match(popupJs, /Live sync/);
+assert.match(popupJs, /enabled: siteFixesInput\.checked/);
 assert.equal(popupHtml.includes("mhglniaepbokfgnpeennihlifandcgjh"), false);
+assert.match(popupJs, /"disable everywhere" : "enable everywhere"/);
+assert.match(popupJs, /"enable this site" : "disable this site"/);
+assert.doesNotMatch(popupJs, /turn off|turn on|pause on|theme this site/);
+assert.match(popupJs, /enabledButton\.classList\.toggle\("muted", !enabled\)/);
+assert.match(popupJs, /siteButton\.classList\.toggle\("muted", Boolean\(host\) && \(!enabled \|\| paused\)\)/);
+assert.match(popupJs, /type: "setEnabled", enabled/);
+assert.match(popupJs, /fontStack\(state\.font\)/);
 assert.doesNotMatch(popupJs, /mhglniaepbokfgnpeennihlifandcgjh/);
 
 const popupCss = readFileSync(new URL("../src/popup.css", import.meta.url), "utf8");
-assert.match(popupCss, /body\s*\{[^}]*font:[^;]*var\(--font\)/);
-assert.match(popupCss, /h1\s*\{[^}]*"Omarchy Font"/);
+assert.match(popupCss, /\.brand\s*\{[^}]*justify-content:\s*center/);
+assert.match(popupCss, /\.switch\s*\{[^}]*width:\s*100%/);
+assert.match(popupCss, /\.switch\.muted/);
+assert.match(popupCss, /:root\s*\{[^}]*font:[^;]*var\(--font\)/);
 assert.match(popupCss, /--font:\s*monospace/);
-assert.match(popupCss, /#update\s*\{[^}]*white-space:\s*nowrap/);
+assert.doesNotMatch(popupCss, /\.keys\s*\{[^}]*display:\s*none/);
+assert.doesNotMatch(popupCss, /visibility:\s*hidden/);
 assert.match(popupCss, /font-family:\s*"Omarchy Font"/);
 assert.match(popupCss, /url\("omarchy-font\.ttf"\)/);
 assert.ok(statSync(new URL("../src/omarchy-font.ttf", import.meta.url)).size > 1000);

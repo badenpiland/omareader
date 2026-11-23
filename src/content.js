@@ -3,7 +3,6 @@ import { disable, enable, setFetchMethod } from "darkreader";
 import { readableInvert, readablePoles, repairFixColors } from "./contrast.js";
 import { DARK_READER_PROXY_ATTRIBUTE, extensionProxyInjected } from "./dark-reader.js";
 import { THEME_RESOURCE } from "./theme-fetch.js";
-import { normalizeSettings, paletteForMode, siteModeOf } from "./modes.js";
 
 // Dark Reader replaces sendMessage and drops its return value, so the
 // stylesheet fetch uses its own port. The page cannot read another host.
@@ -96,16 +95,26 @@ function themedFix(palette, fix) {
   return { ...fix, css, invert };
 }
 
+function pausedHere(state) {
+  const host = location.hostname.toLowerCase().replace(/\.$/, "");
+  return Boolean(host && state?.pausedSites?.includes(host));
+}
+
 function apply(state) {
-  // The worker picks this page's palette from its mode: Omarchy, Dark, or none for Normal.
-  const palette = state?.themePalette;
-  const active = Boolean(palette?.background && palette?.foreground);
+  const palette = state?.palette;
+  const active = Boolean(
+    state &&
+      state.enabled !== false &&
+      !pausedHere(state) &&
+      palette?.background &&
+      palette?.foreground,
+  );
   // siteFix is this page's Dark Reader corrections. A later download has to
   // change this key so the engine repaints with the new list.
   const hasFix = Boolean(state && Object.prototype.hasOwnProperty.call(state, "siteFix"));
   const fix = hasFix && state.siteFix && typeof state.siteFix === "object" ? themedFix(palette, state.siteFix) : null;
   const next = active ? JSON.stringify([palette, hasFix ? fix : null]) : "";
-  if (state && !active) {
+  if (state?.enabled === false || pausedHere(state)) {
     sealEarly();
   }
   if (next === lastKey) {
@@ -134,9 +143,8 @@ function cssHex(value) {
 
 async function paintEarly() {
   try {
-    const stored = await chrome.storage.session.get(["palette", "settings"]);
-    const mode = siteModeOf(normalizeSettings(stored?.settings), location.hostname);
-    const palette = paletteForMode(mode, stored?.palette);
+    const stored = await chrome.storage.session.get("palette");
+    const palette = stored?.palette;
     const background = cssHex(palette?.background);
     const foreground = cssHex(palette?.foreground);
     if (earlySealed || !background || !foreground || !document.documentElement) {
