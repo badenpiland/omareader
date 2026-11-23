@@ -3,22 +3,12 @@ import { updateLine } from "./update-notice.js";
 import { fontStack } from "./font.js";
 
 const enabledButton = document.querySelector("#enabled");
-const enabledCtrl = document.querySelector("#enabled-ctrl");
 const enabledLabel = document.querySelector("#enabled-label");
-const siteLine = document.querySelector("#site-line");
-const siteHost = document.querySelector("#site-host");
-const siteCtrl = document.querySelector("#site-ctrl");
 const siteButton = document.querySelector("#site");
 const siteLabel = document.querySelector("#site-label");
-const siteIcon = document.querySelector("#site-icon");
 const themeNode = document.querySelector("#theme");
 const statusNode = document.querySelector("#status");
 const logo = document.querySelector("#logo");
-const swatches = document.querySelector(".swatches");
-const bg = document.querySelector("#bg");
-const fg = document.querySelector("#fg");
-const bgLabel = document.querySelector("#bg-label");
-const fgLabel = document.querySelector("#fg-label");
 const darkReader = document.querySelector("#dark-reader");
 const siteFixesInput = document.querySelector("#site-fixes");
 const updateInstalled = document.querySelector("#update-installed");
@@ -30,25 +20,16 @@ let declineNote = "";
 let latest = null;
 let host = "";
 
-function syncDetails() {
-  siteLine.hidden = !host;
-}
-
+// Both switches name what a click does. A muted switch is one that is off.
 function renderControls() {
   const enabled = latest?.enabled !== false;
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
-  enabledLabel.textContent = enabled ? "turn off everywhere" : "turn on everywhere";
-  enabledCtrl.classList.toggle("muted", !enabled);
-  siteCtrl.hidden = !host;
-  siteCtrl.classList.toggle("muted", Boolean(host) && (!enabled || paused));
-  if (host) {
-    siteHost.textContent = host;
-    const theming = enabled && !paused;
-    siteLabel.textContent = enabled && paused ? "theme this site" : "pause on this site";
-    siteIcon.classList.toggle("pause", theming || !enabled);
-    siteIcon.classList.toggle("play", enabled && paused);
-  }
-  syncDetails();
+  enabledLabel.textContent = enabled ? "disable everywhere" : "enable everywhere";
+  enabledButton.classList.toggle("muted", !enabled);
+  siteButton.hidden = !host;
+  siteLabel.textContent = paused ? "enable this site" : "disable this site";
+  siteButton.classList.toggle("muted", Boolean(host) && (!enabled || paused));
+  siteButton.title = host;
 }
 
 function applyPalette(palette) {
@@ -57,19 +38,12 @@ function applyPalette(palette) {
   logo.src = palette?.mode === "light" ? "icon-light.svg" : "icon-dark.svg";
   if (!palette?.background || !palette?.foreground) {
     themeNode.textContent = "Waiting for Omarchy";
-    swatches.hidden = true;
     root.style.removeProperty("--popup-bg");
     root.style.removeProperty("--popup-fg");
     root.style.colorScheme = "";
     return;
   }
-  const name = palette.theme || "current theme";
-  themeNode.textContent = `${name} · ${palette.mode}`;
-  swatches.hidden = false;
-  bg.style.background = palette.background;
-  fg.style.background = palette.foreground;
-  bgLabel.textContent = palette.background;
-  fgLabel.textContent = palette.foreground;
+  themeNode.textContent = palette.theme || "current theme";
   root.style.setProperty("--popup-bg", palette.background);
   root.style.setProperty("--popup-fg", palette.foreground);
   root.style.colorScheme = palette.mode === "light" ? "light" : "dark";
@@ -92,7 +66,6 @@ function render(state) {
   if (state.darkReaderPrompt) {
     darkReaderText.textContent = state.darkReaderKnown ? DARK_READER_KNOWN : DARK_READER_UNKNOWN;
   }
-  syncDetails();
 }
 
 // The version line is short: "v0.3.1 ✓" once a check finds nothing newer, and
