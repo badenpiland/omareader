@@ -34,10 +34,12 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--s) * 2);
-  width: 320px;
+  gap: 12px;
+  /* The popup is as wide as the wordmark or the switches, whichever is wider. */
+  width: max-content;
+  min-width: 220px;
   margin: 0;
-  padding: calc(var(--s) * 2);
+  padding: 12px 14px;
 }
 
 h1,
@@ -82,6 +84,7 @@ footer {
 }
 
 #theme {
+  text-align: center;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,11 +95,10 @@ footer {
   overflow-wrap: anywhere;
 }
 
-/* The switches fit their words, both as wide as the longer one, centered. */
+/* Both switches are as wide as the longer one's words. */
 main {
   display: grid;
-  grid-template-columns: max-content;
-  justify-content: center;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 
@@ -176,8 +178,19 @@ button:focus-visible,
   padding: 6px var(--s);
 }
 
+/* The theme name, notes and footer wrap instead of widening the popup. */
+#theme,
+#status,
+#dark-reader,
+footer {
+  width: 0;
+  min-width: 100%;
+}
+
 footer {
   display: flex;
+  flex-wrap: wrap;
+  row-gap: 4px;
   align-items: center;
   justify-content: space-between;
   gap: var(--s);
@@ -207,6 +220,7 @@ footer {
 
 #update {
   min-width: 0;
+  margin-left: auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
