@@ -33,9 +33,9 @@ curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.
 
 ## What it does
 
-Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, and selection color whenever `omarchy theme set` swaps that directory. It also sends the font Omarchy set as the system monospace font (what `omarchy-font-current` prints), and sends it again when `omarchy-font-set` rewrites `~/.config/fontconfig/fonts.conf`. The popup uses that font.
+Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, and selection color whenever `omarchy theme set` swaps that directory. It also sends the font Omarchy set as the system monospace font (what `omarchy-font-current` prints), and sends it again when `omarchy-font-set` rewrites `~/.config/fontconfig/fonts.conf`. The popup uses that font. It also sends the theme’s named colors (red, orange, yellow, green, cyan, blue and magenta), and every color the page draws as a color is moved to the nearest of them, keeping the lightness Dark Reader chose so text stays readable. Grays stay on the theme background and foreground.
 
-The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once, and only when the Dark Reader extension is installed and enabled. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “fetch site fixes daily” at the bottom of the popup to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. The popup shows the installed version in its bottom corner. When a release is newer, it shows an arrow and links that version, as in “v0.3.1 → v0.4.0”. When the check finds nothing newer, it adds a check mark, and hovering it says up to date. Before that check finishes, and when the check fails, it shows the installed version and does not say up to date. That check sends no browsing data.
+The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once, and only when the Dark Reader extension is installed and enabled. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “fetch site fixes daily” at the bottom of the popup to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. The popup shows the installed version in its bottom corner. When a release is newer, it shows an arrow and links that version, as in “v0.4.0 → v0.5.0”. When the check finds nothing newer, it adds a check mark, and hovering it says up to date. Before that check finishes, and when the check fails, it shows the installed version and does not say up to date. That check sends no browsing data.
 
 The popup has two matching switches, each named for what a click does: “disable everywhere” (or “enable everywhere”) and “disable this site” (or “enable this site”). The toolbar shows the dark glasses while Omareader is enabled, and the light glasses while it is disabled. Disable this site leaves that host alone and shows the light glasses on its tabs.
 
@@ -65,7 +65,7 @@ Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy
 
 Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are not supported yet.
 
-**Curl installer (current).** [v0.3.1](https://github.com/badenpiland/omareader/releases/tag/v0.3.1). The one-line command is in [Install](#install) above.
+**Curl installer (current).** [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). The one-line command is in [Install](#install) above.
 
 The command follows the Omarchy default browser and installs Omareader only there. Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome asks once for sudo and writes the extension where Chrome will load it. Restart that browser.
 
@@ -73,7 +73,7 @@ If a browser already refused the extension, it will not accept the installer aga
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 
-The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.3.1](https://github.com/badenpiland/omareader/releases/tag/v0.3.1). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
+The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
 
 **Omarchy package (coming soon).** Pending [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120). Once merged:
 
@@ -154,7 +154,7 @@ The official Omarchy package is [omarchy-pkgs#1120](https://github.com/omacom/om
 
 ## Omarchy
 
-The latest release is [v0.3.1](https://github.com/badenpiland/omareader/releases/tag/v0.3.1). v0.2.1 does not start. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
+The latest release is [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). v0.2.1 does not start. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
