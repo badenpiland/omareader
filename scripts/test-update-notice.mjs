@@ -158,7 +158,10 @@ for (const [id, key] of [["enabled", "U"], ["site", "O"]]) {
   assert.match(button[0], /class="switch"/);
   assert.match(button[0], new RegExp(`aria-keyshortcuts="Alt\\+Shift\\+${key}"`));
   assert.match(button[0], /class="ico power"/);
-  assert.match(button[0], new RegExp(`class="keys"[^>]*>alt\\+shift\\+${key.toLowerCase()}<`));
+  assert.doesNotMatch(button[0], /class="keys"/, `${id} switch keeps its shortcut outside the button`);
+  const ctrl = popupHtml.match(new RegExp(`<div id="${id}-ctrl" class="ctrl"[\\s\\S]*?</div>`));
+  assert.ok(ctrl, `${id} switch sits in its control`);
+  assert.match(ctrl[0], new RegExp(`class="keys"[^>]*><kbd>alt</kbd><span>\\+</span><kbd>shift</kbd><span>\\+</span><kbd>${key.toLowerCase()}</kbd></p>`));
 }
 assert.match(popupHtml, /disable everywhere/);
 assert.match(popupHtml, /disable this site/);
@@ -212,8 +215,11 @@ assert.match(popupCss, /--font:\s*monospace/);
 assert.match(popupCss, /:root\s*\{[^}]*font-size-adjust:\s*ex-height 0\.5/, "every Omarchy font draws at the same x-height");
 assert.match(popupCss, /\nh1\s*\{[^}]*font-size-adjust:\s*none/, "the wordmark keeps its own size");
 assert.match(popupCss, /\nbody\s*\{[^}]*font:\s*inherit/, "body takes the Omarchy font, not Chromium's extension-page font");
+// The shortcut appears on hover or focus, and its line keeps its space so nothing moves.
 assert.doesNotMatch(popupCss, /\.keys\s*\{[^}]*display:\s*none/);
-assert.doesNotMatch(popupCss, /visibility:\s*hidden/);
+assert.match(popupCss, /\.keys\s*\{[^}]*visibility:\s*hidden/);
+assert.match(popupCss, /\.ctrl:hover \.keys,\s*\.ctrl:focus-within \.keys\s*\{[^}]*visibility:\s*visible/);
+assert.match(popupJs, /siteCtrl\.hidden = !host/);
 assert.match(popupCss, /font-family:\s*"Omarchy Font"/);
 assert.match(popupCss, /url\("omarchy-font\.ttf"\)/);
 assert.ok(statSync(new URL("../src/omarchy-font.ttf", import.meta.url)).size > 1000);

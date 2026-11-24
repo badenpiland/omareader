@@ -5,6 +5,7 @@ import { fontFaceRule, fontStack } from "./font.js";
 const enabledButton = document.querySelector("#enabled");
 const enabledLabel = document.querySelector("#enabled-label");
 const siteButton = document.querySelector("#site");
+const siteCtrl = document.querySelector("#site-ctrl");
 const siteLabel = document.querySelector("#site-label");
 const themeNode = document.querySelector("#theme");
 const statusNode = document.querySelector("#status");
@@ -26,7 +27,7 @@ function renderControls() {
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
   enabledLabel.textContent = enabled ? "disable everywhere" : "enable everywhere";
   enabledButton.classList.toggle("muted", !enabled);
-  siteButton.hidden = !host;
+  siteCtrl.hidden = !host;
   siteLabel.textContent = paused ? "enable this site" : "disable this site";
   siteButton.classList.toggle("muted", Boolean(host) && (!enabled || paused));
   siteButton.title = host;

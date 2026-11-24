@@ -15,16 +15,20 @@
       <p id="theme">Waiting for Omarchy</p>
     </header>
     <main>
-      <button id="enabled" type="button" class="switch" aria-keyshortcuts="Alt+Shift+U">
-        <span class="ico power" aria-hidden="true"></span>
-        <span id="enabled-label">disable everywhere</span>
-        <span class="keys" aria-hidden="true">alt+shift+u</span>
-      </button>
-      <button id="site" type="button" class="switch" aria-keyshortcuts="Alt+Shift+O" hidden>
-        <span class="ico power" aria-hidden="true"></span>
-        <span id="site-label">disable this site</span>
-        <span class="keys" aria-hidden="true">alt+shift+o</span>
-      </button>
+      <div id="enabled-ctrl" class="ctrl">
+        <button id="enabled" type="button" class="switch" aria-keyshortcuts="Alt+Shift+U">
+          <span class="ico power" aria-hidden="true"></span>
+          <span id="enabled-label">disable everywhere</span>
+        </button>
+        <p class="keys" aria-hidden="true"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>u</kbd></p>
+      </div>
+      <div id="site-ctrl" class="ctrl" hidden>
+        <button id="site" type="button" class="switch" aria-keyshortcuts="Alt+Shift+O">
+          <span class="ico power" aria-hidden="true"></span>
+          <span id="site-label">disable this site</span>
+        </button>
+        <p class="keys" aria-hidden="true"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>o</kbd></p>
+      </div>
     </main>
     <p id="status" hidden></p>
     <section id="dark-reader" hidden>
