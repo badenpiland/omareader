@@ -200,8 +200,7 @@ assert.match(popupJs, /siteLabel\.textContent = siteName\(host\)/);
   }
 }
 assert.doesNotMatch(popupJs, /turn off|turn on|pause on|theme this site/);
-assert.match(popupJs, /enabledButton\.classList\.toggle\("muted", !enabled\)/);
-assert.match(popupJs, /siteButton\.classList\.toggle\("muted", Boolean\(host\) && \(!enabled \|\| paused\)\)/);
+assert.match(popupJs, /siteButton\.classList\.toggle\("muted", !enabled\)/);
 assert.match(popupJs, /type: "setEnabled", enabled/);
 assert.match(popupJs, /applyFont\(state\.font, state\.fontFaces\)/);
 assert.match(popupJs, /fontStack\(family, faces\)/);

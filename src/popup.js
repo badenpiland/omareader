@@ -27,11 +27,10 @@ function renderControls() {
   const enabled = latest?.enabled !== false;
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
   enabledButton.setAttribute("aria-checked", String(enabled));
-  enabledButton.classList.toggle("muted", !enabled);
   siteCtrl.hidden = !host;
   siteLabel.textContent = siteName(host);
   siteButton.setAttribute("aria-checked", String(!paused));
-  siteButton.classList.toggle("muted", Boolean(host) && (!enabled || paused));
+  siteButton.classList.toggle("muted", !enabled);
   siteButton.title = host;
 }
 

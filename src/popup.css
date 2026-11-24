@@ -138,62 +138,66 @@ button:focus-visible,
   gap: 3px;
 }
 
-/* A row: the name, then a toggle that sits right when on. */
+/* Omarchy's labeled toggle row (shell Ui/Toggle.qml) at popup size: a
+   bordered row, the name in bold, and a square switch at the end. The alphas
+   are Omarchy's defaults: normal fill 4% and border 40%, hover fill 8% and
+   border 25%, selected fill 18% with no border. */
 .switch {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   width: 100%;
-  padding: 3px 0;
-  border: none;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  font-weight: 700;
   text-align: left;
 }
 
-.switch:hover {
-  background: transparent;
+.switch:hover,
+.switch:focus-visible {
+  border-color: color-mix(in srgb, currentColor 25%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
+/* Off everywhere: the site row is dimmed. Its switch still shows its own state. */
 .switch.muted {
   color: var(--muted);
 }
 
+/* Omarchy's ToggleSwitch: square track 1.9 times as wide as tall, knob 0.72 of
+   the height. Off is a 40% border with a dimmed knob at the start. On is an
+   18% fill with the knob in the foreground at the end. */
 .toggle {
   position: relative;
   flex: none;
-  width: 26px;
+  width: 27px;
   height: 14px;
-  border: 1px solid currentColor;
-  border-radius: 7px;
-  transition: background-color 120ms ease;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
 .toggle::after {
   content: "";
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  transition: transform 120ms ease;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 10px;
+  background: color-mix(in srgb, currentColor 80%, var(--popup-bg));
+  transition: transform 120ms cubic-bezier(0.33, 1, 0.68, 1), background-color 120ms ease;
 }
 
 .switch[aria-checked="true"] .toggle {
-  background: color-mix(in srgb, currentColor 22%, transparent);
+  border-color: transparent;
+  background: color-mix(in srgb, currentColor 18%, transparent);
 }
 
 .switch[aria-checked="true"] .toggle::after {
-  transform: translateX(12px);
-}
-
-.switch:hover .toggle {
-  background: color-mix(in srgb, currentColor 14%, transparent);
-}
-
-.switch[aria-checked="true"]:hover .toggle {
-  background: color-mix(in srgb, currentColor 30%, transparent);
+  background: currentColor;
+  transform: translateX(13px);
 }
 
 /* The shortcut shows while its switch is hovered or focused. Its line always
