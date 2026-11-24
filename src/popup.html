@@ -16,16 +16,16 @@
     </header>
     <main>
       <div id="enabled-ctrl" class="ctrl">
-        <button id="enabled" type="button" class="switch" aria-keyshortcuts="Alt+Shift+U">
-          <span class="ico power" aria-hidden="true"></span>
-          <span id="enabled-label">disable</span>
+        <button id="enabled" type="button" class="switch" role="switch" aria-checked="true" aria-keyshortcuts="Alt+Shift+U">
+          <span id="enabled-label">everywhere</span>
+          <span class="toggle" aria-hidden="true"></span>
         </button>
         <p class="keys" aria-hidden="true"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>u</kbd></p>
       </div>
       <div id="site-ctrl" class="ctrl" hidden>
-        <button id="site" type="button" class="switch" aria-keyshortcuts="Alt+Shift+O">
-          <span class="ico power" aria-hidden="true"></span>
-          <span id="site-label">disable</span>
+        <button id="site" type="button" class="switch" role="switch" aria-checked="true" aria-keyshortcuts="Alt+Shift+O">
+          <span id="site-label">this site</span>
+          <span class="toggle" aria-hidden="true"></span>
         </button>
         <p class="keys" aria-hidden="true"><kbd>alt</kbd><span>+</span><kbd>shift</kbd><span>+</span><kbd>o</kbd></p>
       </div>

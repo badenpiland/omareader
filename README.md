@@ -38,7 +38,7 @@ Omareader is a Chromium extension that repaints web pages in your current Omarch
 - **Theme sync.** A small Python program watches `~/.local/state/omarchy/current` and sends the theme's background, foreground, selection and named colors whenever `omarchy theme set` swaps it.
 - **Theme colors.** Pages are themed by [Dark Reader](https://darkreader.org/)'s dynamic engine (`darkreader` 4.9.133, MIT, bundled, so you don't need the Dark Reader extension). Omareader then moves every color the page draws as a color to the closest of the theme's own red, orange, yellow, green, cyan, blue and magenta. It keeps the lightness Dark Reader chose, so text stays readable. Grays stay on the theme background and foreground.
 - **Readable text.** Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. Dark Reader's site fixes are included, Amazon among them.
-- **Popup.** Two matching switches, each named for what a click does: "disable", and "disable github" for the site you're on. Each turns to "enable" when off, and shows its shortcut on hover. The popup wears the current theme and the monospace font Omarchy set (`omarchy-font-set` updates it without a browser restart). The bottom row has the site-fix toggle and the version, which shows "v0.4.0 ✓" when up to date and "v0.4.0 → v0.5.0" with a link when a newer release is out.
+- **Popup.** Two switches: "everywhere", and the site you're on by its short name, such as "github". A switch sits right while that one is themed, and shows its shortcut on hover. The popup wears the current theme and the monospace font Omarchy set (`omarchy-font-set` updates it without a browser restart). The bottom row has the site-fix toggle and the version, which shows "v0.4.0 ✓" when up to date and "v0.4.0 → v0.5.0" with a link when a newer release is out.
 - **Toolbar.** The dark glasses show while a tab is themed, and the light glasses while it is disabled.
 
 If the Dark Reader extension is also installed and enabled, the popup asks once whether to turn it off, since both would restyle the page. Turning it off asks for permission to manage extensions.
@@ -52,7 +52,7 @@ If the Dark Reader extension is also installed and enabled, the popup asks once 
 
 Alt+Shift+U (U for universal) disables or enables Omareader everywhere. The toolbar badge shows ON or OFF for a moment.
 
-Alt+Shift+O (O for one site) disables the current site, or enables it again. That is the same switch as "disable github" in the popup, named for the site you're on. That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. The badge also shows ON or OFF for a moment, for this site.
+Alt+Shift+O (O for one site) disables the current site, or enables it again. That is the same switch as the site's switch in the popup, such as "github". That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. The badge also shows ON or OFF for a moment, for this site.
 
 Change either shortcut at `chrome://extensions/shortcuts`.
 

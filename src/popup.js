@@ -4,7 +4,6 @@ import { fontFaceRule, fontStack } from "./font.js";
 import { siteName } from "./site-name.js";
 
 const enabledButton = document.querySelector("#enabled");
-const enabledLabel = document.querySelector("#enabled-label");
 const siteButton = document.querySelector("#site");
 const siteCtrl = document.querySelector("#site-ctrl");
 const siteLabel = document.querySelector("#site-label");
@@ -22,15 +21,16 @@ let declineNote = "";
 let latest = null;
 let host = "";
 
-// Both switches name what a click does: "disable", and "disable github" for
-// the site in this tab. A muted switch is one that is off.
+// Two switches: Omareader everywhere, and the site in this tab by its short
+// name, "github" for github.com. A switch is on while that one is themed.
 function renderControls() {
   const enabled = latest?.enabled !== false;
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
-  enabledLabel.textContent = enabled ? "disable" : "enable";
+  enabledButton.setAttribute("aria-checked", String(enabled));
   enabledButton.classList.toggle("muted", !enabled);
   siteCtrl.hidden = !host;
-  siteLabel.textContent = `${paused ? "enable" : "disable"} ${siteName(host)}`;
+  siteLabel.textContent = siteName(host);
+  siteButton.setAttribute("aria-checked", String(!paused));
   siteButton.classList.toggle("muted", Boolean(host) && (!enabled || paused));
   siteButton.title = host;
 }

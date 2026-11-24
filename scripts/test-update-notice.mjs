@@ -157,13 +157,14 @@ for (const [id, key] of [["enabled", "U"], ["site", "O"]]) {
   assert.ok(button, `${id} switch is present`);
   assert.match(button[0], /class="switch"/);
   assert.match(button[0], new RegExp(`aria-keyshortcuts="Alt\\+Shift\\+${key}"`));
-  assert.match(button[0], /class="ico power"/);
+  assert.match(button[0], /role="switch" aria-checked="true"/);
+  assert.match(button[0], /class="toggle"/);
   assert.doesNotMatch(button[0], /class="keys"/, `${id} switch keeps its shortcut outside the button`);
   const ctrl = popupHtml.match(new RegExp(`<div id="${id}-ctrl" class="ctrl"[\\s\\S]*?</div>`));
   assert.ok(ctrl, `${id} switch sits in its control`);
   assert.match(ctrl[0], new RegExp(`class="keys"[^>]*><kbd>alt</kbd><span>\\+</span><kbd>shift</kbd><span>\\+</span><kbd>${key.toLowerCase()}</kbd></p>`));
 }
-assert.match(popupHtml, /<span id="enabled-label">disable<\/span>/);
+assert.match(popupHtml, /<span id="enabled-label">everywhere<\/span>/);
 assert.doesNotMatch(popupHtml, /<details/);
 assert.doesNotMatch(popupHtml, /turn off|pause/i);
 assert.doesNotMatch(popupHtml, /id="settings"/);
@@ -177,8 +178,9 @@ assert.match(popupJs, /siteFixesAutoUpdate !== false/);
 assert.match(popupJs, /type: "setSiteFixesAutoUpdate"/);
 assert.match(popupJs, /enabled: siteFixesInput\.checked/);
 assert.equal(popupHtml.includes("mhglniaepbokfgnpeennihlifandcgjh"), false);
-assert.match(popupJs, /enabled \? "disable" : "enable"/);
-assert.match(popupJs, /\$\{paused \? "enable" : "disable"\} \$\{siteName\(host\)\}/);
+assert.match(popupJs, /enabledButton\.setAttribute\("aria-checked", String\(enabled\)\)/);
+assert.match(popupJs, /siteButton\.setAttribute\("aria-checked", String\(!paused\)\)/);
+assert.match(popupJs, /siteLabel\.textContent = siteName\(host\)/);
 {
   const { siteName } = await import("../src/site-name.js");
   for (const [host, name] of [
@@ -227,6 +229,7 @@ const popupCss = readFileSync(new URL("../src/popup.css", import.meta.url), "utf
 assert.match(popupCss, /\.brand\s*\{[^}]*justify-content:\s*center/);
 assert.match(popupCss, /\.switch\s*\{[^}]*width:\s*100%/);
 assert.match(popupCss, /\.switch\.muted/);
+assert.match(popupCss, /\.switch\[aria-checked="true"\] \.toggle::after\s*\{[^}]*translateX/);
 assert.match(popupCss, /:root\s*\{[^}]*font:[^;]*var\(--font\)/);
 assert.match(popupCss, /--font:\s*monospace/);
 assert.match(popupCss, /:root\s*\{[^}]*font-size-adjust:\s*ex-height 0\.42/, "every Omarchy font draws at the same x-height");
