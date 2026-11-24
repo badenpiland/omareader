@@ -251,7 +251,10 @@ copyFileSync(join(root, "LICENSES", "omarchy-font-MIT.txt"), join(dist, "LICENSE
 for (const file of ["background.js", "commands.js", "dark-reader.js", "reconnect-delay.js", "extension-page.js", "host-message.js", "site-fixes.js", "theme-fetch.js", "update-notice.js", "font.js", "site-name.js", "popup.js", "popup.html", "popup.css", "omarchy-font.ttf", "early.css"]) {
   copyFileSync(join(root, "src", file), join(dist, file));
 }
-copyFileSync(siteFixPath, join(dist, "dynamic-theme-fixes.config"));
+// The bundled list gets the same cleanup as the daily download, so neither one
+// can make a page fetch a file from another host.
+const { sanitizeFetchedFixes } = await import("../src/site-fixes.js");
+writeFileSync(join(dist, "dynamic-theme-fixes.config"), sanitizeFetchedFixes(siteFixText));
 for (const mode of ["dark", "light"]) {
   for (const size of [16, 32, 48, 128]) {
     writeFileSync(join(dist, `icon-${mode}-${size}.png`), png(size, ICON_COLORS[mode]));

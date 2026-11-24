@@ -87,6 +87,22 @@ const quotedSelector = [
   "\n================================\n\nlater.test\n\nINVERT\n.later-logo\n",
 ].join("");
 const quotedSites = acceptSiteFixes(sanitizeFetchedFixes(quotedSelector));
+const escaped = sanitizeFetchedFixes([
+  "*\nCSS\n",
+  "a { background: \\75 rl(https://evil.test/e.png); }\n",
+  "b { background: \\55\\52\\4c(https://evil.test/f.png); }\n",
+  "c { background-image: image-set(\"https://evil.test/g.png\" 1x); }\n",
+  "d { background-image: -webkit-image-set(url(https://evil.test/h.png) 1x); }\n",
+  "e { background: url(data:image/png;base64,bbbb); }\n",
+  "@\\69mport \"https://evil.test/i.css\";\n",
+  ".bg-\\[\\#E5E7EB\\] { color: red; }\n",
+  ".bg-\\[url\\(\\/static\\/a\\.svg\\)\\] { color: blue; }\n",
+].join(""));
+assert(!escaped.includes("evil.test"), "escaped url(), image-set() and @import are removed");
+assert(escaped.includes("data:image/png;base64,bbbb"), "a data url() still stays");
+assert(escaped.includes(".bg-\\[\\#E5E7EB\\] { color: red; }"), "escapes that hide nothing stay");
+assert(escaped.includes(".bg-\\[url\\(\\/static\\/a\\.svg\\)\\] { color: blue; }"), "an escaped ( in a class name stays");
+
 const quotedFix = fixesFor("https://example.com/", quotedSites);
 assert(quotedFix.invert.some((selector) => selector.startsWith("div[style^=")), "a url( quoted in a selector stays");
 assert(!quotedFix.invert.some((selector) => selector.includes("evil.test")), "a selector line that opens a rule is dropped");
