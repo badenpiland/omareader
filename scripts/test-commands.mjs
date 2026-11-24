@@ -184,6 +184,10 @@ const unknown = await runReaderCommand("toggle-something-else", { id: 1, url: "h
 assert.equal(unknown, null);
 
 assert.equal(hostFromUrl("https://example.com."), "example.com");
+assert.equal(hostFromUrl("chrome://extensions/"), "", "chrome:// pages have no site");
+assert.equal(hostFromUrl("chrome-extension://mhglniaepbokfgnpeennihlifandcgjh/popup.html"), "");
+assert.equal(hostFromUrl("file:///home/x/a.html"), "");
+assert.equal(hostFromUrl("http://localhost:8080/"), "localhost");
 assert.equal(normalizeHost("a".repeat(254)), "");
 assert.equal(normalizeHost("bad host"), "");
 assert.equal(await runReaderCommand(COMMAND_TOGGLE_SITE, { id: 7, url: `https://${"a".repeat(254)}/` }, deps()), null);

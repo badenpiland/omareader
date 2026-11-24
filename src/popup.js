@@ -2,6 +2,7 @@
 import { updateLine } from "./update-notice.js";
 import { fontFaceRule, fontStack } from "./font.js";
 import { siteName } from "./site-name.js";
+import { hostFromUrl } from "./commands.js";
 
 const enabledButton = document.querySelector("#enabled");
 const siteButton = document.querySelector("#site");
@@ -130,11 +131,7 @@ siteButton.addEventListener("click", () => {
   port.postMessage({ type: "setSitePaused", host, paused: !paused });
 });
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-  try {
-    host = new URL(tabs?.[0]?.url || "").hostname.toLowerCase().replace(/\.$/, "");
-  } catch {
-    host = "";
-  }
+  host = hostFromUrl(tabs?.[0]?.url || "");
   renderControls();
 });
 document.querySelector("#dark-reader-off").addEventListener("click", async () => {

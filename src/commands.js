@@ -17,9 +17,15 @@ export function normalizeHost(value) {
   return host;
 }
 
+// Only web pages have a site to pause. chrome://extensions has the hostname
+// "extensions", which is not a site.
 export function hostFromUrl(url) {
   try {
-    return normalizeHost(new URL(url).hostname);
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "";
+    }
+    return normalizeHost(parsed.hostname);
   } catch {
     return "";
   }
