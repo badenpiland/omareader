@@ -7,6 +7,7 @@
 - Page colors take on the Omarchy theme’s own colors. A blue button becomes the theme’s blue, a red badge the theme’s red, and so on, matched by hue in OKLCH. Lightness stays as Dark Reader set it, so contrast does not change, and colors the page drew as grays are left alone. The native host now also sends the theme’s named colors.
 - The popup is cleaner. Its two switches match: the same power icon and the same words, "disable everywhere" and "disable this site", each turning to "enable" when off. Shortcuts sit inside the buttons. The theme name sits under the wordmark, and the site-fix toggle and version line share the bottom row. The Details panel with the theme's hex colors is gone.
 - The popup uses the font Omarchy set as the system monospace font, and follows `omarchy-font-set` without a browser restart. The wordmark stays in Omarchy Font.
+- The shortcuts swapped: Alt+Shift+U ("universal") now disables or enables Omareader everywhere, and Alt+Shift+O ("one") the current site. Both flash ON or OFF on the toolbar badge. The popup reads the keys Chromium actually bound, so a key changed in `chrome://extensions/shortcuts`, or one an update kept, shows correctly.
 - The popup shows the glasses logo beside the wordmark, light glasses on a light theme. The version line is shorter: "v0.3.1 ✓" when up to date, "v0.3.1 → v0.4.0" when a newer release is out.
 
 ### Performance

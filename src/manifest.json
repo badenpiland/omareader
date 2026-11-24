@@ -34,15 +34,15 @@
   "commands": {
     "toggle": {
       "suggested_key": {
-        "default": "Alt+Shift+O"
+        "default": "Alt+Shift+U"
       },
-      "description": "Turn Omareader on or off"
+      "description": "Disable or enable Omareader everywhere"
     },
     "toggle-site": {
       "suggested_key": {
-        "default": "Alt+Shift+U"
+        "default": "Alt+Shift+O"
       },
-      "description": "Pause or theme the current site"
+      "description": "Disable or enable the current site"
     }
   },
   "action": {

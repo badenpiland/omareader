@@ -29,7 +29,8 @@ function tabIdOf(tab) {
   return typeof tab?.id === "number" ? tab.id : undefined;
 }
 
-// Suggested keys are Alt+Shift+O and Alt+Shift+U in the manifest. Omarchy binds
+// Suggested keys are Alt+Shift+U (everywhere, "universal") and Alt+Shift+O (this site,
+// "one") in the manifest. Omarchy binds
 // O with SUPER, and Chromium already uses Ctrl+U, Ctrl+Shift+O, and Alt+Shift+T.
 export async function runReaderCommand(command, tab, deps) {
   if (command === COMMAND_TOGGLE) {
@@ -48,5 +49,5 @@ export async function runReaderCommand(command, tab, deps) {
     return null;
   }
   const paused = !deps.isPaused(host);
-  return { type: "setSitePaused", host, paused, tabId: tabIdOf(current) };
+  return { type: "setSitePaused", host, paused, badge: paused ? "OFF" : "ON", tabId: tabIdOf(current) };
 }

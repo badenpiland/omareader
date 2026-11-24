@@ -152,7 +152,7 @@ assert.match(header[0], /id="theme"/);
 assert.match(popupJs, /palette\?\.mode === "light" \? "icon-light\.svg" : "icon-dark\.svg"/);
 const built = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
 assert.match(built, /icon-\$\{mode\}\.svg/);
-for (const [id, key] of [["enabled", "O"], ["site", "U"]]) {
+for (const [id, key] of [["enabled", "U"], ["site", "O"]]) {
   const button = popupHtml.match(new RegExp(`<button id="${id}"[\\s\\S]*?</button>`));
   assert.ok(button, `${id} switch is present`);
   assert.match(button[0], /class="switch"/);
@@ -211,3 +211,5 @@ assert.doesNotMatch(build, /"options\.html"/);
 assert.doesNotMatch(build, /"options\.js"/);
 
 console.log("update notice checked");
+assert.match(popupJs, /chrome\.commands\.getAll/);
+console.log("popup shows the bound shortcut keys");
