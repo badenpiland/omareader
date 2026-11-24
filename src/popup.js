@@ -2,7 +2,7 @@
 import { updateLine } from "./update-notice.js";
 import { fontFaceRule, fontStack } from "./font.js";
 import { siteName } from "./site-name.js";
-import { hostFromUrl } from "./commands.js";
+import { COMMAND_TOGGLE, COMMAND_TOGGLE_SITE, hostFromUrl, shortcutLabel } from "./commands.js";
 
 const enabledButton = document.querySelector("#enabled");
 const siteButton = document.querySelector("#site");
@@ -129,6 +129,24 @@ siteButton.addEventListener("click", () => {
   }
   renderControls();
   port.postMessage({ type: "setSitePaused", host, paused: !paused });
+});
+// Show the keys Chromium actually has bound, which people can change at
+// chrome://extensions/shortcuts. An unbound command shows no tooltip.
+function showKeys(button, keysNode, shortcut) {
+  const label = shortcutLabel(shortcut);
+  keysNode.textContent = label;
+  keysNode.hidden = label === "";
+  if (label) {
+    button.setAttribute("aria-keyshortcuts", shortcut.trim());
+  } else {
+    button.removeAttribute("aria-keyshortcuts");
+  }
+}
+
+chrome.commands.getAll((commands) => {
+  const bound = new Map((commands || []).map((command) => [command.name, command.shortcut]));
+  showKeys(enabledButton, document.querySelector("#enabled-keys"), bound.get(COMMAND_TOGGLE));
+  showKeys(siteButton, document.querySelector("#site-keys"), bound.get(COMMAND_TOGGLE_SITE));
 });
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   host = hostFromUrl(tabs?.[0]?.url || "");

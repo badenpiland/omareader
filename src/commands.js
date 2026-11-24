@@ -56,3 +56,9 @@ export async function runReaderCommand(command, tab, deps) {
   const paused = !deps.isPaused(host);
   return { type: "setSitePaused", host, paused, badge: paused ? "OFF" : "ON", tabId: tabIdOf(current) };
 }
+
+// The keys Chromium has bound to a command, as the popup shows them:
+// "Alt+Shift+U" becomes "alt+shift+u". An unbound command has no keys.
+export function shortcutLabel(shortcut) {
+  return typeof shortcut === "string" ? shortcut.trim().toLowerCase() : "";
+}

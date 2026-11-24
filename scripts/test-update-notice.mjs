@@ -181,15 +181,25 @@ assert.equal(popupHtml.includes("mhglniaepbokfgnpeennihlifandcgjh"), false);
 assert.match(popupJs, /enabledButton\.setAttribute\("aria-checked", String\(enabled\)\)/);
 assert.match(popupJs, /siteButton\.setAttribute\("aria-checked", String\(!paused\)\)/);
 assert.match(popupJs, /siteLabel\.textContent = siteName\(host\)/);
+assert.match(popupJs, /chrome\.commands\.getAll\(/, "the popup shows the keys Chromium has bound");
+{
+  const { shortcutLabel } = await import("../src/commands.js");
+  assert.equal(shortcutLabel("Alt+Shift+U"), "alt+shift+u");
+  assert.equal(shortcutLabel("Ctrl+Shift+Y"), "ctrl+shift+y");
+  assert.equal(shortcutLabel(""), "");
+  assert.equal(shortcutLabel(undefined), "");
+}
 {
   const { siteName } = await import("../src/site-name.js");
   for (const [host, name] of [
     ["github.com", "github"],
     ["www.github.com", "github"],
-    ["en.wikipedia.org", "wikipedia"],
-    ["news.ycombinator.com", "ycombinator"],
+    ["en.wikipedia.org", "en.wikipedia"],
+    ["news.ycombinator.com", "news.ycombinator"],
+    ["gist.github.com", "gist.github"],
     ["www.bbc.co.uk", "bbc"],
-    ["shop.example.com.au", "example"],
+    ["shop.example.com.au", "shop.example"],
+    ["www.com", "www"],
     ["github.io", "github"],
     ["x.co", "x"],
     ["localhost", "localhost"],
