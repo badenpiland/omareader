@@ -202,6 +202,16 @@ XDG_DATA_HOME="$picker_home/.local/share" run_install "$picker_home" "$GOOD_URL"
 assert_only "$picker_home" ".config/BraveSoftware/Brave-Origin"
 test -f "$picker_home/.config/BraveSoftware/Brave-Origin/External Extensions/$EXT_JSON"
 
+# A picker's separate instances (--user-data-dir) that already have
+# Omareader get the new version too. One without it is left alone.
+mkdir -p "$picker_home/.config/brave-work/Default/Extensions/mhglniaepbokfgnpeennihlifandcgjh/0.3.1_0" "$picker_home/.config/brave-plain/Default"
+: > "$picker_home/.config/brave-work/Local State"
+: > "$picker_home/.config/brave-plain/Local State"
+XDG_DATA_HOME="$picker_home/.local/share" run_install "$picker_home" "$GOOD_URL" brave-pick.desktop >/tmp/omareader-install-picker2.out
+test -f "$picker_home/.config/brave-work/External Extensions/$EXT_JSON"
+test ! -e "$picker_home/.config/brave-plain/External Extensions"
+grep -q "Also updated the browser using $picker_home/.config/brave-work" /tmp/omareader-install-picker2.out
+
 # OMAREADER_BROWSER names the browser outright.
 named_home="$WORK/home-named"
 seed_browsers "$named_home"

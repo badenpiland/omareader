@@ -71,7 +71,7 @@ Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are coming in a
 
 **Curl installer (current).** [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). The one-line command is in [Install](#install) above.
 
-The command follows the Omarchy default browser and installs Omareader only there. If the default is a browser picker, such as brave-pick from omapicker, it installs into the browser the picker starts. To choose the browser yourself, name it: `curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | OMAREADER_BROWSER=brave-origin bash` (chromium, chrome, brave, brave-origin or edge). Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome asks once for sudo and writes the extension where Chrome will load it. Restart that browser.
+The command follows the Omarchy default browser and installs Omareader only there. If the default is a browser picker, such as brave-pick from omapicker, it installs into the browser the picker starts. Separate instances of that browser that already have Omareader, such as a picker's Personal and Work, are updated too. To choose the browser yourself, name it: `curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | OMAREADER_BROWSER=brave-origin bash` (chromium, chrome, brave, brave-origin or edge). Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome asks once for sudo and writes the extension where Chrome will load it. Restart that browser.
 
 If a browser already refused the extension, it will not accept the installer again until the extension is installed by hand once, removed, and the command is run again.
 

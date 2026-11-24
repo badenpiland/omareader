@@ -302,6 +302,24 @@ if [[ "$BROWSER_ID" == "chrome" ]]; then
   fi
 else
   write_extension "$CRX_DEST" "$BROWSER_BASE/External Extensions/${EXT_ID}.json"
+  # A browser started with --user-data-dir, as a picker's separate instances
+  # are, reads extensions from "External Extensions" in that folder, so the
+  # one above never updates it. Update every such folder that already has
+  # Omareader. This never adds Omareader anywhere new.
+  for data_dir in "$CONFIG_HOME"/*/; do
+    data_dir="${data_dir%/}"
+    [[ "$data_dir" == "$BROWSER_BASE" ]] && continue
+    # Chrome only loads system-wide external extensions, which take sudo.
+    [[ "${data_dir##*/}" == google-chrome* ]] && continue
+    [[ -f "$data_dir/Local State" ]] || continue
+    for profile_ext in "$data_dir"/*/Extensions/"$EXT_ID"; do
+      if [[ -d "$profile_ext" ]]; then
+        write_extension "$CRX_DEST" "$data_dir/External Extensions/${EXT_ID}.json"
+        echo "Also updated the browser using ${data_dir}."
+        break
+      fi
+    done
+  done
 fi
 
 echo "Omareader ${VERSION} (${EXT_ID}) installed for ${PRETTY}."
