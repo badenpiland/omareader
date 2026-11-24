@@ -8,6 +8,7 @@
 - The popup is cleaner. It has two switches: "everywhere", and the site in the tab by its short name, read the way people say it: "github", "google docs", "ycombinator news" or "wikipedia". The ending and any leading www, m or language code (en, pt-br) are dropped. Two-letter subdomains that aren't languages stay, as in "google ai". Each sits right while on. Each switch shows its shortcut as a tooltip on hover or keyboard focus: the keys set at `chrome://extensions/shortcuts`, or none when it has no keys. The theme name sits under the wordmark, and the site-fix toggle and version line share the bottom row. The Details panel with the theme's hex colors is gone.
 - The popup uses the font Omarchy set as the system monospace font, and follows `omarchy-font-set` without a browser restart. The wordmark stays in Omarchy Font.
 - The popup shows the glasses logo beside the wordmark, light glasses on a light theme. The version line is shorter: "v0.3.1 ✓" when up to date, "v0.3.1 → v0.4.0" when a newer release is out.
+- The shortcuts swap: Alt+Shift+U (U for universal) now turns Omareader off or on everywhere, and Alt+Shift+O (O for one site) the current site. Both flash ON or OFF on the toolbar badge. If your browser keeps the old keys after the update, or you set your own, change them at `chrome://extensions/shortcuts`.
 
 ### Performance
 
@@ -15,11 +16,15 @@
 
 ### Fixed
 
-- Sites late in the alphabet lost their fixes once the daily site-fix download arrived. Removing remote `url()`s from the downloaded list misread a `url(` quoted inside a selector and dropped the rest of the file, so Wikipedia's wordmark, for one, showed as dark text on a dark page. The cleanup now works one line at a time and only touches CSS, and every site keeps its fixes. It also catches `url()` and `@import` spelled with CSS escapes, and files named in `image-set()`. The bundled list gets the same cleanup at build time, so a page can't fetch another host's files from it either.
-- The shortcuts swap: Alt+Shift+U (universal) now disables or enables Omareader everywhere, and Alt+Shift+O (one site) the current site. Both flash ON or OFF on the toolbar badge. Shortcuts you set yourself at `chrome://extensions/shortcuts` stay as they are.
+- Sites late in the alphabet lost their fixes once the daily site-fix download arrived. Removing remote `url()`s from the downloaded list misread a `url(` quoted inside a selector and dropped the rest of the file, so Wikipedia's wordmark, for one, showed as dark text on a dark page. The cleanup now works one line at a time and only touches CSS, and every site keeps its fixes.
 - The popup now really uses the Omarchy monospace font. Chromium gives extension pages a sans-serif body font of its own, which hid the font the popup set. A font change also shows without a browser restart now. Chromium keeps the fontconfig rules it read at startup, which map every monospace family to the font set back then, so the host now also sends the face's full and PostScript names and the popup loads the face by name with CSS `local()`. Each font is also scaled to the same small x-height, so a wide or tall font doesn't make the popup text look bigger than another.
 - Browser pages such as chrome://extensions no longer count as a site. The popup used to offer to pause "extensions" there, and Alt+Shift+O paused it.
 - Hovering a popup switch no longer moves anything. The shortcut used to appear on hover and push the controls down. It is now a tooltip that floats over the popup.
+
+### Security
+
+- The site-fix cleanup also catches `url()` and `@import` spelled with CSS escapes, such as `\75 rl(`, and files named in `image-set()`.
+- The bundled site-fix list, used on first run and when daily updates are off, now gets the same cleanup as the daily download. It used to ship with 123 `url()`s that could make a page load files from other hosts.
 
 ## 0.3.1 — 2026-10-15
 
