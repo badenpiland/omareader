@@ -74,11 +74,45 @@ function stripRemoteUrls(line) {
   return out;
 }
 
+// CSS lets an escape stand for any letter, so "\\75 rl(" is url(. Decode the
+// escaped letters before looking for calls that fetch. Any other escaped
+// character, such as "\\(" in a Tailwind class name, is literal text and can't
+// open a call, so it decodes to a placeholder.
+function cssUnescape(text) {
+  const letter = (char) => (/^[a-z-]$/i.test(char) ? char : "\ufffd");
+  return text
+    .replace(/\\([0-9a-f]{1,6})[ \t]?/gi, (_, hex) => {
+      const code = parseInt(hex, 16);
+      return code > 0 && code <= 0x10ffff ? letter(String.fromCodePoint(code)) : "\ufffd";
+    })
+    .replace(/\\(.)/g, (_, char) => letter(char));
+}
+
+const FETCHING_CALL = /url\(|image-set\(|@import/g;
+
+function fetchingCalls(text) {
+  return (text.toLowerCase().match(FETCHING_CALL) || []).length;
+}
+
+// One line of a CSS section, cleaned. A line is dropped whole when escapes
+// hide a fetching call, or when image-set() still names a file by a plain
+// string, which loads it the same as url() does.
+function cleanCssLine(line) {
+  if (fetchingCalls(cssUnescape(line)) !== fetchingCalls(line)) {
+    return null;
+  }
+  const cleaned = stripRemoteUrls(line.replace(/@import\b[^;]*(;|$)/gi, ""));
+  if (/image-set\(/i.test(cleaned) && /image-set\([^)]*["'](?!data:)/i.test(cleaned)) {
+    return null;
+  }
+  return cleaned;
+}
+
 const COMMAND_LINE = /^[A-Z]+(\s[A-Z]+){0,2}$/;
 const BLOCK_SEPARATOR = /^\s*={2,}\s*$/;
 
-// Drop @import and any url() that is not a data: URL from CSS sections, one
-// line at a time. Selector lists such as INVERT can quote a url( inside an
+// Drop @import and any url() or image-set() file that is not a data: URL from
+// CSS sections, one line at a time, including ones spelled with CSS escapes. Selector lists such as INVERT can quote a url( inside an
 // attribute selector. Those are only text, so they stay, unless the line also
 // has a brace and could close the selector and start a rule of its own.
 export function sanitizeFetchedFixes(text) {
@@ -102,7 +136,8 @@ export function sanitizeFetchedFixes(text) {
         }
         return [line];
       }
-      return [stripRemoteUrls(line.replace(/@import\b[^;]*(;|$)/gi, ""))];
+      const cleaned = cleanCssLine(line);
+      return cleaned === null ? [] : [cleaned];
     })
     .join("\n");
 }
