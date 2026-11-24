@@ -19,10 +19,10 @@ const toggle = manifest.commands[COMMAND_TOGGLE];
 const toggleSite = manifest.commands[COMMAND_TOGGLE_SITE];
 assert.ok(toggle, "global toggle command stays declared");
 assert.ok(toggleSite, "site toggle command is declared");
-assert.equal(toggle.suggested_key.default, "Alt+Shift+U");
-assert.equal(toggleSite.suggested_key.default, "Alt+Shift+O");
-assert.equal(toggle.description, "Disable or enable Omareader everywhere");
-assert.equal(toggleSite.description, "Disable or enable the current site");
+assert.equal(toggle.suggested_key.default, "Alt+Shift+O");
+assert.equal(toggleSite.suggested_key.default, "Alt+Shift+U");
+assert.equal(toggle.description, "Turn Omareader on or off");
+assert.equal(toggleSite.description, "Pause or theme the current site");
 assert.notEqual(toggle.suggested_key.default, toggleSite.suggested_key.default);
 
 // Omarchy's Hyprland defaults (default/hypr/bindings.conf, bindings/*.conf, and
@@ -86,8 +86,8 @@ assert.match(background, /setSitePaused\(effect\.host, effect\.paused\)/);
 assert.match(background, /applyTabIcon\(effect\.tabId, effect\.host\)/);
 assert.match(background, /showCommandBadge\(effect\.tabId, effect\.badge\)/);
 assert.match(background, /chrome\.action\.setIcon\(\{ tabId, path \}\)/);
-assert.doesNotMatch(background, /showCommandIcon|icon-pause|icon-play/);
-console.log("manifest binds Alt+Shift+U everywhere and Alt+Shift+O for this site");
+assert.doesNotMatch(background, /showCommandIcon|icon-pause|icon-play|badge: paused/);
+console.log("manifest keeps Alt+Shift+O and adds Alt+Shift+U");
 
 function deps(overrides = {}) {
   return {
@@ -121,9 +121,9 @@ assert.deepEqual(paused, {
   type: "setSitePaused",
   host: "example.com",
   paused: true,
-  badge: "OFF",
   tabId: 8,
 });
+assert.equal("badge" in paused, false);
 
 let pausedNow = true;
 const themed = await runReaderCommand(
@@ -135,9 +135,9 @@ assert.deepEqual(themed, {
   type: "setSitePaused",
   host: "example.com",
   paused: false,
-  badge: "ON",
   tabId: 8,
 });
+assert.equal("badge" in themed, false);
 
 let focusedCalls = 0;
 const fromFocus = await runReaderCommand(
@@ -153,7 +153,7 @@ const fromFocus = await runReaderCommand(
 assert.equal(focusedCalls, 1);
 assert.equal(fromFocus.host, "news.ycombinator.com");
 assert.equal(fromFocus.paused, true);
-assert.equal(fromFocus.badge, "OFF");
+assert.equal("badge" in fromFocus, false);
 assert.equal(fromFocus.tabId, 12);
 
 const missingUrl = await runReaderCommand(

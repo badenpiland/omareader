@@ -88,28 +88,6 @@ function applyUpdate(available, checked) {
 
 applyUpdate("", false);
 
-// Show the keys Chromium actually bound, which can differ from the manifest
-// after an update or a change in chrome://extensions/shortcuts.
-function showShortcuts() {
-  chrome.commands.getAll((commands) => {
-    if (chrome.runtime.lastError || !Array.isArray(commands)) {
-      return;
-    }
-    for (const [name, button] of [["toggle", enabledButton], ["toggle-site", siteButton]]) {
-      const keys = button.querySelector(".keys");
-      const shortcut = commands.find((command) => command.name === name)?.shortcut || "";
-      keys.textContent = shortcut.toLowerCase();
-      keys.hidden = shortcut === "";
-      if (shortcut) {
-        button.setAttribute("aria-keyshortcuts", shortcut.replace(/\s+/g, ""));
-      } else {
-        button.removeAttribute("aria-keyshortcuts");
-      }
-    }
-  });
-}
-showShortcuts();
-
 const port = chrome.runtime.connect({ name: "client" });
 port.onMessage.addListener(render);
 enabledButton.addEventListener("click", () => {

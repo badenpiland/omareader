@@ -709,7 +709,6 @@ async function applyReaderCommand(command, tab) {
     if (typeof effect.tabId === "number") {
       applyTabIcon(effect.tabId, effect.host);
     }
-    showCommandBadge(effect.tabId, effect.badge);
   }
 }
 
