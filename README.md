@@ -50,6 +50,8 @@ If the Dark Reader extension is also installed and enabled, the popup asks once 
 
 ## Shortcuts
 
+**Changed in 0.4.0:** the two shortcuts swapped places, so each letter says what it covers. U is for universal, every site at once. O is for one site, the one you're on. If you set your own keys, they stay as they are.
+
 Alt+Shift+U (U for universal) disables or enables Omareader everywhere. The toolbar badge shows ON or OFF for a moment.
 
 Alt+Shift+O (O for one site) disables the current site, or enables it again. That is the same switch as the site's switch in the popup, such as "github". That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. The badge also shows ON or OFF for a moment, for this site.
