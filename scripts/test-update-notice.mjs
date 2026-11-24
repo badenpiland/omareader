@@ -163,8 +163,7 @@ for (const [id, key] of [["enabled", "U"], ["site", "O"]]) {
   assert.ok(ctrl, `${id} switch sits in its control`);
   assert.match(ctrl[0], new RegExp(`class="keys"[^>]*><kbd>alt</kbd><span>\\+</span><kbd>shift</kbd><span>\\+</span><kbd>${key.toLowerCase()}</kbd></p>`));
 }
-assert.match(popupHtml, /disable everywhere/);
-assert.match(popupHtml, /disable this site/);
+assert.match(popupHtml, /<span id="enabled-label">disable<\/span>/);
 assert.doesNotMatch(popupHtml, /<details/);
 assert.doesNotMatch(popupHtml, /turn off|pause/i);
 assert.doesNotMatch(popupHtml, /id="settings"/);
@@ -178,8 +177,26 @@ assert.match(popupJs, /siteFixesAutoUpdate !== false/);
 assert.match(popupJs, /type: "setSiteFixesAutoUpdate"/);
 assert.match(popupJs, /enabled: siteFixesInput\.checked/);
 assert.equal(popupHtml.includes("mhglniaepbokfgnpeennihlifandcgjh"), false);
-assert.match(popupJs, /"disable everywhere" : "enable everywhere"/);
-assert.match(popupJs, /"enable this site" : "disable this site"/);
+assert.match(popupJs, /enabled \? "disable" : "enable"/);
+assert.match(popupJs, /\$\{paused \? "enable" : "disable"\} \$\{siteName\(host\)\}/);
+{
+  const { siteName } = await import("../src/site-name.js");
+  for (const [host, name] of [
+    ["github.com", "github"],
+    ["www.github.com", "github"],
+    ["en.wikipedia.org", "wikipedia"],
+    ["news.ycombinator.com", "ycombinator"],
+    ["www.bbc.co.uk", "bbc"],
+    ["shop.example.com.au", "example"],
+    ["github.io", "github"],
+    ["x.co", "x"],
+    ["localhost", "localhost"],
+    ["127.0.0.1", "127.0.0.1"],
+    ["Example.COM.", "example"],
+  ]) {
+    assert.equal(siteName(host), name, host);
+  }
+}
 assert.doesNotMatch(popupJs, /turn off|turn on|pause on|theme this site/);
 assert.match(popupJs, /enabledButton\.classList\.toggle\("muted", !enabled\)/);
 assert.match(popupJs, /siteButton\.classList\.toggle\("muted", Boolean\(host\) && \(!enabled \|\| paused\)\)/);
@@ -212,7 +229,7 @@ assert.match(popupCss, /\.switch\s*\{[^}]*width:\s*100%/);
 assert.match(popupCss, /\.switch\.muted/);
 assert.match(popupCss, /:root\s*\{[^}]*font:[^;]*var\(--font\)/);
 assert.match(popupCss, /--font:\s*monospace/);
-assert.match(popupCss, /:root\s*\{[^}]*font-size-adjust:\s*ex-height 0\.5/, "every Omarchy font draws at the same x-height");
+assert.match(popupCss, /:root\s*\{[^}]*font-size-adjust:\s*ex-height 0\.42/, "every Omarchy font draws at the same x-height");
 assert.match(popupCss, /\nh1\s*\{[^}]*font-size-adjust:\s*none/, "the wordmark keeps its own size");
 assert.match(popupCss, /\nbody\s*\{[^}]*font:\s*inherit/, "body takes the Omarchy font, not Chromium's extension-page font");
 // The shortcut appears on hover or focus, and its line keeps its space so nothing moves.

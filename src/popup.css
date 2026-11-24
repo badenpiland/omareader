@@ -18,8 +18,9 @@
   color-scheme: dark;
   font: 400 13px/1.4 var(--font);
   /* Monospace fonts differ in how big they draw at the same size. Scale each one
-     to the same x-height, so every Omarchy font looks the same size here. */
-  font-size-adjust: ex-height 0.5;
+     to the same x-height, so every Omarchy font looks the same size here.
+     0.42 keeps the popup small, about 10.5px of JetBrains Mono. */
+  font-size-adjust: ex-height 0.42;
 }
 
 *,

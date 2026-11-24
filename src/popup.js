@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { updateLine } from "./update-notice.js";
 import { fontFaceRule, fontStack } from "./font.js";
+import { siteName } from "./site-name.js";
 
 const enabledButton = document.querySelector("#enabled");
 const enabledLabel = document.querySelector("#enabled-label");
@@ -21,14 +22,15 @@ let declineNote = "";
 let latest = null;
 let host = "";
 
-// Both switches name what a click does. A muted switch is one that is off.
+// Both switches name what a click does: "disable", and "disable github" for
+// the site in this tab. A muted switch is one that is off.
 function renderControls() {
   const enabled = latest?.enabled !== false;
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
-  enabledLabel.textContent = enabled ? "disable everywhere" : "enable everywhere";
+  enabledLabel.textContent = enabled ? "disable" : "enable";
   enabledButton.classList.toggle("muted", !enabled);
   siteCtrl.hidden = !host;
-  siteLabel.textContent = paused ? "enable this site" : "disable this site";
+  siteLabel.textContent = `${paused ? "enable" : "disable"} ${siteName(host)}`;
   siteButton.classList.toggle("muted", Boolean(host) && (!enabled || paused));
   siteButton.title = host;
 }
