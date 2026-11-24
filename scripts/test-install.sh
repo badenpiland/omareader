@@ -343,3 +343,40 @@ if grep -qF 'sha256sum "$ROOT/release/omareader.crx"' "$ROOT/scripts/pack.sh"; t
 fi
 
 echo "remote release install checked"
+
+# A browser picker as the default browser: install into every Chromium-based
+# browser with a profile, but not Chrome, which needs sudo.
+picker_home="$WORK/home-picker"
+mkdir -p "$picker_home/.config/chromium" "$picker_home/.config/BraveSoftware/Brave-Origin" "$picker_home/.config/google-chrome"
+run_install "$picker_home" "$GOOD_URL" omapicker >/tmp/omareader-install-picker.out
+test -f "$picker_home/.config/chromium/NativeMessagingHosts/$HOST_JSON"
+test -f "$picker_home/.config/chromium/External Extensions/$EXT_JSON"
+test -f "$picker_home/.config/BraveSoftware/Brave-Origin/NativeMessagingHosts/$HOST_JSON"
+test -f "$picker_home/.config/BraveSoftware/Brave-Origin/External Extensions/$EXT_JSON"
+test ! -e "$picker_home/.config/google-chrome/NativeMessagingHosts"
+grep -q "installed for Brave Origin, Chromium" /tmp/omareader-install-picker.out
+test ! -e "$WORK/sudo-called"
+
+# A .desktop name from the picker is accepted too.
+desktop_home="$WORK/home-desktop"
+mkdir -p "$desktop_home"
+run_install "$desktop_home" "$GOOD_URL" brave-browser.desktop >/tmp/omareader-install-desktop.out
+test -f "$desktop_home/.config/BraveSoftware/Brave-Browser/External Extensions/$EXT_JSON"
+
+# OMAREADER_BROWSER overrides the default browser.
+override_home="$WORK/home-override"
+mkdir -p "$override_home/.config/chromium"
+OMAREADER_BROWSER=edge run_install "$override_home" "$GOOD_URL" omapicker >/tmp/omareader-install-override.out
+test -f "$override_home/.config/microsoft-edge/External Extensions/$EXT_JSON"
+test ! -e "$override_home/.config/chromium/External Extensions"
+
+# No Chromium-based browser at all: a clear error.
+none_home="$WORK/home-none"
+set +e
+run_install "$none_home" "$GOOD_URL" omapicker >/tmp/omareader-install-none.out 2>/tmp/omareader-install-none.err
+status=$?
+set -e
+test "$status" -ne 0
+grep -q "OMAREADER_BROWSER" /tmp/omareader-install-none.err
+
+echo "browser picker install checked"

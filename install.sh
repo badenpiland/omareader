@@ -46,20 +46,73 @@ default_browser() {
   esac
 }
 
-BROWSER_ID="$(default_browser)"
+browser_base() {
+  case "$1" in
+    chromium) printf '%s\n' "$CONFIG_HOME/chromium" ;;
+    brave) printf '%s\n' "$CONFIG_HOME/BraveSoftware/Brave-Browser" ;;
+    brave-origin) printf '%s\n' "$CONFIG_HOME/BraveSoftware/Brave-Origin" ;;
+    edge) printf '%s\n' "$CONFIG_HOME/microsoft-edge" ;;
+    chrome) printf '%s\n' "$CONFIG_HOME/google-chrome" ;;
+    *) return 1 ;;
+  esac
+}
+
+browser_name() {
+  case "$1" in
+    chromium) printf '%s\n' "Chromium" ;;
+    brave) printf '%s\n' "Brave" ;;
+    brave-origin) printf '%s\n' "Brave Origin" ;;
+    edge) printf '%s\n' "Edge" ;;
+    chrome) printf '%s\n' "Chrome" ;;
+  esac
+}
+
+# A browser picker (such as omapicker) can be the default browser. Then
+# Omareader goes into every Chromium-based browser that has a profile here.
+# Chrome needs sudo, so it is used only when it is the one such browser.
+installed_browsers() {
+  local id found=()
+  for id in brave-origin brave chromium edge; do
+    if [[ -d "$(browser_base "$id")" ]]; then
+      found+=("$id")
+    fi
+  done
+  if [[ ${#found[@]} -eq 0 && -d "$(browser_base chrome)" ]]; then
+    found+=(chrome)
+  fi
+  if [[ ${#found[@]} -gt 0 ]]; then
+    printf '%s\n' "${found[@]}"
+  fi
+}
+
+BROWSER_ID="${OMAREADER_BROWSER:-}"
+if [[ -z "$BROWSER_ID" ]]; then
+  BROWSER_ID="$(default_browser)"
+fi
+BROWSER_ID="${BROWSER_ID%.desktop}"
 case "$BROWSER_ID" in
-  chromium) BROWSER_BASE="$CONFIG_HOME/chromium"; PRETTY="Chromium" ;;
-  brave) BROWSER_BASE="$CONFIG_HOME/BraveSoftware/Brave-Browser"; PRETTY="Brave" ;;
-  brave-origin) BROWSER_BASE="$CONFIG_HOME/BraveSoftware/Brave-Origin"; PRETTY="Brave Origin" ;;
-  edge) BROWSER_BASE="$CONFIG_HOME/microsoft-edge"; PRETTY="Edge" ;;
-  chrome) BROWSER_BASE="$CONFIG_HOME/google-chrome"; PRETTY="Chrome" ;;
+  brave-browser) BROWSER_ID=brave ;;
+  google-chrome | google-chrome-stable) BROWSER_ID=chrome ;;
+  microsoft-edge | microsoft-edge-stable) BROWSER_ID=edge ;;
+esac
+
+TARGETS=()
+case "$BROWSER_ID" in
+  chromium | brave | brave-origin | edge | chrome)
+    TARGETS=("$BROWSER_ID")
+    ;;
   firefox | zen)
     echo "Omareader is for Chromium-based browsers. The default browser is ${BROWSER_ID}." >&2
     exit 1
     ;;
   *)
-    echo "Omareader does not recognize the default browser: ${BROWSER_ID}" >&2
-    exit 1
+    mapfile -t TARGETS < <(installed_browsers)
+    if [[ ${#TARGETS[@]} -eq 0 ]]; then
+      echo "Omareader does not recognize the default browser (${BROWSER_ID}) and found no Chromium-based browser." >&2
+      echo "Set OMAREADER_BROWSER to chromium, brave, brave-origin, edge or chrome." >&2
+      exit 1
+    fi
+    echo "The default browser is ${BROWSER_ID}. Installing for: ${TARGETS[*]}"
     ;;
 esac
 
@@ -189,8 +242,6 @@ else
   download_crx "https://github.com/${REPO}/releases/download/v${VERSION}/omareader.crx"
 fi
 
-write_host_json "$BROWSER_BASE/NativeMessagingHosts/${HOST_NAME}.json"
-
 chrome_accepted() {
   local choice
   case "${OMAREADER_SYSTEM:-ask}" in
@@ -210,18 +261,28 @@ chrome_accepted() {
   esac
 }
 
-if [[ "$BROWSER_ID" == "chrome" ]]; then
-  write_extension "$CHROME_CRX" "$CHROME_JSON"
-  if chrome_accepted; then
-    sudo install -Dm644 "$CRX_DEST" "$CHROME_CRX"
-    sudo install -Dm644 "$CHROME_JSON" "$CHROME_EXT"
+NAMES=()
+for id in "${TARGETS[@]}"; do
+  base="$(browser_base "$id")"
+  NAMES+=("$(browser_name "$id")")
+  write_host_json "$base/NativeMessagingHosts/${HOST_NAME}.json"
+  if [[ "$id" == "chrome" ]]; then
+    write_extension "$CHROME_CRX" "$CHROME_JSON"
+    if chrome_accepted; then
+      sudo install -Dm644 "$CRX_DEST" "$CHROME_CRX"
+      sudo install -Dm644 "$CHROME_JSON" "$CHROME_EXT"
+    else
+      echo "sudo install -Dm644 ${CRX_DEST} ${CHROME_CRX}"
+      echo "sudo install -Dm644 ${CHROME_JSON} ${CHROME_EXT}"
+    fi
   else
-    echo "sudo install -Dm644 ${CRX_DEST} ${CHROME_CRX}"
-    echo "sudo install -Dm644 ${CHROME_JSON} ${CHROME_EXT}"
+    write_extension "$CRX_DEST" "$base/External Extensions/${EXT_ID}.json"
   fi
-else
-  write_extension "$CRX_DEST" "$BROWSER_BASE/External Extensions/${EXT_ID}.json"
-fi
+done
 
+PRETTY="${NAMES[0]}"
+for name in "${NAMES[@]:1}"; do
+  PRETTY+=", ${name}"
+done
 echo "Omareader ${VERSION} (${EXT_ID}) installed for ${PRETTY}."
 echo "Restart ${PRETTY}. If Dark Reader is installed and on, Omareader asks before turning it off."

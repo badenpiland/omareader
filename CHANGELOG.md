@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The installer works when the default browser is a picker such as omapicker. It installs into every Chromium-based browser with a profile, except Chrome, and `OMAREADER_BROWSER` picks one by hand.
+
 ## 0.4.0 — 2026-11-24
 
 ### Changed

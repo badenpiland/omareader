@@ -73,6 +73,8 @@ Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are coming in a
 
 The command follows the Omarchy default browser and installs Omareader only there. Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome asks once for sudo and writes the extension where Chrome will load it. Restart that browser.
 
+If the default browser is a picker, such as omapicker, the installer adds Omareader to every Chromium-based browser that has a profile, leaving out Chrome, which needs sudo. To choose one yourself, set `OMAREADER_BROWSER` to `chromium`, `brave`, `brave-origin`, `edge` or `chrome` before running the command.
+
 If a browser already refused the extension, it will not accept the installer again until the extension is installed by hand once, removed, and the command is run again.
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
