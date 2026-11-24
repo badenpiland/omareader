@@ -23,18 +23,22 @@ CHROME_JSON="$SHARE/google-chrome-extension.json"
 CHROME_CRX="/usr/share/omareader/omareader.crx"
 CHROME_EXT="/usr/share/google-chrome/extensions/${EXT_ID}.json"
 
-default_browser() {
-  local desktop
-  if command -v omarchy-default-browser >/dev/null 2>&1; then
-    omarchy-default-browser | head -n 1 | tr -d '[:space:]'
-    return
-  fi
-  if ! command -v xdg-settings >/dev/null 2>&1; then
-    echo "Could not find omarchy-default-browser or xdg-settings." >&2
-    exit 1
-  fi
-  desktop="$(env -u BROWSER xdg-settings get default-web-browser | head -n 1 | tr -d '[:space:]')"
-  case "$desktop" in
+# A browser id for a launcher command: chromium, chrome, brave, brave-origin,
+# edge, firefox or zen. Anything else prints nothing.
+browser_for_command() {
+  case "${1##*/}" in
+    chromium) printf '%s\n' chromium ;;
+    google-chrome-stable | google-chrome) printf '%s\n' chrome ;;
+    brave-origin) printf '%s\n' brave-origin ;;
+    brave | brave-browser) printf '%s\n' brave ;;
+    microsoft-edge-stable | microsoft-edge) printf '%s\n' edge ;;
+    firefox) printf '%s\n' firefox ;;
+    zen-browser | zen) printf '%s\n' zen ;;
+  esac
+}
+
+browser_for_desktop() {
+  case "$1" in
     chromium.desktop) printf '%s\n' chromium ;;
     google-chrome.desktop) printf '%s\n' chrome ;;
     brave-browser.desktop) printf '%s\n' brave ;;
@@ -42,8 +46,83 @@ default_browser() {
     microsoft-edge.desktop) printf '%s\n' edge ;;
     firefox.desktop) printf '%s\n' firefox ;;
     zen.desktop) printf '%s\n' zen ;;
-    *) printf '%s\n' "$desktop" ;;
   esac
+}
+
+# A browser picker, such as omapicker's brave-pick.desktop, is the default
+# browser but starts a real browser itself. Follow its Exec= line: the command
+# may be the browser, or a short script that runs one.
+browser_behind_desktop() {
+  local desktop="$1" dir file exec_line command line word found
+  local -a words
+  local dirs="${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+  local IFS=:
+  for dir in $dirs; do
+    if [[ -f "$dir/applications/$desktop" ]]; then
+      file="$dir/applications/$desktop"
+      break
+    fi
+  done
+  unset IFS
+  [[ -n "${file:-}" ]] || return 0
+  while IFS= read -r line; do
+    if [[ "$line" == Exec=* ]]; then
+      exec_line="${line#Exec=}"
+      break
+    fi
+  done < "$file"
+  [[ -n "${exec_line:-}" ]] || return 0
+  read -r command _ <<< "$exec_line"
+  [[ "$command" == env ]] && read -r _ command _ <<< "$exec_line"
+  found="$(browser_for_command "$command")"
+  if [[ -n "$found" ]]; then
+    printf '%s\n' "$found"
+    return 0
+  fi
+  if [[ "$command" != */* ]]; then
+    command="$(command -v -- "$command" 2>/dev/null || true)"
+  fi
+  [[ -f "$command" && -r "$command" ]] || return 0
+  # A script: the first browser command it runs. brave-origin is checked
+  # before brave, so the longer name wins.
+  while IFS= read -r line; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    read -r -a words <<< "$line"
+    for word in "${words[@]}"; do
+      word="${word//\"/}"
+      found="$(browser_for_command "$word")"
+      if [[ -n "$found" ]]; then
+        printf '%s\n' "$found"
+        return 0
+      fi
+    done
+  done < <(head -c 65536 -- "$command" 2>/dev/null | tr -d '\0')
+}
+
+default_browser() {
+  local desktop found
+  if [[ -n "${OMAREADER_BROWSER:-}" ]]; then
+    printf '%s\n' "$OMAREADER_BROWSER"
+    return
+  fi
+  if command -v omarchy-default-browser >/dev/null 2>&1; then
+    desktop="$(omarchy-default-browser | head -n 1 | tr -d '[:space:]')"
+  elif command -v xdg-settings >/dev/null 2>&1; then
+    desktop="$(env -u BROWSER xdg-settings get default-web-browser | head -n 1 | tr -d '[:space:]')"
+  else
+    echo "Could not find omarchy-default-browser or xdg-settings." >&2
+    exit 1
+  fi
+  # omarchy-default-browser already names the browser; xdg-settings gives a desktop file.
+  if [[ "$desktop" != *.desktop ]]; then
+    printf '%s\n' "$desktop"
+    return
+  fi
+  found="$(browser_for_desktop "$desktop")"
+  if [[ -z "$found" ]]; then
+    found="$(browser_behind_desktop "$desktop")"
+  fi
+  printf '%s\n' "${found:-$desktop}"
 }
 
 BROWSER_ID="$(default_browser)"
@@ -59,6 +138,8 @@ case "$BROWSER_ID" in
     ;;
   *)
     echo "Omareader does not recognize the default browser: ${BROWSER_ID}" >&2
+    echo "Set OMAREADER_BROWSER to the browser to install into: chromium, chrome, brave, brave-origin or edge." >&2
+    echo "For example: curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | OMAREADER_BROWSER=brave-origin bash" >&2
     exit 1
     ;;
 esac

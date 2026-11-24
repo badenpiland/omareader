@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The installer works when the default browser is a picker, such as brave-pick from omapicker. It follows the picker's desktop file to the browser it starts. `OMAREADER_BROWSER` names the browser outright, and an unknown default browser now says how to set it.
+
 ## 0.4.0 — 2026-11-24
 
 ### Changed
