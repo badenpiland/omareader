@@ -13,16 +13,16 @@ const COUNTRY_SECOND_LEVEL = new Set(["ac", "co", "com", "edu", "gov", "net", "o
 const DEVICE_LABEL = /^(www\d*|m|mobile)$/;
 
 // ISO 639-1 language codes, as in en.wikipedia.org or pt-br.example.com. A few
-// codes usually name a thing instead, such as "io", "ml", "my", "id" and "is",
-// so they stay in the name: my.example.edu is "example my". "ai" is not a
+// codes usually name a thing instead, such as "io", "ml", "my", "id", "it" and
+// "hr", so they stay in the name: my.example.edu is "example my". "ai" is not a
 // language code, so ai.google.com is "google ai".
 const LANGUAGES = new Set([
   "aa", "ab", "ae", "af", "ak", "ar", "as", "av", "ay", "az", "ba", "bg", "bh",
   "bi", "bm", "bn", "bo", "br", "bs", "ca", "ce", "ch", "co", "cr", "cs", "cu",
   "cv", "cy", "da", "de", "dv", "dz", "ee", "el", "en", "eo", "es", "et", "eu",
   "fa", "ff", "fi", "fj", "fo", "fr", "fy", "ga", "gd", "gl", "gn", "gu", "gv",
-  "ha", "he", "hi", "ho", "hr", "ht", "hu", "hy", "hz", "ia", "ie", "ig", "ii",
-  "ik", "it", "iu", "ja", "jv", "ka", "kg", "ki", "kj", "kk", "kl", "km", "kn",
+  "ha", "he", "hi", "ho", "ht", "hu", "hy", "hz", "ia", "ie", "ig", "ii",
+  "ik", "iu", "ja", "jv", "ka", "kg", "ki", "kj", "kk", "kl", "km", "kn",
   "ko", "kr", "ks", "ku", "kv", "kw", "ky", "la", "lb", "lg", "li", "ln", "lo",
   "lt", "lu", "lv", "mg", "mh", "mi", "mk", "mn", "mr", "mt", "na", "nb", "nd",
   "ne", "ng", "nl", "nn", "nr", "nv", "ny", "oc", "oj", "om", "or", "pa", "pi",

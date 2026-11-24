@@ -209,6 +209,8 @@ assert.match(popupJs, /chrome\.commands\.getAll\(/, "the popup shows the keys Ch
     ["my.example.edu", "example my"],
     ["pt-br.example.com", "example"],
     ["xx.example.com", "example xx"],
+    ["it.example.edu", "example it"],
+    ["hr.example.com", "example hr"],
     ["news.ycombinator.com", "ycombinator news"],
     ["gist.github.com", "github gist"],
     ["www.bbc.co.uk", "bbc"],
