@@ -40,6 +40,8 @@ body {
   min-width: 220px;
   margin: 0;
   padding: 12px 14px;
+  /* Chromium gives extension pages its own body font. Take the Omarchy font from :root. */
+  font: inherit;
 }
 
 h1,

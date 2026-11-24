@@ -17,6 +17,7 @@
 
 - Sites late in the alphabet lost their fixes once the daily site-fix download arrived. Removing remote `url()`s from the downloaded list misread a `url(` quoted inside a selector and dropped the rest of the file, so Wikipedia's wordmark, for one, showed as dark text on a dark page. The cleanup now works one line at a time and only touches CSS, and every site keeps its fixes.
 - The shortcuts swap: Alt+Shift+U (universal) now disables or enables Omareader everywhere, and Alt+Shift+O (one site) the current site. Both flash ON or OFF on the toolbar badge. Shortcuts you set yourself at `chrome://extensions/shortcuts` stay as they are.
+- The popup now really uses the Omarchy monospace font. Chromium gives extension pages a sans-serif body font of its own, which hid the font the popup set.
 - Hovering a popup button no longer moves it. The shortcut used to appear on hover and push the controls down. It is now always shown inside the button.
 
 ## 0.3.1 — 2026-10-15

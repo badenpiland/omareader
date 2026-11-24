@@ -190,6 +190,7 @@ assert.match(popupCss, /\.switch\s*\{[^}]*width:\s*100%/);
 assert.match(popupCss, /\.switch\.muted/);
 assert.match(popupCss, /:root\s*\{[^}]*font:[^;]*var\(--font\)/);
 assert.match(popupCss, /--font:\s*monospace/);
+assert.match(popupCss, /\nbody\s*\{[^}]*font:\s*inherit/, "body takes the Omarchy font, not Chromium's extension-page font");
 assert.doesNotMatch(popupCss, /\.keys\s*\{[^}]*display:\s*none/);
 assert.doesNotMatch(popupCss, /visibility:\s*hidden/);
 assert.match(popupCss, /font-family:\s*"Omarchy Font"/);
