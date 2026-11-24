@@ -209,6 +209,8 @@ assert.match(popupCss, /\.switch\s*\{[^}]*width:\s*100%/);
 assert.match(popupCss, /\.switch\.muted/);
 assert.match(popupCss, /:root\s*\{[^}]*font:[^;]*var\(--font\)/);
 assert.match(popupCss, /--font:\s*monospace/);
+assert.match(popupCss, /:root\s*\{[^}]*font-size-adjust:\s*ex-height 0\.5/, "every Omarchy font draws at the same x-height");
+assert.match(popupCss, /\nh1\s*\{[^}]*font-size-adjust:\s*none/, "the wordmark keeps its own size");
 assert.match(popupCss, /\nbody\s*\{[^}]*font:\s*inherit/, "body takes the Omarchy font, not Chromium's extension-page font");
 assert.doesNotMatch(popupCss, /\.keys\s*\{[^}]*display:\s*none/);
 assert.doesNotMatch(popupCss, /visibility:\s*hidden/);

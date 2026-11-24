@@ -17,6 +17,9 @@
   --font: monospace;
   color-scheme: dark;
   font: 400 13px/1.4 var(--font);
+  /* Monospace fonts differ in how big they draw at the same size. Scale each one
+     to the same x-height, so every Omarchy font looks the same size here. */
+  font-size-adjust: ex-height 0.5;
 }
 
 *,
@@ -73,6 +76,7 @@ h1 {
   color: var(--popup-fg);
   font-family: "Omarchy Font", ui-monospace, monospace;
   font-size: 24px;
+  font-size-adjust: none;
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
