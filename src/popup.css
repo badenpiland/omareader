@@ -200,7 +200,7 @@ button:focus-visible,
 }
 
 /* The shortcut is an Omarchy tooltip (shell Ui/PanelToolTip.qml): a bordered
-   box under the switch, shown after 400ms of hover or at once on keyboard
+   box under the switch, shown after 100ms of hover or at once on keyboard
    focus. It floats over what is below, so nothing moves and no space is kept. */
 .keys {
   position: absolute;
@@ -223,7 +223,7 @@ button:focus-visible,
 .ctrl:hover .keys {
   visibility: visible;
   opacity: 1;
-  transition: opacity 120ms ease 400ms, visibility 0s linear 400ms;
+  transition: opacity 120ms ease 100ms, visibility 0s linear 100ms;
 }
 
 .ctrl:has(:focus-visible) .keys {
