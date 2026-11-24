@@ -52,7 +52,7 @@ If the Dark Reader extension is also installed and enabled, the popup asks once 
 
 Alt+Shift+O disables or enables Omareader everywhere. The toolbar badge shows ON or OFF for a moment.
 
-Alt+Shift+U disables the current site, or enables it again. That is the same switch as disable this site in the popup. That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. This shortcut does not flash a badge.
+Alt+Shift+U disables the current site, or enables it again. That is the same switch as disable this site in the popup. That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. The badge also shows ON or OFF for a moment, for this site.
 
 Change either shortcut at `chrome://extensions/shortcuts`.
 

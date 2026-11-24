@@ -49,29 +49,62 @@ function urlCallEnd(text, from) {
   return -1;
 }
 
-// Drop @import and any url() that is not a data: URL. data: images stay.
-export function sanitizeFetchedFixes(text) {
-  const source = String(text).replace(/@import\b[^;]*(;|$)/gi, "");
-  const lower = source.toLowerCase();
+// Drop any url() that is not a data: URL from one line of CSS. A url() left
+// open at the end of the line drops the rest of that line, never the file.
+function stripRemoteUrls(line) {
+  const lower = line.toLowerCase();
   let out = "";
   let cursor = 0;
-  while (cursor < source.length) {
+  while (cursor < line.length) {
     const start = lower.indexOf("url(", cursor);
     if (start < 0) {
-      out += source.slice(cursor);
+      out += line.slice(cursor);
       break;
     }
-    out += source.slice(cursor, start);
-    const end = urlCallEnd(source, start + 4);
+    out += line.slice(cursor, start);
+    const end = urlCallEnd(line, start + 4);
     if (end < 0) {
       break;
     }
-    if (dataUrlValue(source.slice(start + 4, end))) {
-      out += source.slice(start, end + 1);
+    if (dataUrlValue(line.slice(start + 4, end))) {
+      out += line.slice(start, end + 1);
     }
     cursor = end + 1;
   }
   return out;
+}
+
+const COMMAND_LINE = /^[A-Z]+(\s[A-Z]+){0,2}$/;
+const BLOCK_SEPARATOR = /^\s*={2,}\s*$/;
+
+// Drop @import and any url() that is not a data: URL from CSS sections, one
+// line at a time. Selector lists such as INVERT can quote a url( inside an
+// attribute selector. Those are only text, so they stay, unless the line also
+// has a brace and could close the selector and start a rule of its own.
+export function sanitizeFetchedFixes(text) {
+  let inCss = false;
+  return String(text)
+    .replace(/\r/g, "")
+    .split("\n")
+    .flatMap((line) => {
+      if (BLOCK_SEPARATOR.test(line)) {
+        inCss = false;
+        return [line];
+      }
+      if (COMMAND_LINE.test(line)) {
+        inCss = line.trim() === "CSS";
+        return [line];
+      }
+      const lower = line.toLowerCase();
+      if (!inCss) {
+        if (lower.includes("@import") || (lower.includes("url(") && /[{}]/.test(line))) {
+          return [];
+        }
+        return [line];
+      }
+      return [stripRemoteUrls(line.replace(/@import\b[^;]*(;|$)/gi, ""))];
+    })
+    .join("\n");
 }
 
 // Missing or true keeps the daily download. Only an explicit false opts out.

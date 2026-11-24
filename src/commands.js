@@ -48,5 +48,5 @@ export async function runReaderCommand(command, tab, deps) {
     return null;
   }
   const paused = !deps.isPaused(host);
-  return { type: "setSitePaused", host, paused, tabId: tabIdOf(current) };
+  return { type: "setSitePaused", host, paused, badge: paused ? "OFF" : "ON", tabId: tabIdOf(current) };
 }

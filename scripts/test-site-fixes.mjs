@@ -77,6 +77,30 @@ assert(!cleaned.includes("https://evil.test"), "fetched https url() is removed")
 assert(!cleaned.includes("//evil.test"), "fetched protocol-relative url() is removed");
 assert(!cleaned.includes("/secret"), "fetched path url() is removed");
 assert(cleaned.includes("data:image/png;base64,aaaa"), "fetched data url() stays");
+const quotedSelector = [
+  "*\nINVERT\n.a\n\n================================\n\nexample.com\n\nINVERT\n",
+  "div[style^=\"background-image: url(\\\"https://example.com/a.png\\\")\"]\n",
+  "x{} body { background: url(https://evil.test/c.png) } y\n",
+  "\nCSS\n",
+  "a { background: url(\"https://evil.test/open.png\n",
+  "b { color: red; }\n",
+  "\n================================\n\nlater.test\n\nINVERT\n.later-logo\n",
+].join("");
+const quotedSites = acceptSiteFixes(sanitizeFetchedFixes(quotedSelector));
+const quotedFix = fixesFor("https://example.com/", quotedSites);
+assert(quotedFix.invert.some((selector) => selector.startsWith("div[style^=")), "a url( quoted in a selector stays");
+assert(!quotedFix.invert.some((selector) => selector.includes("evil.test")), "a selector line that opens a rule is dropped");
+assert(!quotedFix.css.includes("evil.test") && quotedFix.css.includes("color: red"), "an unclosed url() drops only its own line");
+assert(
+  fixesFor("https://later.test/", quotedSites).invert.includes(".later-logo"),
+  "sites after a quoted url( keep their fixes",
+);
+const cleanedBundle = acceptSiteFixes(sanitizeFetchedFixes(text));
+assert(cleanedBundle.length === sites.length, "cleaning the full list keeps every site");
+assert(
+  fixesFor("https://en.wikipedia.org/wiki/Arch_Linux", cleanedBundle).invert.includes(".mw-logo-wordmark"),
+  "the cleaned list still inverts the Wikipedia wordmark",
+);
 assert(trustedFixesUrl(SITE_FIXES_URL) === true, "the Dark Reader list URL is trusted");
 assert(
   SITE_FIXES_URL.includes("/92637d8c3fbb210853c005e3f25dbbec46dd21fc/"),
