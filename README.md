@@ -33,13 +33,15 @@ curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.
 
 ## What it does
 
-Omareader is a Chromium extension. A small Python program watches `~/.local/state/omarchy/current` and sends over the background, foreground, and selection color whenever `omarchy theme set` swaps that directory. It also sends the font Omarchy set as the system monospace font (what `omarchy-font-current` prints), and sends it again when `omarchy-font-set` rewrites `~/.config/fontconfig/fonts.conf`. The popup uses that font.
+Omareader is a Chromium extension that repaints web pages in your current Omarchy theme, and follows along when you switch themes.
 
-The themeing is [Dark Reader](https://darkreader.org/)’s dynamic theme engine (`darkreader` 4.9.133, MIT, copyright Dark Reader Ltd). You do not install the Dark Reader extension. The popup asks once, and only when the Dark Reader extension is installed and enabled. Turning it off asks for permission to manage extensions. Leaving it on means both extensions restyle the page. Pages also get Dark Reader’s site fixes, including Amazon. The bundled list is from Dark Reader 4.9.133. Once a day Omareader downloads that same list from raw.githubusercontent.com, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`. No browsing data is sent. Uncheck “fetch site fixes daily” at the bottom of the popup to keep the list already in use. A failed download, or a list with a command this version does not know, also keeps the list already in use. Once a day Omareader checks this repo's GitHub releases, including pre-releases. The popup shows the installed version in its bottom corner. When a release is newer, it shows an arrow and links that version, as in “v0.3.1 → v0.4.0”. When the check finds nothing newer, it adds a check mark, and hovering it says up to date. Before that check finishes, and when the check fails, it shows the installed version and does not say up to date. That check sends no browsing data.
+- **Theme sync.** A small Python program watches `~/.local/state/omarchy/current` and sends the theme's background, foreground, selection and named colors whenever `omarchy theme set` swaps it, along with the monospace font Omarchy set.
+- **Theme colors.** Pages are themed by [Dark Reader](https://darkreader.org/)'s dynamic engine (`darkreader` 4.9.133, MIT, bundled, so you don't need the Dark Reader extension). Omareader then moves every color the page draws as a color to the closest of the theme's own red, orange, yellow, green, cyan, blue and magenta. It keeps the lightness Dark Reader chose, so text stays readable. Grays stay on the theme background and foreground.
+- **Readable text.** Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. Dark Reader's site fixes are included, Amazon among them.
+- **Popup.** Two switches: "everywhere", and the site you're on by its short name, such as "github" or "google docs". A switch sits right while that one is themed, and shows the shortcut Chromium has bound to it on hover. The popup wears the current theme and the monospace font Omarchy set (`omarchy-font-set` updates it without a browser restart). The bottom row has the site-fix toggle and the version, which shows "v0.4.0 ✓" when up to date and the newer version with a link when a release is out.
+- **Toolbar.** The dark glasses show while a tab is themed, and the light glasses while it is disabled.
 
-The popup has two matching switches, each named for what a click does: “disable everywhere” (or “enable everywhere”) and “disable this site” (or “enable this site”). The toolbar shows the dark glasses while Omareader is enabled, and the light glasses while it is disabled. Disable this site leaves that host alone and shows the light glasses on its tabs.
-
-Link and syntax colors stay on Dark Reader’s usual path. They are not replaced with the terminal’s red, green, and blue. Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. On a dark theme the Amazon header wordmark stays the light sprite Amazon ships, and the orange smile stays orange.
+If the Dark Reader extension is also installed and enabled, the popup asks once whether to turn it off, since both would restyle the page. Turning it off asks for permission to manage extensions.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
@@ -48,13 +50,15 @@ Link and syntax colors stay on Dark Reader’s usual path. They are not replaced
 
 ## Shortcuts
 
-Alt+Shift+O disables or enables Omareader everywhere. The toolbar badge shows ON or OFF for a moment.
+**Changed in 0.4.0:** the two shortcuts swapped places, so each letter says what it covers. U is for universal, every site at once. O is for one site, the one you're on. If you set your own keys, they stay as they are.
 
-Alt+Shift+U disables the current site, or enables it again. That is the same switch as disable this site in the popup. That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. This shortcut does not flash a badge.
+Alt+Shift+U (U for universal) disables or enables Omareader everywhere. The toolbar badge shows ON or OFF for a moment.
+
+Alt+Shift+O (O for one site) disables the current site, or enables it again. That is the same switch as the site's switch in the popup, such as "github". That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. The badge also shows ON or OFF for a moment, for this site.
 
 Change either shortcut at `chrome://extensions/shortcuts`.
 
-Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy's Hyprland defaults bind letter keys with SUPER. That is `default/hypr/bindings.conf` and `default/hypr/bindings/*.conf` in [basecamp/omarchy](https://github.com/basecamp/omarchy), and the current `default/hypr/bindings/*.lua` in [omacom/omarchy](https://github.com/omacom/omarchy). Obsidian is SUPER+O and SUPER+SHIFT+O. Pseudo window is SUPER+P, and Google Photos is SUPER+SHIFT+P. The chords that leave SUPER out are Ctrl+Alt+Delete, Alt+Tab, Alt+Shift+Tab, Ctrl+Alt+Tab, Ctrl+Alt+Shift+Tab, Print, Alt+Print, the media keys, F9, and Right Alt held for dictation. The older tiling config also binds Alt+F11 and Shift+F11. A Japanese layout binds Ctrl+Shift+semicolon for zoom, and a terminal receives Ctrl+Space without consuming it. Chrome refuses a Ctrl+Alt suggested key, because that pair is AltGr. Chromium already uses Ctrl+P to print, Ctrl+Shift+O for the bookmark manager, and Alt+Shift+T to focus the toolbar. Alt+Shift+U is outside that set.
+Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy's Hyprland defaults bind letter keys with SUPER. That is `default/hypr/bindings.conf` and `default/hypr/bindings/*.conf` in [basecamp/omarchy](https://github.com/basecamp/omarchy), and the current `default/hypr/bindings/*.lua` in [omacom/omarchy](https://github.com/omacom/omarchy). Obsidian is SUPER+O and SUPER+SHIFT+O. Pseudo window is SUPER+P, and Google Photos is SUPER+SHIFT+P. The chords that leave SUPER out are Ctrl+Alt+Delete, Alt+Tab, Alt+Shift+Tab, Ctrl+Alt+Tab, Ctrl+Alt+Shift+Tab, Print, Alt+Print, the media keys, F9, and Right Alt held for dictation. The older tiling config also binds Alt+F11 and Shift+F11. A Japanese layout binds Ctrl+Shift+semicolon for zoom, and a terminal receives Ctrl+Space without consuming it. Chrome refuses a Ctrl+Alt suggested key, because that pair is AltGr. Chromium already uses Ctrl+P to print, Ctrl+Shift+O for the bookmark manager, and Alt+Shift+T to focus the toolbar. Alt+Shift+U and Alt+Shift+O are outside that set.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
@@ -63,9 +67,9 @@ Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy
 
 ## Install details
 
-Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are not supported yet.
+Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are coming in a future version.
 
-**Curl installer (current).** [v0.3.1](https://github.com/badenpiland/omareader/releases/tag/v0.3.1). The one-line command is in [Install](#install) above.
+**Curl installer (current).** [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). The one-line command is in [Install](#install) above.
 
 The command follows the Omarchy default browser and installs Omareader only there. Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome asks once for sudo and writes the extension where Chrome will load it. Restart that browser.
 
@@ -73,7 +77,7 @@ If a browser already refused the extension, it will not accept the installer aga
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 
-The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.3.1](https://github.com/badenpiland/omareader/releases/tag/v0.3.1). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
+The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
 
 **Omarchy package (coming soon).** Pending [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120). Once merged:
 
@@ -99,7 +103,7 @@ Two requests go out once a day. These fetches send no cookies and no page data.
 - Dark Reader's site-fix list, pinned to commit `92637d8c3fbb210853c005e3f25dbbec46dd21fc`: `https://raw.githubusercontent.com/darkreader/darkreader/92637d8c3fbb210853c005e3f25dbbec46dd21fc/src/config/dynamic-theme-fixes.config`
 - This repo's GitHub releases: `https://api.github.com/repos/badenpiland/omareader/releases?per_page=20`
 
-Uncheck "fetch site fixes daily" in the popup to stop the Dark Reader download. The release check runs once a day.
+Uncheck "fetch site fixes daily" in the popup to stop the Dark Reader download. The bundled list and the downloaded one are both cleaned of remote `url()`, `image-set()` and `@import`, so a site fix can't make a page load files from another host. The release check runs once a day.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
@@ -143,18 +147,12 @@ The build refreshes `LICENSES/darkreader-MIT.txt` from `node_modules/darkreader/
 
 ## Roadmap
 
-A Firefox version is planned.
+Coming in a future version:
 
-The official Omarchy package is [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120).
+- Firefox and Zen support.
+- An official Omarchy plugin tied to Omareader.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">
-  <img alt="" src="docs/divider-light.png" width="72" height="8">
-</picture>
-
-## Omarchy
-
-The latest release is [v0.3.1](https://github.com/badenpiland/omareader/releases/tag/v0.3.1). v0.2.1 does not start. Inclusion in Omarchy is suggested here: https://github.com/omacom/omarchy/discussions/14632
+The Omarchy package is pending in [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120), and inclusion in Omarchy is suggested in [omarchy discussion 14632](https://github.com/omacom/omarchy/discussions/14632). v0.2.1 does not start, so update past it.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/divider-dark.png">

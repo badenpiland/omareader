@@ -152,16 +152,19 @@ assert.match(header[0], /id="theme"/);
 assert.match(popupJs, /palette\?\.mode === "light" \? "icon-light\.svg" : "icon-dark\.svg"/);
 const built = readFileSync(new URL("../scripts/build.mjs", import.meta.url), "utf8");
 assert.match(built, /icon-\$\{mode\}\.svg/);
-for (const [id, key] of [["enabled", "O"], ["site", "U"]]) {
+for (const [id, key] of [["enabled", "U"], ["site", "O"]]) {
   const button = popupHtml.match(new RegExp(`<button id="${id}"[\\s\\S]*?</button>`));
   assert.ok(button, `${id} switch is present`);
   assert.match(button[0], /class="switch"/);
   assert.match(button[0], new RegExp(`aria-keyshortcuts="Alt\\+Shift\\+${key}"`));
-  assert.match(button[0], /class="ico power"/);
-  assert.match(button[0], new RegExp(`class="keys"[^>]*>alt\\+shift\\+${key.toLowerCase()}<`));
+  assert.match(button[0], /role="switch" aria-checked="true"/);
+  assert.match(button[0], /class="toggle"/);
+  assert.doesNotMatch(button[0], /class="keys"/, `${id} switch keeps its shortcut outside the button`);
+  const ctrl = popupHtml.match(new RegExp(`<div id="${id}-ctrl" class="ctrl"[\\s\\S]*?</div>`));
+  assert.ok(ctrl, `${id} switch sits in its control`);
+  assert.match(ctrl[0], new RegExp(`class="keys"[^>]*>alt\\+shift\\+${key.toLowerCase()}</p>`));
 }
-assert.match(popupHtml, /disable everywhere/);
-assert.match(popupHtml, /disable this site/);
+assert.match(popupHtml, /<span id="enabled-label">everywhere<\/span>/);
 assert.doesNotMatch(popupHtml, /<details/);
 assert.doesNotMatch(popupHtml, /turn off|pause/i);
 assert.doesNotMatch(popupHtml, /id="settings"/);
@@ -175,23 +178,95 @@ assert.match(popupJs, /siteFixesAutoUpdate !== false/);
 assert.match(popupJs, /type: "setSiteFixesAutoUpdate"/);
 assert.match(popupJs, /enabled: siteFixesInput\.checked/);
 assert.equal(popupHtml.includes("mhglniaepbokfgnpeennihlifandcgjh"), false);
-assert.match(popupJs, /"disable everywhere" : "enable everywhere"/);
-assert.match(popupJs, /"enable this site" : "disable this site"/);
+assert.match(popupJs, /enabledButton\.setAttribute\("aria-checked", String\(enabled\)\)/);
+assert.match(popupJs, /siteButton\.setAttribute\("aria-checked", String\(!paused\)\)/);
+assert.match(popupJs, /siteLabel\.textContent = siteName\(host\)/);
+assert.match(popupJs, /chrome\.commands\.getAll\(/, "the popup shows the keys Chromium has bound");
+{
+  const { shortcutLabel } = await import("../src/commands.js");
+  assert.equal(shortcutLabel("Alt+Shift+U"), "alt+shift+u");
+  assert.equal(shortcutLabel("Ctrl+Shift+Y"), "ctrl+shift+y");
+  assert.equal(shortcutLabel(""), "");
+  assert.equal(shortcutLabel(undefined), "");
+}
+{
+  const { siteName } = await import("../src/site-name.js");
+  for (const [host, name] of [
+    ["github.com", "github"],
+    ["www.github.com", "github"],
+    ["en.wikipedia.org", "wikipedia"],
+    ["en.m.wikipedia.org", "wikipedia"],
+    ["de.wikipedia.org", "wikipedia"],
+    ["zh-hant.example.org", "example"],
+    ["m.youtube.com", "youtube"],
+    ["www2.example.com", "example"],
+    ["docs.github.com", "github docs"],
+    ["docs.google.com", "google docs"],
+    ["api.eu.example.com", "example eu api"],
+    ["a.b.example.com", "example b a"],
+    ["io.github.com", "github io"],
+    ["ai.google.com", "google ai"],
+    ["my.example.edu", "example my"],
+    ["pt-br.example.com", "example"],
+    ["xx.example.com", "example xx"],
+    ["it.example.edu", "example it"],
+    ["hr.example.com", "example hr"],
+    ["news.ycombinator.com", "ycombinator news"],
+    ["gist.github.com", "github gist"],
+    ["www.bbc.co.uk", "bbc"],
+    ["shop.example.com.au", "example shop"],
+    ["www.com", "www"],
+    ["github.io", "github"],
+    ["x.co", "x"],
+    ["localhost", "localhost"],
+    ["127.0.0.1", "127.0.0.1"],
+    ["Example.COM.", "example"],
+  ]) {
+    assert.equal(siteName(host), name, host);
+  }
+}
 assert.doesNotMatch(popupJs, /turn off|turn on|pause on|theme this site/);
-assert.match(popupJs, /enabledButton\.classList\.toggle\("muted", !enabled\)/);
-assert.match(popupJs, /siteButton\.classList\.toggle\("muted", Boolean\(host\) && \(!enabled \|\| paused\)\)/);
+assert.match(popupJs, /siteButton\.classList\.toggle\("muted", !enabled\)/);
 assert.match(popupJs, /type: "setEnabled", enabled/);
-assert.match(popupJs, /fontStack\(state\.font\)/);
+assert.match(popupJs, /applyFont\(state\.font, state\.fontFaces\)/);
+assert.match(popupJs, /fontStack\(family, faces\)/);
+{
+  const { fontFaceRule, fontFacesFromHost, fontStack } = await import("../src/font.js");
+  const faces = ["JetBrainsMono NF Regular", "JetBrainsMonoNF-Regular"];
+  const rule = fontFaceRule(faces);
+  assert.equal(rule.family, "Omareader JetBrainsMono NF Regular");
+  assert.equal(
+    rule.css,
+    '@font-face { font-family: "Omareader JetBrainsMono NF Regular"; src: local("JetBrainsMono NF Regular"), local("JetBrainsMonoNF-Regular"); }',
+  );
+  assert.equal(
+    fontStack("JetBrainsMono Nerd Font", faces),
+    '"Omareader JetBrainsMono NF Regular", "JetBrainsMono Nerd Font", monospace',
+  );
+  assert.equal(fontStack("JetBrainsMono Nerd Font"), '"JetBrainsMono Nerd Font", monospace');
+  assert.equal(fontStack(""), "monospace");
+  assert.deepEqual(fontFacesFromHost(['Bad"); } body { x', "Ok-Name", "Ok-Name", 3]), ["Ok-Name"]);
+  assert.deepEqual(fontFaceRule("nope"), { family: "", css: "" });
+}
 assert.doesNotMatch(popupJs, /mhglniaepbokfgnpeennihlifandcgjh/);
 
 const popupCss = readFileSync(new URL("../src/popup.css", import.meta.url), "utf8");
 assert.match(popupCss, /\.brand\s*\{[^}]*justify-content:\s*center/);
 assert.match(popupCss, /\.switch\s*\{[^}]*width:\s*100%/);
 assert.match(popupCss, /\.switch\.muted/);
+assert.match(popupCss, /\.switch\[aria-checked="true"\] \.toggle::after\s*\{[^}]*translateX/);
 assert.match(popupCss, /:root\s*\{[^}]*font:[^;]*var\(--font\)/);
 assert.match(popupCss, /--font:\s*monospace/);
+assert.match(popupCss, /:root\s*\{[^}]*font-size-adjust:\s*ex-height 0\.42/, "every Omarchy font draws at the same x-height");
+assert.match(popupCss, /\nh1\s*\{[^}]*font-size-adjust:\s*none/, "the wordmark keeps its own size");
+assert.match(popupCss, /\nbody\s*\{[^}]*font:\s*inherit/, "body takes the Omarchy font, not Chromium's extension-page font");
+// The shortcut is a tooltip on hover or focus. It floats, so nothing moves and no space is kept.
 assert.doesNotMatch(popupCss, /\.keys\s*\{[^}]*display:\s*none/);
-assert.doesNotMatch(popupCss, /visibility:\s*hidden/);
+assert.match(popupCss, /\.keys\s*\{[^}]*visibility:\s*hidden/);
+assert.match(popupCss, /\.keys\s*\{[^}]*position:\s*absolute/);
+assert.match(popupCss, /\.ctrl:hover \.keys\s*\{[^}]*visibility:\s*visible/);
+assert.match(popupCss, /\.ctrl:has\(:focus-visible\) \.keys\s*\{[^}]*visibility:\s*visible/);
+assert.match(popupJs, /siteCtrl\.hidden = !host/);
 assert.match(popupCss, /font-family:\s*"Omarchy Font"/);
 assert.match(popupCss, /url\("omarchy-font\.ttf"\)/);
 assert.ok(statSync(new URL("../src/omarchy-font.ttf", import.meta.url)).size > 1000);

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { PROXY_ATTRIBUTE, PROXY_EVENT } from "../src/page-proxy-install.js";
 
 // Chromium blocked this inline script with sha256-r1cyMJILgyTo33FkQEdMV0NGSfZO6vhBj0Gj/Medd20=.
@@ -103,9 +105,32 @@ export function replaceInlineProxy(source) {
   return next;
 }
 
+const TINT_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "tint.js");
+const CACHE_KEYS_START = "const themeCacheKeys = [";
+const MODIFY_CALL = "const modified = modifyHSL(hsl, pole, anotherPole);";
+
+// Every color Dark Reader modifies goes through modifyColorWithCache. Its HSL
+// result is handed to tint.js with the theme's hue list, which rides on the
+// theme options as omareaderHues and is part of the color cache key.
+export function addThemeHues(source, tintPath = TINT_PATH) {
+  if (!source.includes(CACHE_KEYS_START)) {
+    throw new Error("Dark Reader themeCacheKeys was not found");
+  }
+  if (source.split(MODIFY_CALL).length !== 2) {
+    throw new Error("Dark Reader modifyColorWithCache call was not found once");
+  }
+  const next = source
+    .replace(CACHE_KEYS_START, `${CACHE_KEYS_START}\n    "omareaderHues",`)
+    .replace(
+      MODIFY_CALL,
+      "const modified = omareaderTintHsl(modifyHSL(hsl, pole, anotherPole), theme.omareaderHues, hsl);",
+    );
+  return `import { tintHsl as omareaderTintHsl } from ${JSON.stringify(tintPath)};\n${next}`;
+}
+
 export function createDarkReaderPlugin(darkReaderPath) {
   const source = readFileSync(darkReaderPath, "utf8");
-  const patched = replaceInlineProxy(source);
+  const patched = addThemeHues(replaceInlineProxy(source));
   const injectProxySource = extractInjectProxy(source);
   return {
     name: "omareader-dark-reader",

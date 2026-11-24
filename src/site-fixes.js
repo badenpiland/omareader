@@ -49,29 +49,97 @@ function urlCallEnd(text, from) {
   return -1;
 }
 
-// Drop @import and any url() that is not a data: URL. data: images stay.
-export function sanitizeFetchedFixes(text) {
-  const source = String(text).replace(/@import\b[^;]*(;|$)/gi, "");
-  const lower = source.toLowerCase();
+// Drop any url() that is not a data: URL from one line of CSS. A url() left
+// open at the end of the line drops the rest of that line, never the file.
+function stripRemoteUrls(line) {
+  const lower = line.toLowerCase();
   let out = "";
   let cursor = 0;
-  while (cursor < source.length) {
+  while (cursor < line.length) {
     const start = lower.indexOf("url(", cursor);
     if (start < 0) {
-      out += source.slice(cursor);
+      out += line.slice(cursor);
       break;
     }
-    out += source.slice(cursor, start);
-    const end = urlCallEnd(source, start + 4);
+    out += line.slice(cursor, start);
+    const end = urlCallEnd(line, start + 4);
     if (end < 0) {
       break;
     }
-    if (dataUrlValue(source.slice(start + 4, end))) {
-      out += source.slice(start, end + 1);
+    if (dataUrlValue(line.slice(start + 4, end))) {
+      out += line.slice(start, end + 1);
     }
     cursor = end + 1;
   }
   return out;
+}
+
+// CSS lets an escape stand for any letter, so "\\75 rl(" is url(. Decode the
+// escaped letters before looking for calls that fetch. Any other escaped
+// character, such as "\\(" in a Tailwind class name, is literal text and can't
+// open a call, so it decodes to a placeholder.
+function cssUnescape(text) {
+  const letter = (char) => (/^[a-z-]$/i.test(char) ? char : "\ufffd");
+  return text
+    .replace(/\\([0-9a-f]{1,6})[ \t]?/gi, (_, hex) => {
+      const code = parseInt(hex, 16);
+      return code > 0 && code <= 0x10ffff ? letter(String.fromCodePoint(code)) : "\ufffd";
+    })
+    .replace(/\\(.)/g, (_, char) => letter(char));
+}
+
+const FETCHING_CALL = /url\(|image-set\(|@import/g;
+
+function fetchingCalls(text) {
+  return (text.toLowerCase().match(FETCHING_CALL) || []).length;
+}
+
+// One line of a CSS section, cleaned. A line is dropped whole when escapes
+// hide a fetching call, or when image-set() still names a file by a plain
+// string, which loads it the same as url() does.
+function cleanCssLine(line) {
+  if (fetchingCalls(cssUnescape(line)) !== fetchingCalls(line)) {
+    return null;
+  }
+  const cleaned = stripRemoteUrls(line.replace(/@import\b[^;]*(;|$)/gi, ""));
+  if (/image-set\(/i.test(cleaned) && /image-set\([^)]*["'](?!data:)/i.test(cleaned)) {
+    return null;
+  }
+  return cleaned;
+}
+
+const COMMAND_LINE = /^[A-Z]+(\s[A-Z]+){0,2}$/;
+const BLOCK_SEPARATOR = /^\s*={2,}\s*$/;
+
+// Drop @import and any url() or image-set() file that is not a data: URL from
+// CSS sections, one line at a time, including ones spelled with CSS escapes. Selector lists such as INVERT can quote a url( inside an
+// attribute selector. Those are only text, so they stay, unless the line also
+// has a brace and could close the selector and start a rule of its own.
+export function sanitizeFetchedFixes(text) {
+  let inCss = false;
+  return String(text)
+    .replace(/\r/g, "")
+    .split("\n")
+    .flatMap((line) => {
+      if (BLOCK_SEPARATOR.test(line)) {
+        inCss = false;
+        return [line];
+      }
+      if (COMMAND_LINE.test(line)) {
+        inCss = line.trim() === "CSS";
+        return [line];
+      }
+      const lower = line.toLowerCase();
+      if (!inCss) {
+        if (lower.includes("@import") || (lower.includes("url(") && /[{}]/.test(line))) {
+          return [];
+        }
+        return [line];
+      }
+      const cleaned = cleanCssLine(line);
+      return cleaned === null ? [] : [cleaned];
+    })
+    .join("\n");
 }
 
 // Missing or true keeps the daily download. Only an explicit false opts out.
@@ -258,26 +326,42 @@ function matchPrepared(url, pattern) {
   return true;
 }
 
-function isURLMatched(url, pattern) {
-  if (pattern.startsWith("/") && pattern.endsWith("/") && pattern.length > 2) {
-    try {
-      return new RegExp(pattern.slice(1, -1)).test(url);
-    } catch {
-      return false;
-    }
+const isRegExpPattern = (pattern) => pattern.startsWith("/") && pattern.endsWith("/") && pattern.length > 2;
+
+// Each site's patterns, prepared once per parsed list. Preparing them on every
+// lookup parsed all ~3,400 patterns, and the page URL once per pattern, for
+// every frame.
+const preparedSites = new WeakMap();
+
+function preparedPatterns(site) {
+  let prepared = preparedSites.get(site);
+  if (!prepared) {
+    prepared = (site.url || []).map((pattern) => {
+      if (!isRegExpPattern(pattern)) {
+        return preparePattern(pattern);
+      }
+      try {
+        return new RegExp(pattern.slice(1, -1));
+      } catch {
+        return null;
+      }
+    });
+    preparedSites.set(site, prepared);
   }
-  return matchPrepared(prepareURL(url), preparePattern(pattern));
+  return prepared;
 }
 
 export function fixesFor(url, sites) {
   if (!Array.isArray(sites) || sites.length === 0 || sites[0].url?.[0] !== "*") {
     return null;
   }
+  const preparedURL = prepareURL(url);
+  const matches = (pattern) => (pattern instanceof RegExp ? pattern.test(url) : matchPrepared(preparedURL, pattern));
   let best = null;
   let bestLength = -1;
   for (let i = 1; i < sites.length; i++) {
     const patterns = sites[i].url || [];
-    if (!patterns.some((pattern) => isURLMatched(url, pattern))) {
+    if (!preparedPatterns(sites[i]).some(matches)) {
       continue;
     }
     const specificity = patterns[0]?.length || 0;

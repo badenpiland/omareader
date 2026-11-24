@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 import { updateLine } from "./update-notice.js";
-import { fontStack } from "./font.js";
+import { fontFaceRule, fontStack } from "./font.js";
+import { siteName } from "./site-name.js";
+import { COMMAND_TOGGLE, COMMAND_TOGGLE_SITE, hostFromUrl, shortcutLabel } from "./commands.js";
 
 const enabledButton = document.querySelector("#enabled");
-const enabledLabel = document.querySelector("#enabled-label");
 const siteButton = document.querySelector("#site");
+const siteCtrl = document.querySelector("#site-ctrl");
 const siteLabel = document.querySelector("#site-label");
 const themeNode = document.querySelector("#theme");
 const statusNode = document.querySelector("#status");
@@ -20,15 +22,16 @@ let declineNote = "";
 let latest = null;
 let host = "";
 
-// Both switches name what a click does. A muted switch is one that is off.
+// Two switches: Omareader everywhere, and the site in this tab by its short
+// name, "github" for github.com. A switch is on while that one is themed.
 function renderControls() {
   const enabled = latest?.enabled !== false;
   const paused = Boolean(host && latest?.pausedSites?.includes(host));
-  enabledLabel.textContent = enabled ? "disable everywhere" : "enable everywhere";
-  enabledButton.classList.toggle("muted", !enabled);
-  siteButton.hidden = !host;
-  siteLabel.textContent = paused ? "enable this site" : "disable this site";
-  siteButton.classList.toggle("muted", Boolean(host) && (!enabled || paused));
+  enabledButton.setAttribute("aria-checked", String(enabled));
+  siteCtrl.hidden = !host;
+  siteLabel.textContent = siteName(host);
+  siteButton.setAttribute("aria-checked", String(!paused));
+  siteButton.classList.toggle("muted", !enabled);
   siteButton.title = host;
 }
 
@@ -49,13 +52,25 @@ function applyPalette(palette) {
   root.style.colorScheme = palette.mode === "light" ? "light" : "dark";
 }
 
+// The Omarchy font, loaded by face name so a change shows while the browser runs.
+const fontFaceStyle = document.createElement("style");
+document.head.append(fontFaceStyle);
+
+function applyFont(family, faces) {
+  const css = fontFaceRule(faces).css;
+  if (fontFaceStyle.textContent !== css) {
+    fontFaceStyle.textContent = css;
+  }
+  document.documentElement.style.setProperty("--font", fontStack(family, faces));
+}
+
 function render(state) {
   if (!state) {
     return;
   }
   latest = state;
   renderControls();
-  document.documentElement.style.setProperty("--font", fontStack(state.font));
+  applyFont(state.font, state.fontFaces);
   applyPalette(state.palette);
   const note = state.hostError || declineNote;
   statusNode.textContent = note;
@@ -115,12 +130,26 @@ siteButton.addEventListener("click", () => {
   renderControls();
   port.postMessage({ type: "setSitePaused", host, paused: !paused });
 });
-chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-  try {
-    host = new URL(tabs?.[0]?.url || "").hostname.toLowerCase().replace(/\.$/, "");
-  } catch {
-    host = "";
+// Show the keys Chromium actually has bound, which people can change at
+// chrome://extensions/shortcuts. An unbound command shows no tooltip.
+function showKeys(button, keysNode, shortcut) {
+  const label = shortcutLabel(shortcut);
+  keysNode.textContent = label;
+  keysNode.hidden = label === "";
+  if (label) {
+    button.setAttribute("aria-keyshortcuts", shortcut.trim());
+  } else {
+    button.removeAttribute("aria-keyshortcuts");
   }
+}
+
+chrome.commands.getAll((commands) => {
+  const bound = new Map((commands || []).map((command) => [command.name, command.shortcut]));
+  showKeys(enabledButton, document.querySelector("#enabled-keys"), bound.get(COMMAND_TOGGLE));
+  showKeys(siteButton, document.querySelector("#site-keys"), bound.get(COMMAND_TOGGLE_SITE));
+});
+chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  host = hostFromUrl(tabs?.[0]?.url || "");
   renderControls();
 });
 document.querySelector("#dark-reader-off").addEventListener("click", async () => {

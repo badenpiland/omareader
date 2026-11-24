@@ -17,6 +17,10 @@
   --font: monospace;
   color-scheme: dark;
   font: 400 13px/1.4 var(--font);
+  /* Monospace fonts differ in how big they draw at the same size. Scale each one
+     to the same x-height, so every Omarchy font looks the same size here.
+     0.42 keeps the popup small, about 10.5px of JetBrains Mono. */
+  font-size-adjust: ex-height 0.42;
 }
 
 *,
@@ -34,12 +38,14 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   /* The popup is as wide as the wordmark or the switches, whichever is wider. */
   width: max-content;
   min-width: 220px;
   margin: 0;
-  padding: 12px 14px;
+  padding: 10px 12px;
+  /* Chromium gives extension pages its own body font. Take the Omarchy font from :root. */
+  font: inherit;
 }
 
 h1,
@@ -51,14 +57,14 @@ header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .brand img {
@@ -71,6 +77,7 @@ h1 {
   color: var(--popup-fg);
   font-family: "Omarchy Font", ui-monospace, monospace;
   font-size: 24px;
+  font-size-adjust: none;
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
@@ -99,7 +106,7 @@ footer {
 main {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
+  gap: 4px;
 }
 
 button,
@@ -125,46 +132,104 @@ button:focus-visible,
   outline-offset: 2px;
 }
 
-/* Both switches look and read the same: power icon, what a click does, shortcut. */
+/* Each switch carries its shortcut as a tooltip, so it takes no room. */
+.ctrl {
+  position: relative;
+}
+
+/* Omarchy's labeled toggle row (shell Ui/Toggle.qml) at popup size: a
+   bordered row, the name in bold, and a square switch at the end. The alphas
+   are Omarchy's defaults: normal fill 4% and border 40%, hover fill 8% and
+   border 25%, selected fill 18% with no border. */
 .switch {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
-  padding: 5px 10px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  font-weight: 700;
   text-align: left;
 }
 
+.switch:hover,
+.switch:focus-visible {
+  border-color: color-mix(in srgb, currentColor 25%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+/* Off everywhere: the site row is dimmed. Its switch still shows its own state. */
 .switch.muted {
   color: var(--muted);
 }
 
-.keys {
-  margin-left: auto;
-  padding-left: 6px;
-  color: var(--muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.ico.power {
+/* Omarchy's ToggleSwitch: square track 1.9 times as wide as tall, knob 0.72 of
+   the height. Off is a 40% border with a dimmed knob at the start. On is an
+   18% fill with the knob in the foreground at the end. */
+.toggle {
   position: relative;
   flex: none;
-  width: 13px;
-  height: 13px;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  border-top-color: transparent;
+  width: 27px;
+  height: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-.ico.power::before {
+.toggle::after {
   content: "";
   position: absolute;
-  top: -3px;
-  left: 3.5px;
-  width: 2px;
-  height: 7px;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 10px;
+  background: color-mix(in srgb, currentColor 80%, var(--popup-bg));
+  transition: transform 120ms cubic-bezier(0.33, 1, 0.68, 1), background-color 120ms ease;
+}
+
+.switch[aria-checked="true"] .toggle {
+  border-color: transparent;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.switch[aria-checked="true"] .toggle::after {
   background: currentColor;
+  transform: translateX(13px);
+}
+
+/* The shortcut is an Omarchy tooltip (shell Ui/PanelToolTip.qml): a bordered
+   box under the switch, shown after 100ms of hover or at once on keyboard
+   focus. It floats over what is below, so nothing moves and no space is kept. */
+.keys {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 2px);
+  right: 0;
+  margin: 0;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--popup-fg) 40%, transparent);
+  background: var(--popup-bg);
+  color: var(--popup-fg);
+  font-size: 11px;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, visibility 0s linear 120ms;
+}
+
+.ctrl:hover .keys {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 120ms ease 100ms, visibility 0s linear 100ms;
+}
+
+.ctrl:has(:focus-visible) .keys {
+  visibility: visible;
+  opacity: 1;
+  transition: none;
 }
 
 #dark-reader .choices {
@@ -178,19 +243,19 @@ button:focus-visible,
   padding: 6px var(--s);
 }
 
-/* The theme name, notes and footer wrap instead of widening the popup. */
+/* The theme name and notes wrap instead of widening the popup. The footer
+   stays on one row, so the popup is at least as wide as it. */
 #theme,
 #status,
-#dark-reader,
-footer {
+#dark-reader {
   width: 0;
   min-width: 100%;
 }
 
 footer {
   display: flex;
-  flex-wrap: wrap;
-  row-gap: 4px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--s);
