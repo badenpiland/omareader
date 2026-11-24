@@ -1,0 +1,81 @@
+name: No session links
+
+# Keeps links to Claude sessions and project threads out of PR text,
+# release notes and the commits that land on main. See CLAUDE.md.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [main]
+    tags: ["v*"]
+  release:
+    types: [published, edited]
+
+permissions:
+  contents: read
+
+env:
+  PATTERN: 'Claude-Session:|claude\.ai/code/session_|claude\.ai/(project|chat)/|\[project thread\]'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PR title and description
+        if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if printf '%s\n%s\n' "$TITLE" "$BODY" | grep -inE "$PATTERN"; then
+            echo "::error::The PR title or description links a Claude session or project thread. Remove it."
+            exit 1
+          fi
+
+      - name: PR commits (dropped by squash merge, so a warning only)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          hits=$(git log --format='%h %B' "$BASE..$HEAD" | grep -iE "$PATTERN" || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo "::warning::Some commits on this branch link a Claude session. Squash merge and write a clean commit message."
+          fi
+
+      - name: Commits pushed to main or tagged
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            range="$AFTER -1"
+          else
+            range="$BEFORE..$AFTER"
+          fi
+          tagmsg=""
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tagmsg=$(git tag -l --format='%(contents)' "${GITHUB_REF_NAME}")
+          fi
+          if { git log --format='%h %B' $range; printf '%s\n' "$tagmsg"; } | grep -inE "$PATTERN"; then
+            echo "::error::A commit or tag message links a Claude session or project thread."
+            exit 1
+          fi
+
+      - name: Release notes
+        if: github.event_name == 'release'
+        env:
+          NAME: ${{ github.event.release.name }}
+          BODY: ${{ github.event.release.body }}
+        run: |
+          if printf '%s\n%s\n' "$NAME" "$BODY" | grep -inE "$PATTERN"; then
+            echo "::error::The release notes link a Claude session or project thread."
+            exit 1
+          fi
