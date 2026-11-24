@@ -38,7 +38,7 @@ Omareader is a Chromium extension that repaints web pages in your current Omarch
 - **Theme sync.** A small Python program watches `~/.local/state/omarchy/current` and sends the theme's background, foreground, selection and named colors whenever `omarchy theme set` swaps it.
 - **Theme colors.** Pages are themed by [Dark Reader](https://darkreader.org/)'s dynamic engine (`darkreader` 4.9.133, MIT, bundled, so you don't need the Dark Reader extension). Omareader then moves every color the page draws as a color to the closest of the theme's own red, orange, yellow, green, cyan, blue and magenta. It keeps the lightness Dark Reader chose, so text stays readable. Grays stay on the theme background and foreground.
 - **Readable text.** Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. Dark Reader's site fixes are included, Amazon among them.
-- **Popup.** Two matching switches, each named for what a click does: "disable everywhere" and "disable this site", which turn to "enable" when off. The popup wears the current theme and the monospace font Omarchy set (`omarchy-font-set` updates it without a browser restart). The bottom row has the site-fix toggle and the version, which shows "v0.4.0 ✓" when up to date and "v0.4.0 → v0.5.0" with a link when a newer release is out.
+- **Popup.** Two switches: "everywhere", and the site you're on by its short name, such as "github" or "google docs". A switch sits right while that one is themed, and shows the shortcut Chromium has bound to it on hover. The popup wears the current theme and the monospace font Omarchy set (`omarchy-font-set` updates it without a browser restart). The bottom row has the site-fix toggle and the version, which shows "v0.4.0 ✓" when up to date and the newer version with a link when a release is out.
 - **Toolbar.** The dark glasses show while a tab is themed, and the light glasses while it is disabled.
 
 If the Dark Reader extension is also installed and enabled, the popup asks once whether to turn it off, since both would restyle the page. Turning it off asks for permission to manage extensions.
@@ -50,9 +50,9 @@ If the Dark Reader extension is also installed and enabled, the popup asks once 
 
 ## Shortcuts
 
-Alt+Shift+O disables or enables Omareader everywhere. The toolbar badge shows ON or OFF for a moment.
+Alt+Shift+U (U for universal) disables or enables Omareader everywhere. The toolbar badge shows ON or OFF for a moment.
 
-Alt+Shift+U disables the current site, or enables it again. That is the same switch as disable this site in the popup. That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. This shortcut does not flash a badge.
+Alt+Shift+O (O for one site) disables the current site, or enables it again. That is the same switch as the site's switch in the popup, such as "github". That tab's toolbar icon switches to the light glasses while the site is disabled, and back to the dark glasses when the theme returns. The badge also shows ON or OFF for a moment, for this site.
 
 Change either shortcut at `chrome://extensions/shortcuts`.
 
@@ -65,7 +65,7 @@ Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy
 
 ## Install details
 
-Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are planned for 0.5.0.
+Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are coming in a future version.
 
 **Curl installer (current).** [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). The one-line command is in [Install](#install) above.
 
@@ -145,8 +145,10 @@ The build refreshes `LICENSES/darkreader-MIT.txt` from `node_modules/darkreader/
 
 ## Roadmap
 
-- **0.5.0:** Firefox support.
-- **0.6.0:** an official Omarchy plugin tied to Omareader.
+Coming in a future version:
+
+- Firefox and Zen support.
+- An official Omarchy plugin tied to Omareader.
 
 The Omarchy package is pending in [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120), and inclusion in Omarchy is suggested in [omarchy discussion 14632](https://github.com/omacom/omarchy/discussions/14632). v0.2.1 does not start, so update past it.
 
