@@ -34,13 +34,13 @@
   "commands": {
     "toggle": {
       "suggested_key": {
-        "default": "Alt+Shift+O"
+        "default": "Alt+Shift+U"
       },
       "description": "Turn Omareader on or off"
     },
     "toggle-site": {
       "suggested_key": {
-        "default": "Alt+Shift+U"
+        "default": "Alt+Shift+O"
       },
       "description": "Pause or theme the current site"
     }

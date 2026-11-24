@@ -19,8 +19,8 @@ const toggle = manifest.commands[COMMAND_TOGGLE];
 const toggleSite = manifest.commands[COMMAND_TOGGLE_SITE];
 assert.ok(toggle, "global toggle command stays declared");
 assert.ok(toggleSite, "site toggle command is declared");
-assert.equal(toggle.suggested_key.default, "Alt+Shift+O");
-assert.equal(toggleSite.suggested_key.default, "Alt+Shift+U");
+assert.equal(toggle.suggested_key.default, "Alt+Shift+U");
+assert.equal(toggleSite.suggested_key.default, "Alt+Shift+O");
 assert.equal(toggle.description, "Turn Omareader on or off");
 assert.equal(toggleSite.description, "Pause or theme the current site");
 assert.notEqual(toggle.suggested_key.default, toggleSite.suggested_key.default);
@@ -87,7 +87,7 @@ assert.match(background, /applyTabIcon\(effect\.tabId, effect\.host\)/);
 assert.match(background, /showCommandBadge\(effect\.tabId, effect\.badge\)/);
 assert.match(background, /chrome\.action\.setIcon\(\{ tabId, path \}\)/);
 assert.doesNotMatch(background, /showCommandIcon|icon-pause|icon-play/);
-console.log("manifest keeps Alt+Shift+O and adds Alt+Shift+U");
+console.log("manifest uses Alt+Shift+U everywhere and Alt+Shift+O for one site");
 
 function deps(overrides = {}) {
   return {

@@ -709,7 +709,7 @@ async function applyReaderCommand(command, tab) {
     if (typeof effect.tabId === "number") {
       applyTabIcon(effect.tabId, effect.host);
     }
-    // The same ON or OFF label as Alt+Shift+O, for this site only.
+    // The same ON or OFF label as the everywhere shortcut, for this site only.
     showCommandBadge(effect.tabId, effect.badge);
   }
 }
