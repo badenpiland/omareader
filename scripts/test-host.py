@@ -391,9 +391,13 @@ def test_font():
         try:
             first = read_message(proc.stdout)
             assert first["font"] == "Fira Code", first
+            assert first["fontFaces"] == [], first
 
             # omarchy-font-set rewrites fonts.conf. The host reports the new family.
-            family.write_text("JetBrainsMono Nerd Font\n", encoding="utf-8")
+            family.write_text(
+                "JetBrainsMono Nerd Font,JetBrainsMono NF\nJetBrainsMono NF Regular\nJetBrainsMonoNF-Regular\n",
+                encoding="utf-8",
+            )
             (fonts / "fonts.conf").write_text("<fontconfig/>\n", encoding="utf-8")
             deadline = time.monotonic() + 3
             seen = first
@@ -405,6 +409,10 @@ def test_font():
                 else:
                     time.sleep(0.05)
             assert seen.get("font") == "JetBrainsMono Nerd Font", seen
+            assert seen.get("fontFaces") == [
+                "JetBrainsMono NF Regular",
+                "JetBrainsMonoNF-Regular",
+            ], seen
         finally:
             proc.kill()
             proc.wait(timeout=2)

@@ -181,7 +181,26 @@ assert.doesNotMatch(popupJs, /turn off|turn on|pause on|theme this site/);
 assert.match(popupJs, /enabledButton\.classList\.toggle\("muted", !enabled\)/);
 assert.match(popupJs, /siteButton\.classList\.toggle\("muted", Boolean\(host\) && \(!enabled \|\| paused\)\)/);
 assert.match(popupJs, /type: "setEnabled", enabled/);
-assert.match(popupJs, /fontStack\(state\.font\)/);
+assert.match(popupJs, /applyFont\(state\.font, state\.fontFaces\)/);
+assert.match(popupJs, /fontStack\(family, faces\)/);
+{
+  const { fontFaceRule, fontFacesFromHost, fontStack } = await import("../src/font.js");
+  const faces = ["JetBrainsMono NF Regular", "JetBrainsMonoNF-Regular"];
+  const rule = fontFaceRule(faces);
+  assert.equal(rule.family, "Omareader JetBrainsMono NF Regular");
+  assert.equal(
+    rule.css,
+    '@font-face { font-family: "Omareader JetBrainsMono NF Regular"; src: local("JetBrainsMono NF Regular"), local("JetBrainsMonoNF-Regular"); }',
+  );
+  assert.equal(
+    fontStack("JetBrainsMono Nerd Font", faces),
+    '"Omareader JetBrainsMono NF Regular", "JetBrainsMono Nerd Font", monospace',
+  );
+  assert.equal(fontStack("JetBrainsMono Nerd Font"), '"JetBrainsMono Nerd Font", monospace');
+  assert.equal(fontStack(""), "monospace");
+  assert.deepEqual(fontFacesFromHost(['Bad"); } body { x', "Ok-Name", "Ok-Name", 3]), ["Ok-Name"]);
+  assert.deepEqual(fontFaceRule("nope"), { family: "", css: "" });
+}
 assert.doesNotMatch(popupJs, /mhglniaepbokfgnpeennihlifandcgjh/);
 
 const popupCss = readFileSync(new URL("../src/popup.css", import.meta.url), "utf8");

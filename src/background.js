@@ -6,7 +6,7 @@ import { fromExtensionPage } from "./extension-page.js";
 import { readThemeResource, THEME_RESOURCE } from "./theme-fetch.js";
 import { hostFailureText, paletteFromHost } from "./host-message.js";
 import { COMMAND_BADGE_MS, hostFromUrl, normalizeHost, runReaderCommand } from "./commands.js";
-import { fontFromHost } from "./font.js";
+import { fontFacesFromHost, fontFromHost } from "./font.js";
 import {
   MAX_RELEASES_BYTES,
   newerRelease,
@@ -28,6 +28,7 @@ let palette = null;
 let enabled = true;
 let pausedSites = [];
 let font = "";
+let fontFaces = [];
 let hostError = "";
 let reconnectTimer = null;
 let reconnectDelay = RECONNECT_MIN_MS;
@@ -48,6 +49,7 @@ function snapshot() {
     pausedSites,
     palette,
     font,
+    fontFaces,
     hostError,
     darkReaderPrompt,
     darkReaderKnown,
@@ -403,11 +405,13 @@ function rememberPalette(next) {
 }
 
 // The popup's font: what Omarchy set as the system monospace font.
-function rememberFont(family) {
+function rememberFont(family, faces) {
   const next = fontFromHost({ family });
-  if (next !== font) {
+  const nextFaces = fontFacesFromHost(faces);
+  if (next !== font || nextFaces.join("\n") !== fontFaces.join("\n")) {
     font = next;
-    chrome.storage.local.set({ font });
+    fontFaces = nextFaces;
+    chrome.storage.local.set({ font, fontFaces });
   }
 }
 
@@ -468,7 +472,7 @@ function connectHost() {
     if (message.type === "palette" && paletteFromHost(message)) {
       hostError = "";
       reconnectDelay = RECONNECT_MIN_MS;
-      rememberFont(message.font);
+      rememberFont(message.font, message.fontFaces);
       rememberPalette(message);
       return;
     }
@@ -829,6 +833,7 @@ async function start() {
     pausedSites: [],
     palette: null,
     font: "",
+    fontFaces: [],
     darkReaderChoice: "",
     darkReaderOffered: false,
   });
@@ -837,6 +842,7 @@ async function start() {
     ? stored.pausedSites.map(normalizeHost).filter(Boolean)
     : [];
   font = fontFromHost({ family: stored.font });
+  fontFaces = fontFacesFromHost(stored.fontFaces);
   palette = paletteFromHost(stored.palette);
   if (palette?.background && palette?.foreground) {
     chrome.storage.session.set({ palette });

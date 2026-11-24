@@ -165,6 +165,7 @@ def read_palette():
             value = normalize_hex(colors.get(slot))
         if value and value not in hues:
             hues.append(value)
+    font, faces = read_font()
     theme = ""
     if name_path.is_file():
         theme = read_capped(name_path).decode().strip()[:100]
@@ -176,30 +177,42 @@ def read_palette():
         "foreground": foreground,
         "selection": selection or "",
         "hues": hues,
-        "font": read_font(),
+        "font": font,
+        "fontFaces": faces,
     }
 
 
 def read_font():
-    """Family Omarchy set for monospace, as `omarchy-font-current` reads it."""
+    """Family Omarchy set for monospace, as `omarchy-font-current` reads it.
+
+    Also returns the face's full and PostScript names. The popup loads the face
+    by those names with CSS local(), which skips fontconfig's aliases. Chromium
+    keeps the fontconfig rules it read at startup, and they map any monospace
+    family to the font Omarchy had set then, so a family name alone stays stuck
+    on the old font until the browser restarts.
+    """
     command = os.environ.get("OMAREADER_FC_MATCH", "fc-match")
     try:
         result = subprocess.run(
-            [command, "monospace", "-f", "%{family}"],
+            [command, "monospace", "-f", "%{family}\\n%{fullname}\\n%{postscriptname}\\n"],
             capture_output=True,
             text=True,
             timeout=2,
             check=False,
         )
     except (OSError, subprocess.SubprocessError):
-        return ""
+        return "", []
     if result.returncode != 0:
-        return ""
-    family = result.stdout.splitlines()[0] if result.stdout else ""
-    family = family.split(",")[0].strip()
+        return "", []
+    lines = [line.split(",")[0].strip() for line in result.stdout.splitlines()[:3]]
+    family = lines[0] if lines else ""
     if not family or len(family) > FONT_NAME_LIMIT:
-        return ""
-    return family
+        return "", []
+    faces = []
+    for name in lines[1:]:
+        if name and len(name) <= FONT_NAME_LIMIT and name not in faces:
+            faces.append(name)
+    return family, faces
 
 
 def publish(force=False):

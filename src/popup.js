@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { updateLine } from "./update-notice.js";
-import { fontStack } from "./font.js";
+import { fontFaceRule, fontStack } from "./font.js";
 
 const enabledButton = document.querySelector("#enabled");
 const enabledLabel = document.querySelector("#enabled-label");
@@ -49,13 +49,25 @@ function applyPalette(palette) {
   root.style.colorScheme = palette.mode === "light" ? "light" : "dark";
 }
 
+// The Omarchy font, loaded by face name so a change shows while the browser runs.
+const fontFaceStyle = document.createElement("style");
+document.head.append(fontFaceStyle);
+
+function applyFont(family, faces) {
+  const css = fontFaceRule(faces).css;
+  if (fontFaceStyle.textContent !== css) {
+    fontFaceStyle.textContent = css;
+  }
+  document.documentElement.style.setProperty("--font", fontStack(family, faces));
+}
+
 function render(state) {
   if (!state) {
     return;
   }
   latest = state;
   renderControls();
-  document.documentElement.style.setProperty("--font", fontStack(state.font));
+  applyFont(state.font, state.fontFaces);
   applyPalette(state.palette);
   const note = state.hostError || declineNote;
   statusNode.textContent = note;
