@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
-// A short name for the popup's site switch: the host without "www." and
-// without its public suffix. github.com is "github", gist.github.com is
-// "gist.github", en.wikipedia.org is "en.wikipedia", www.bbc.co.uk is "bbc".
+// A short name for the popup's site switch: the host without its public
+// suffix, and without leading labels that only pick a language or a device
+// (www, m, mobile, en, de-at). github.com is "github", gist.github.com is
+// "gist.github", en.wikipedia.org and en.m.wikipedia.org are "wikipedia",
+// www.bbc.co.uk is "bbc".
 
 // Second-level labels that sit under a country code, as in co.uk or com.au.
 const COUNTRY_SECOND_LEVEL = new Set(["ac", "co", "com", "edu", "gov", "net", "org", "ne", "or", "go", "gv"]);
+
+// "www", "m" and "mobile", or a language code such as "en", "fr" or "zh-hant".
+const NOISE_LABEL = /^(www\d*|m|mobile|[a-z]{2}(-[a-z]{2,4})?)$/;
 
 export function siteName(host) {
   const name = String(host || "").toLowerCase().replace(/\.$/, "");
@@ -17,6 +22,9 @@ export function siteName(host) {
   if (top.length === 2 && labels.length >= 3 && COUNTRY_SECOND_LEVEL.has(labels[end - 1])) {
     end -= 1;
   }
-  const start = labels[0] === "www" && end > 1 ? 1 : 0;
+  let start = 0;
+  while (start < end - 1 && NOISE_LABEL.test(labels[start])) {
+    start += 1;
+  }
   return labels.slice(start, Math.max(end, 1)).join(".");
 }
