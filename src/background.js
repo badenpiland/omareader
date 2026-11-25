@@ -4,6 +4,7 @@ import {
   FIXES_CLEANUP_VERSION,
   fixesAutoUpdateEnabled,
   fixesFor,
+  fixesFromOtherVersion,
   sanitizeFetchedFixes,
   SITE_FIXES_URL,
   storedFixesCurrent,
@@ -34,6 +35,7 @@ const RETRY_MS = 6 * 60 * 60 * 1000;
 // yet due and waited another day. Counting a download as due an hour early
 // keeps the checks daily.
 const DUE_MS = DAY_MS - 60 * 60 * 1000;
+const EXTENSION_VERSION = chrome.runtime.getManifest().version;
 
 const clients = new Set();
 const pageUrls = new WeakMap();
@@ -134,9 +136,17 @@ async function loadFixes() {
     siteFixesAttemptAt: 0,
     siteFixesAutoUpdate: true,
     siteFixesCleanup: 0,
+    siteFixesExtensionVersion: "",
   });
   siteFixesAutoUpdate = fixesAutoUpdateEnabled(stored);
   let applied = false;
+  if (fixesFromOtherVersion(stored, EXTENSION_VERSION)) {
+    // First start after an update: download the list now. The saved one
+    // stays in use until the new one arrives.
+    await chrome.storage.local.set({ siteFixesFetchedAt: 0, siteFixesAttemptAt: 0 });
+    stored.siteFixesFetchedAt = 0;
+    stored.siteFixesAttemptAt = 0;
+  }
   if (stored.siteFixesText && !storedFixesCurrent(stored)) {
     // An older cleanup saved this list. Use the bundled one, and download
     // again now instead of waiting out the day.
@@ -235,6 +245,7 @@ async function refreshFixes() {
         siteFixesFetchedAt: Date.now(),
         siteFixesAttemptAt: attemptAt,
         siteFixesCleanup: FIXES_CLEANUP_VERSION,
+        siteFixesExtensionVersion: EXTENSION_VERSION,
       });
       if (changed) {
         broadcast();

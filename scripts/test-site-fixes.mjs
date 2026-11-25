@@ -8,6 +8,7 @@ import {
   parseDynamicThemeFixes,
   sanitizeFetchedFixes,
   storedFixesCurrent,
+  fixesFromOtherVersion,
   FIXES_CLEANUP_VERSION,
   SITE_FIXES_URL,
   trustedFixesUrl,
@@ -125,6 +126,11 @@ assert(!storedFixesCurrent({ siteFixesCleanup: FIXES_CLEANUP_VERSION - 1 }), "a 
 const background = readFileSync(join(root, "src/background.js"), "utf8");
 assert(/!storedFixesCurrent\(stored\)/.test(background), "startup checks the saved list's cleanup version");
 assert(/siteFixesCleanup: FIXES_CLEANUP_VERSION/.test(background), "a download records the cleanup version");
+assert(fixesFromOtherVersion({}, "0.4.2"), "a list saved before versions were recorded is downloaded again");
+assert(fixesFromOtherVersion({ siteFixesExtensionVersion: "0.4.1" }, "0.4.2"), "an update downloads the list again");
+assert(!fixesFromOtherVersion({ siteFixesExtensionVersion: "0.4.2" }, "0.4.2"), "the same version keeps its list");
+assert(/fixesFromOtherVersion\(stored, EXTENSION_VERSION\)/.test(background), "startup checks the version that downloaded the list");
+assert(/siteFixesExtensionVersion: EXTENSION_VERSION/.test(background), "a download records the extension version");
 assert(/const DUE_MS = DAY_MS - 60 \* 60 \* 1000;/.test(background), "the daily checks count as due an hour early");
 assert((background.match(/>= DUE_MS/g) || []).length === 2, "both the site-fix and the release check use DUE_MS");
 assert(!/>= DAY_MS/.test(background), "no daily check waits a full 24 hours");

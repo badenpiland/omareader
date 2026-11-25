@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The site-fix list is downloaded again on the first start after every update, instead of waiting for the daily check. A list saved by an older cleanup is also set aside at once in favor of the bundled one, so a list cut short before 0.4.0 can no longer linger after updating (Wikipedia's wordmark stayed dark).
+- The daily site-fix and release checks run every 24 hours. They ran every 48: the daily alarm fired a moment before the last download was a full day old, so each check waited another day.
+
 ## 0.4.1 — 2026-11-24
 
 ### Fixed

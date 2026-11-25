@@ -152,6 +152,13 @@ export function storedFixesCurrent(stored) {
   return Number(stored?.siteFixesCleanup) === FIXES_CLEANUP_VERSION;
 }
 
+// A list downloaded by another version of Omareader. After every update the
+// list is downloaded again on the first start, instead of waiting for the
+// daily check.
+export function fixesFromOtherVersion(stored, version) {
+  return String(stored?.siteFixesExtensionVersion || "") !== String(version || "");
+}
+
 // Missing or true keeps the daily download. Only an explicit false opts out.
 export function fixesAutoUpdateEnabled(stored) {
   return stored?.siteFixesAutoUpdate !== false;
