@@ -7,6 +7,7 @@ import {
   fixesFor,
   parseDynamicThemeFixes,
   sanitizeFetchedFixes,
+  savedFixesCurrent,
   SITE_FIXES_URL,
   trustedFixesUrl,
 } from "../src/site-fixes.js";
@@ -117,6 +118,10 @@ assert(
   fixesFor("https://en.wikipedia.org/wiki/Arch_Linux", cleanedBundle).invert.includes(".mw-logo-wordmark"),
   "the cleaned list still inverts the Wikipedia wordmark",
 );
+assert(savedFixesCurrent({ siteFixesText: "x", siteFixesVersion: "0.4.2" }, "0.4.2"), "a list saved by this version is used");
+assert(!savedFixesCurrent({ siteFixesText: "x", siteFixesVersion: "0.4.1" }, "0.4.2"), "a list saved by another version is not");
+assert(!savedFixesCurrent({ siteFixesText: "x" }, "0.4.2"), "a list saved before versions were recorded is not");
+assert(!savedFixesCurrent({ siteFixesText: "", siteFixesVersion: "0.4.2" }, "0.4.2"), "an empty saved list is not");
 assert(trustedFixesUrl(SITE_FIXES_URL) === true, "the Dark Reader list URL is trusted");
 assert(
   SITE_FIXES_URL.includes("/92637d8c3fbb210853c005e3f25dbbec46dd21fc/"),

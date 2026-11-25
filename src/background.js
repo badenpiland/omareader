@@ -1,5 +1,13 @@
 // SPDX-License-Identifier: MIT
-import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
+import {
+  acceptSiteFixes,
+  fixesAutoUpdateEnabled,
+  fixesFor,
+  sanitizeFetchedFixes,
+  savedFixesCurrent,
+  SITE_FIXES_URL,
+  trustedFixesUrl,
+} from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 import { decideDarkReaderPrompt } from "./dark-reader.js";
 import { fromExtensionPage } from "./extension-page.js";
@@ -97,7 +105,8 @@ function applyFixesText(text) {
 }
 
 function fixesDue(stored, now) {
-  const fetchedAt = Number(stored.siteFixesFetchedAt) || 0;
+  // A list saved by another version counts as never fetched.
+  const fetchedAt = stored.siteFixesVersion === chrome.runtime.getManifest().version ? Number(stored.siteFixesFetchedAt) || 0 : 0;
   const attemptAt = Number(stored.siteFixesAttemptAt) || 0;
   if (!fetchedAt) {
     return now - attemptAt >= RETRY_MS;
@@ -116,17 +125,20 @@ async function bundledFixesText() {
 async function loadFixes() {
   const stored = await chrome.storage.local.get({
     siteFixesText: "",
+    siteFixesVersion: "",
     siteFixesFetchedAt: 0,
     siteFixesAttemptAt: 0,
     siteFixesAutoUpdate: true,
   });
   siteFixesAutoUpdate = fixesAutoUpdateEnabled(stored);
   let applied = false;
-  try {
-    applyFixesText(stored.siteFixesText);
-    applied = true;
-  } catch {
-    // The saved list is unusable. The bundled file is the fallback.
+  if (savedFixesCurrent(stored, chrome.runtime.getManifest().version)) {
+    try {
+      applyFixesText(stored.siteFixesText);
+      applied = true;
+    } catch {
+      // The saved list is unusable. The bundled file is the fallback.
+    }
   }
   if (!applied) {
     try {
@@ -190,6 +202,7 @@ async function refreshFixes() {
     const attemptAt = Date.now();
     try {
       const stored = await chrome.storage.local.get({
+        siteFixesVersion: "",
         siteFixesFetchedAt: 0,
         siteFixesAttemptAt: 0,
         siteFixesAutoUpdate: true,
@@ -209,6 +222,7 @@ async function refreshFixes() {
       const changed = applyFixesText(text);
       await chrome.storage.local.set({
         siteFixesText: text,
+        siteFixesVersion: chrome.runtime.getManifest().version,
         siteFixesFetchedAt: Date.now(),
         siteFixesAttemptAt: attemptAt,
       });

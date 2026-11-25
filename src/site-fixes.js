@@ -142,6 +142,14 @@ export function sanitizeFetchedFixes(text) {
     .join("\n");
 }
 
+// A saved download is only trusted when this version of Omareader cleaned it.
+// Before 0.4.0 the cleanup could cut the list short, so Wikipedia and every
+// site after it lost their fixes, and that copy stayed in storage for up to a
+// day after an update.
+export function savedFixesCurrent(stored, version) {
+  return Boolean(stored?.siteFixesText) && stored?.siteFixesVersion === version;
+}
+
 // Missing or true keeps the daily download. Only an explicit false opts out.
 export function fixesAutoUpdateEnabled(stored) {
   return stored?.siteFixesAutoUpdate !== false;
