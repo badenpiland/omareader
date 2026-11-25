@@ -69,15 +69,11 @@ The popup shows when a new version is out. Run the install command again and res
 
 ## Uninstall
 
-Delete the native host and the installer's files, then restart your browser. It removes Omareader on its own.
-
 ```bash
-rm -rf ~/.local/share/omareader
-rm -f ~/.config/{chromium,microsoft-edge,BraveSoftware/Brave-Browser,BraveSoftware/Brave-Origin}/{"External Extensions"/mhglniaepbokfgnpeennihlifandcgjh,NativeMessagingHosts/com.bhp.omareader}.json
-# Chrome only
-sudo rm -rf /usr/share/omareader /usr/share/google-chrome/extensions/mhglniaepbokfgnpeennihlifandcgjh.json
-rm -f ~/.config/google-chrome/NativeMessagingHosts/com.bhp.omareader.json
+curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/uninstall.sh | bash
 ```
+
+Then restart your browser. It removes Omareader from every browser the installer added it to. For Chrome, it asks for `sudo` once.
 
 ## Privacy
 
