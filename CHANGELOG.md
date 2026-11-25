@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Wikipedia's wordmark is readable again after updating from 0.3.x. A site-fix list downloaded by 0.3.x had been cut short, losing Wikipedia and about a third of the sites, and the extension kept using that saved copy for up to a day after the update. A saved list now records which version cleaned it, and one from another version is replaced by the bundled list and downloaded again.
+
 ## 0.4.1 — 2026-11-24
 
 ### Fixed
