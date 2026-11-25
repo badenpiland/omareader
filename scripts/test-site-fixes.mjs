@@ -7,6 +7,8 @@ import {
   fixesFor,
   parseDynamicThemeFixes,
   sanitizeFetchedFixes,
+  storedFixesCurrent,
+  FIXES_CLEANUP_VERSION,
   SITE_FIXES_URL,
   trustedFixesUrl,
 } from "../src/site-fixes.js";
@@ -117,6 +119,12 @@ assert(
   fixesFor("https://en.wikipedia.org/wiki/Arch_Linux", cleanedBundle).invert.includes(".mw-logo-wordmark"),
   "the cleaned list still inverts the Wikipedia wordmark",
 );
+assert(storedFixesCurrent({ siteFixesCleanup: FIXES_CLEANUP_VERSION }), "a list from this cleanup is kept");
+assert(!storedFixesCurrent({}), "a list saved before the cleanup version is set aside");
+assert(!storedFixesCurrent({ siteFixesCleanup: FIXES_CLEANUP_VERSION - 1 }), "a list from an older cleanup is set aside");
+const background = readFileSync(join(root, "src/background.js"), "utf8");
+assert(/!storedFixesCurrent\(stored\)/.test(background), "startup checks the saved list's cleanup version");
+assert(/siteFixesCleanup: FIXES_CLEANUP_VERSION/.test(background), "a download records the cleanup version");
 assert(trustedFixesUrl(SITE_FIXES_URL) === true, "the Dark Reader list URL is trusted");
 assert(
   SITE_FIXES_URL.includes("/92637d8c3fbb210853c005e3f25dbbec46dd21fc/"),

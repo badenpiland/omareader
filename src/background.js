@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: MIT
-import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
+import {
+  acceptSiteFixes,
+  FIXES_CLEANUP_VERSION,
+  fixesAutoUpdateEnabled,
+  fixesFor,
+  sanitizeFetchedFixes,
+  SITE_FIXES_URL,
+  storedFixesCurrent,
+  trustedFixesUrl,
+} from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 import { decideDarkReaderPrompt } from "./dark-reader.js";
 import { fromExtensionPage } from "./extension-page.js";
@@ -119,14 +128,23 @@ async function loadFixes() {
     siteFixesFetchedAt: 0,
     siteFixesAttemptAt: 0,
     siteFixesAutoUpdate: true,
+    siteFixesCleanup: 0,
   });
   siteFixesAutoUpdate = fixesAutoUpdateEnabled(stored);
   let applied = false;
-  try {
-    applyFixesText(stored.siteFixesText);
-    applied = true;
-  } catch {
-    // The saved list is unusable. The bundled file is the fallback.
+  if (stored.siteFixesText && !storedFixesCurrent(stored)) {
+    // An older cleanup saved this list. Use the bundled one, and download
+    // again now instead of waiting out the day.
+    await chrome.storage.local.set({ siteFixesText: "", siteFixesFetchedAt: 0, siteFixesAttemptAt: 0 });
+    stored.siteFixesFetchedAt = 0;
+    stored.siteFixesAttemptAt = 0;
+  } else {
+    try {
+      applyFixesText(stored.siteFixesText);
+      applied = true;
+    } catch {
+      // The saved list is unusable. The bundled file is the fallback.
+    }
   }
   if (!applied) {
     try {
@@ -211,6 +229,7 @@ async function refreshFixes() {
         siteFixesText: text,
         siteFixesFetchedAt: Date.now(),
         siteFixesAttemptAt: attemptAt,
+        siteFixesCleanup: FIXES_CLEANUP_VERSION,
       });
       if (changed) {
         broadcast();
