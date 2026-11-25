@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- The installer works when the default browser is a picker, such as brave-pick from omapicker. It follows the picker's desktop file to the browser it starts. `OMAREADER_BROWSER` names the browser outright, and an unknown default browser now says how to set it.
+- The installer works when the default browser is a picker, such as brave-pick from omapicker. It follows the picker's desktop file to the browser it starts. `OMAREADER_BROWSER` names the browser outright, and an unknown default browser now says how to set it. A browser started with its own `--user-data-dir`, as a picker's Personal and Work instances are, reads extensions from that folder, so the installer now also updates every such folder that already has Omareader. It never adds Omareader to a new one.
 
 ## 0.4.0 — 2026-11-24
 
