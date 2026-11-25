@@ -38,7 +38,7 @@ Omareader is a Chromium extension that repaints web pages in your current Omarch
 - **Theme sync.** A small Python program watches `~/.local/state/omarchy/current` and sends the theme's background, foreground, selection and named colors whenever `omarchy theme set` swaps it, along with the monospace font Omarchy set.
 - **Theme colors.** Pages are themed by [Dark Reader](https://darkreader.org/)'s dynamic engine (`darkreader` 4.9.133, MIT, bundled, so you don't need the Dark Reader extension). Omareader then moves every color the page draws as a color to the closest of the theme's own red, orange, yellow, green, cyan, blue and magenta. It keeps the lightness Dark Reader chose, so text stays readable. Grays stay on the theme background and foreground.
 - **Readable text.** Text that would disappear into the theme background is drawn in the theme foreground. A stylesheet from another host is fetched by the extension and themed the same way. Dark Reader's site fixes are included, Amazon among them.
-- **Popup.** Two switches: "everywhere", and the site you're on by its short name, such as "github" or "google docs". A switch sits right while that one is themed, and shows the shortcut Chromium has bound to it on hover. The popup wears the current theme and the monospace font Omarchy set (`omarchy-font-set` updates it without a browser restart). The bottom row has the site-fix toggle and the version, which shows "v0.4.0 ✓" when up to date and the newer version with a link when a release is out.
+- **Popup.** Two switches: "everywhere", and the site you're on by its short name, such as "github" or "google docs". A switch sits right while that one is themed, and shows the shortcut Chromium has bound to it on hover. The popup wears the current theme and the monospace font Omarchy set (`omarchy-font-set` updates it without a browser restart). The bottom row has the site-fix toggle and the version, which shows "v0.4.1 ✓" when up to date and the newer version with a link when a release is out.
 - **Toolbar.** The dark glasses show while a tab is themed, and the light glasses while it is disabled.
 
 If the Dark Reader extension is also installed and enabled, the popup asks once whether to turn it off, since both would restyle the page. Turning it off asks for permission to manage extensions.
@@ -69,7 +69,7 @@ Both are `chrome.commands` suggested keys, using Alt+Shift and a letter. Omarchy
 
 Chromium, Chrome, Brave, Brave Origin, and Edge. Firefox and Zen are coming in a future version.
 
-**Curl installer (current).** [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). The one-line command is in [Install](#install) above.
+**Curl installer (current).** [v0.4.1](https://github.com/badenpiland/omareader/releases/tag/v0.4.1). The one-line command is in [Install](#install) above.
 
 The command follows the Omarchy default browser and installs Omareader only there. If the default is a browser picker, such as brave-pick from omapicker, it installs into the browser the picker starts. Separate instances of that browser that already have Omareader, such as a picker's Personal and Work, are updated too. To choose the browser yourself, name it: `curl -fsSL https://raw.githubusercontent.com/badenpiland/omareader/main/install.sh | OMAREADER_BROWSER=brave-origin bash` (chromium, chrome, brave, brave-origin or edge). Chromium, Brave, Brave Origin, and Edge load it on the next restart. Chrome asks once for sudo and writes the extension where Chrome will load it. Restart that browser.
 
@@ -77,7 +77,7 @@ If a browser already refused the extension, it will not accept the installer aga
 
 The palette has to come from your machine, so the extension and the native host are installed together. The extension id is `mhglniaepbokfgnpeennihlifandcgjh`.
 
-The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.4.0](https://github.com/badenpiland/omareader/releases/tag/v0.4.0). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
+The command fetches this installer from `main`. The installer then downloads the native host and the signed extension from the latest GitHub release, [v0.4.1](https://github.com/badenpiland/omareader/releases/tag/v0.4.1). It checks the published checksum and stops if that file is missing. It does not compile anything and it does not create a signing key. From a checkout, `./install.sh` installs the host in that checkout and, when `release/omareader.crx` is already there, that extension.
 
 **Omarchy package (coming soon).** Pending [omarchy-pkgs#1120](https://github.com/omacom/omarchy-pkgs/pull/1120). Once merged:
 
