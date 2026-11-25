@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- HEY no longer shifts around when it is themed. Its colors are CSS variables set after a nested rule, which Dark Reader 4.9.133 never read, so every border and background written with them dropped out: inputs lost their borders and moved, and buttons lost their color. Those declarations are now themed like the rest. Sites that don't use CSS nesting are unchanged.
 - The installer works when the default browser is a picker, such as brave-pick from omapicker. It follows the picker's desktop file to the browser it starts. `OMAREADER_BROWSER` names the browser outright, and an unknown default browser now says how to set it. A browser started with its own `--user-data-dir`, as a picker's Personal and Work instances are, reads extensions from that folder, so the installer now also updates every such folder that already has Omareader. It never adds Omareader to a new one.
 
 ## 0.4.0 — 2026-11-24

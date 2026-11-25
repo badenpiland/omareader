@@ -128,9 +128,58 @@ export function addThemeHues(source, tintPath = TINT_PATH) {
   return `import { tintHsl as omareaderTintHsl } from ${JSON.stringify(tintPath)};\n${next}`;
 }
 
+// darkreader.mjs has CRLF line endings.
+const ITERATE_RULES_START = /( {4}forEach\(rules, \(rule\) => \{\r?\n)( {8}if \(isStyleRule\(rule\)\) \{)/g;
+
+// CSS nesting puts declarations that follow a nested rule into a
+// CSSNestedDeclarations rule. It has a style but no selector, so Dark Reader
+// 4.9.133 skips it: a variable defined there is never themed, and every
+// var(--darkreader-…) that refers to it is left undefined. A border or
+// background written with that variable then drops out, and the page shifts.
+// HEY defines its colors this way. Each such rule is handed to Dark Reader as
+// "&" inside its parent rule, which is what it means.
+const NESTED_DECLARATIONS = `const omareaderNestedRules = new WeakMap();
+function omareaderNestedDeclarations(rule) {
+    if (
+        !rule ||
+        rule.selectorText ||
+        !rule.style ||
+        typeof CSSNestedDeclarations === "undefined" ||
+        !(rule instanceof CSSNestedDeclarations)
+    ) {
+        return rule;
+    }
+    let nested = omareaderNestedRules.get(rule);
+    if (!nested) {
+        nested = {
+            selectorText: "&",
+            style: rule.style,
+            get cssText() {
+                return \`& { \${rule.style.cssText} }\`;
+            },
+            parentRule: rule.parentRule,
+            parentStyleSheet: rule.parentStyleSheet
+        };
+        omareaderNestedRules.set(rule, nested);
+    }
+    return nested;
+}
+`;
+
+export function addNestedDeclarations(source) {
+  if ((source.match(ITERATE_RULES_START) || []).length !== 1) {
+    throw new Error("Dark Reader iterateCSSRules loop was not found once");
+  }
+  const patched = source.replace(
+    ITERATE_RULES_START,
+    (_, loop, styleCheck) => `${loop}        rule = omareaderNestedDeclarations(rule);\n${styleCheck}`,
+  );
+  return `${NESTED_DECLARATIONS}${patched}`;
+}
+
 export function createDarkReaderPlugin(darkReaderPath) {
   const source = readFileSync(darkReaderPath, "utf8");
-  const patched = addThemeHues(replaceInlineProxy(source));
+  const patched = addThemeHues(addNestedDeclarations(replaceInlineProxy(source)));
   const injectProxySource = extractInjectProxy(source);
   return {
     name: "omareader-dark-reader",

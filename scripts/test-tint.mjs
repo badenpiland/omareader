@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { MIN_CHROMA, nearestHue, oklchToRgb, rgbToOklch, themeHues, tintHsl, tintRgb } from "../src/tint.js";
-import { addThemeHues } from "./proxy-source.mjs";
+import { addNestedDeclarations, addThemeHues } from "./proxy-source.mjs";
 
 const close = (a, b, eps = 1e-3) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
 
@@ -54,6 +54,35 @@ assert.match(patched, /const themeCacheKeys = \[\n {4}"omareaderHues",/);
 assert.equal(patched.split("omareaderTintHsl(modifyHSL(hsl, pole, anotherPole), theme.omareaderHues, hsl)").length, 2);
 assert.throws(() => addThemeHues("nothing here"), /themeCacheKeys was not found/);
 
+// Declarations after a nested rule (CSSNestedDeclarations) reach Dark Reader
+// as "&" inside their parent, so variables defined there get themed.
+const nested = addNestedDeclarations(darkReader);
+assert.equal(nested.split("rule = omareaderNestedDeclarations(rule);").length, 2);
+assert.match(nested, /^const omareaderNestedRules = new WeakMap\(\);/);
+assert.match(nested, /selectorText: "&"/);
+assert.match(nested, /rule instanceof CSSNestedDeclarations/);
+assert.throws(() => addNestedDeclarations("nothing here"), /iterateCSSRules loop was not found/);
+{
+  const helper = nested.slice(0, nested.indexOf("function omareaderNestedDeclarations") + 2000);
+  const body = helper.slice(helper.indexOf("function omareaderNestedDeclarations"), helper.indexOf("\n}\n") + 2);
+  class CSSNestedDeclarations {
+    constructor(style, parentRule) {
+      this.style = style;
+      this.parentRule = parentRule;
+      this.parentStyleSheet = null;
+    }
+  }
+  const make = new Function("CSSNestedDeclarations", `const omareaderNestedRules = new WeakMap();\n${body}\nreturn omareaderNestedDeclarations;`);
+  const wrap = make(CSSNestedDeclarations);
+  const parent = { selectorText: ":root" };
+  const decls = new CSSNestedDeclarations({ cssText: "--color-border: red;" }, parent);
+  const wrapped = wrap(decls);
+  assert.equal(wrapped.selectorText, "&");
+  assert.equal(wrapped.parentRule, parent);
+  assert.equal(wrapped.cssText, "& { --color-border: red; }");
+  assert.equal(wrap(decls), wrapped, "the same wrapper each time, so Dark Reader's caches hold");
+  assert.equal(wrap(parent), parent, "style rules pass through");
+}
 const content = readFileSync(new URL("../src/content.js", import.meta.url), "utf8");
 assert.match(content, /omareaderHues: \(palette\.hues \|\| \[\]\)/);
 console.log("theme hues tint page colors");
