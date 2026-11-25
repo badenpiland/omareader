@@ -1,5 +1,15 @@
 // SPDX-License-Identifier: MIT
-import { acceptSiteFixes, fixesAutoUpdateEnabled, fixesFor, sanitizeFetchedFixes, SITE_FIXES_URL, trustedFixesUrl } from "./site-fixes.js";
+import {
+  acceptSiteFixes,
+  FIXES_CLEANUP_VERSION,
+  fixesAutoUpdateEnabled,
+  fixesFor,
+  fixesFromOtherVersion,
+  sanitizeFetchedFixes,
+  SITE_FIXES_URL,
+  storedFixesCurrent,
+  trustedFixesUrl,
+} from "./site-fixes.js";
 import { RECONNECT_MIN_MS, nextDelay } from "./reconnect-delay.js";
 import { decideDarkReaderPrompt } from "./dark-reader.js";
 import { fromExtensionPage } from "./extension-page.js";
@@ -20,6 +30,12 @@ const EXTENSION_ORIGIN = chrome.runtime.getURL("");
 const DARK_READER_ID = "eimadpbcbfnmbkopoojfekhnkhdbieeh";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RETRY_MS = 6 * 60 * 60 * 1000;
+// The daily alarm fires 24 hours after the last one, but the last download
+// finished a moment after that alarm, so exactly 24 hours later it was not
+// yet due and waited another day. Counting a download as due an hour early
+// keeps the checks daily.
+const DUE_MS = DAY_MS - 60 * 60 * 1000;
+const EXTENSION_VERSION = chrome.runtime.getManifest().version;
 
 const clients = new Set();
 const pageUrls = new WeakMap();
@@ -102,7 +118,7 @@ function fixesDue(stored, now) {
   if (!fetchedAt) {
     return now - attemptAt >= RETRY_MS;
   }
-  return now - fetchedAt >= DAY_MS && now - attemptAt >= RETRY_MS;
+  return now - fetchedAt >= DUE_MS && now - attemptAt >= RETRY_MS;
 }
 
 async function bundledFixesText() {
@@ -119,14 +135,31 @@ async function loadFixes() {
     siteFixesFetchedAt: 0,
     siteFixesAttemptAt: 0,
     siteFixesAutoUpdate: true,
+    siteFixesCleanup: 0,
+    siteFixesExtensionVersion: "",
   });
   siteFixesAutoUpdate = fixesAutoUpdateEnabled(stored);
   let applied = false;
-  try {
-    applyFixesText(stored.siteFixesText);
-    applied = true;
-  } catch {
-    // The saved list is unusable. The bundled file is the fallback.
+  if (fixesFromOtherVersion(stored, EXTENSION_VERSION)) {
+    // First start after an update: download the list now. The saved one
+    // stays in use until the new one arrives.
+    await chrome.storage.local.set({ siteFixesFetchedAt: 0, siteFixesAttemptAt: 0 });
+    stored.siteFixesFetchedAt = 0;
+    stored.siteFixesAttemptAt = 0;
+  }
+  if (stored.siteFixesText && !storedFixesCurrent(stored)) {
+    // An older cleanup saved this list. Use the bundled one, and download
+    // again now instead of waiting out the day.
+    await chrome.storage.local.set({ siteFixesText: "", siteFixesFetchedAt: 0, siteFixesAttemptAt: 0 });
+    stored.siteFixesFetchedAt = 0;
+    stored.siteFixesAttemptAt = 0;
+  } else {
+    try {
+      applyFixesText(stored.siteFixesText);
+      applied = true;
+    } catch {
+      // The saved list is unusable. The bundled file is the fallback.
+    }
   }
   if (!applied) {
     try {
@@ -211,6 +244,8 @@ async function refreshFixes() {
         siteFixesText: text,
         siteFixesFetchedAt: Date.now(),
         siteFixesAttemptAt: attemptAt,
+        siteFixesCleanup: FIXES_CLEANUP_VERSION,
+        siteFixesExtensionVersion: EXTENSION_VERSION,
       });
       if (changed) {
         broadcast();
@@ -234,7 +269,7 @@ function updatesDue(stored, now) {
   if (!checkedAt) {
     return now - attemptAt >= RETRY_MS;
   }
-  return now - checkedAt >= DAY_MS && now - attemptAt >= RETRY_MS;
+  return now - checkedAt >= DUE_MS && now - attemptAt >= RETRY_MS;
 }
 
 async function loadUpdate() {
