@@ -29,6 +29,11 @@ const EXTENSION_ORIGIN = chrome.runtime.getURL("");
 const DARK_READER_ID = "eimadpbcbfnmbkopoojfekhnkhdbieeh";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RETRY_MS = 6 * 60 * 60 * 1000;
+// The daily alarm fires 24 hours after the last one, but the last download
+// finished a moment after that alarm, so exactly 24 hours later it was not
+// yet due and waited another day. Counting a download as due an hour early
+// keeps the checks daily.
+const DUE_MS = DAY_MS - 60 * 60 * 1000;
 
 const clients = new Set();
 const pageUrls = new WeakMap();
@@ -111,7 +116,7 @@ function fixesDue(stored, now) {
   if (!fetchedAt) {
     return now - attemptAt >= RETRY_MS;
   }
-  return now - fetchedAt >= DAY_MS && now - attemptAt >= RETRY_MS;
+  return now - fetchedAt >= DUE_MS && now - attemptAt >= RETRY_MS;
 }
 
 async function bundledFixesText() {
@@ -253,7 +258,7 @@ function updatesDue(stored, now) {
   if (!checkedAt) {
     return now - attemptAt >= RETRY_MS;
   }
-  return now - checkedAt >= DAY_MS && now - attemptAt >= RETRY_MS;
+  return now - checkedAt >= DUE_MS && now - attemptAt >= RETRY_MS;
 }
 
 async function loadUpdate() {
