@@ -77,6 +77,8 @@ function themeFrom(palette) {
     lightSchemeTextColor: poles.foreground,
     selectionColor: palette.selection || "auto",
     styleSystemControls: true,
+    // The theme's named colors. The build hands them to tint.js (see addThemeHues).
+    omareaderHues: (palette.hues || []).map((hex) => hex.slice(1)).join(","),
   };
 }
 

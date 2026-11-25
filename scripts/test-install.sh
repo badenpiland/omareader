@@ -184,6 +184,49 @@ test "$status" -ne 0
 grep -q "Chromium-based" /tmp/omareader-install-zen.err
 test ! -e "$zen_home/.local/share/omareader"
 
+# A browser picker as the default browser: follow its desktop file to the
+# browser it starts. omapicker's brave-pick runs brave-origin from a script.
+picker_home="$WORK/home-picker"
+seed_browsers "$picker_home"
+mkdir -p "$picker_home/.local/share/applications" "$picker_home/.local/bin"
+cat > "$picker_home/.local/bin/brave-pick" <<'EOF2'
+#!/bin/bash
+# omarchy-launch-browser probes the browser with --help.
+[[ ${1:-} == --help ]] && exit 0
+exec uwsm-app -- brave-origin --user-data-dir="$HOME/.config/brave-work" "$@"
+EOF2
+chmod +x "$picker_home/.local/bin/brave-pick"
+printf '[Desktop Entry]\nType=Application\nName=Brave (pick)\nExec=%s %%u\n' \
+  "$picker_home/.local/bin/brave-pick" > "$picker_home/.local/share/applications/brave-pick.desktop"
+XDG_DATA_HOME="$picker_home/.local/share" run_install "$picker_home" "$GOOD_URL" brave-pick.desktop >/tmp/omareader-install-picker.out
+assert_only "$picker_home" ".config/BraveSoftware/Brave-Origin"
+test -f "$picker_home/.config/BraveSoftware/Brave-Origin/External Extensions/$EXT_JSON"
+
+# A picker's separate instances (--user-data-dir) that already have
+# Omareader get the new version too. One without it is left alone.
+mkdir -p "$picker_home/.config/brave-work/Default/Extensions/mhglniaepbokfgnpeennihlifandcgjh/0.3.1_0" "$picker_home/.config/brave-plain/Default"
+: > "$picker_home/.config/brave-work/Local State"
+: > "$picker_home/.config/brave-plain/Local State"
+XDG_DATA_HOME="$picker_home/.local/share" run_install "$picker_home" "$GOOD_URL" brave-pick.desktop >/tmp/omareader-install-picker2.out
+test -f "$picker_home/.config/brave-work/External Extensions/$EXT_JSON"
+test ! -e "$picker_home/.config/brave-plain/External Extensions"
+grep -q "Also updated the browser using $picker_home/.config/brave-work" /tmp/omareader-install-picker2.out
+
+# OMAREADER_BROWSER names the browser outright.
+named_home="$WORK/home-named"
+seed_browsers "$named_home"
+OMAREADER_BROWSER=edge run_install "$named_home" "$GOOD_URL" brave-pick.desktop >/tmp/omareader-install-named.out
+assert_only "$named_home" ".config/microsoft-edge"
+
+# A default browser nobody can follow says how to name one.
+unknown_home="$WORK/home-unknown"
+set +e
+run_install "$unknown_home" "$GOOD_URL" mystery.desktop >/tmp/omareader-install-unknown.out 2>/tmp/omareader-install-unknown.err
+status=$?
+set -e
+test "$status" -ne 0
+grep -q "OMAREADER_BROWSER=" /tmp/omareader-install-unknown.err
+
 echo "default browser install checked"
 
 quote_home="$WORK/say\"hi"
