@@ -181,7 +181,7 @@ async function pollSample(client, ready) {
 
 async function main() {
   if (!(await readFile(join(root, "key.pem")).then(() => true).catch(() => false))) {
-    throw new Error("key.pem is missing. Do not generate a replacement key. See the README.");
+    throw new Error("key.pem is missing. Do not generate a replacement key. See docs/releasing.md.");
   }
   execFileSync("npm", ["run", "build"], { cwd: root, stdio: "inherit" });
   const extensionId = (await readFile(join(root, "extension-id"), "utf8")).trim();
