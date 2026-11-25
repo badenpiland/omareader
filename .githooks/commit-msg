@@ -1,0 +1,7 @@
+#!/bin/sh
+# Remove Claude session links from the commit message.
+# Enable once per clone: git config core.hooksPath .githooks
+msg="$1"
+tmp="$msg.strip.$$"
+grep -v -E '^Claude-Session:|claude\.ai/code/session_' "$msg" > "$tmp" || true
+mv "$tmp" "$msg"
